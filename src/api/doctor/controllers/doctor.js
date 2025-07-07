@@ -1,13 +1,54 @@
+// @ts-nocheck
 'use strict';
+
+const bcrypt = require('bcryptjs');
+const { createCoreController } = require('@strapi/strapi').factories;
 
 /**
  * doctor controller
  */
 
-const { createCoreController } = require('@strapi/strapi').factories;
-
 module.exports = createCoreController('api::doctor.doctor', ({ strapi }) => ({
   
+  async create(ctx) {
+    try {
+      const { data } = ctx.request.body;
+      
+      // Hash password if provided
+      if (data.password) {
+        data.password = await bcrypt.hash(data.password, 10);
+      }
+
+      const doctor = await strapi.entityService.create('api::doctor.doctor', {
+        data,
+      });
+
+      return doctor;
+    } catch (error) {
+      ctx.throw(500, `Error creating doctor: ${error.message}`);
+    }
+  },
+
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data } = ctx.request.body;
+      
+      // Hash password if provided
+      if (data.password) {
+        data.password = await bcrypt.hash(data.password, 10);
+      }
+
+      const doctor = await strapi.entityService.update('api::doctor.doctor', id, {
+        data,
+      });
+
+      return doctor;
+    } catch (error) {
+      ctx.throw(500, `Error updating doctor: ${error.message}`);
+    }
+  },
+
   async findAvailable(ctx) {
     try {
       const { latitude, longitude, radius = 10 } = ctx.query;

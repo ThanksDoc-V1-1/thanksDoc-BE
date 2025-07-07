@@ -412,6 +412,9 @@ export interface ApiBusinessBusiness extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     longitude: Schema.Attribute.Decimal & Schema.Attribute.Required;
     operatingHours: Schema.Attribute.JSON;
+    password: Schema.Attribute.Password &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
     paymentMethods: Schema.Attribute.JSON;
     phone: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
@@ -464,6 +467,9 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     longitude: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    password: Schema.Attribute.Password &
+      Schema.Attribute.Required &
+      Schema.Attribute.Private;
     phone: Schema.Attribute.String & Schema.Attribute.Required;
     profilePicture: Schema.Attribute.Media<'images'>;
     publishedAt: Schema.Attribute.DateTime;

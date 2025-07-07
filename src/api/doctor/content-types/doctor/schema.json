@@ -25,6 +25,11 @@
       "required": true,
       "unique": true
     },
+    "password": {
+      "type": "password",
+      "required": true,
+      "private": true
+    },
     "phone": {
       "type": "string",
       "required": true
