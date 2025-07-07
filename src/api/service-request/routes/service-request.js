@@ -65,9 +65,25 @@ module.exports = {
       },
     },
     {
+      method: 'POST',
+      path: '/service-requests/direct',
+      handler: 'service-request.createDirectRequest',
+      config: {
+        auth: false,
+      },
+    },
+    {
       method: 'PUT',
       path: '/service-requests/:id/accept',
       handler: 'service-request.acceptServiceRequest',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'PUT',
+      path: '/service-requests/:id/reject',
+      handler: 'service-request.rejectServiceRequest',
       config: {
         auth: false,
       },

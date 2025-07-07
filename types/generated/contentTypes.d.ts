@@ -531,11 +531,21 @@ export interface ApiServiceRequestServiceRequest
         },
         number
       >;
+    rejectedAt: Schema.Attribute.DateTime;
+    rejectedBy: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
+    rejectionReason: Schema.Attribute.Text;
     requestedAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
     scheduledAt: Schema.Attribute.DateTime;
     serviceType: Schema.Attribute.String & Schema.Attribute.Required;
     status: Schema.Attribute.Enumeration<
-      ['pending', 'accepted', 'in_progress', 'completed', 'cancelled']
+      [
+        'pending',
+        'accepted',
+        'rejected',
+        'in_progress',
+        'completed',
+        'cancelled',
+      ]
     > &
       Schema.Attribute.DefaultTo<'pending'>;
     totalAmount: Schema.Attribute.Decimal;

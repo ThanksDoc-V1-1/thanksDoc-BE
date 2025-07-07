@@ -161,6 +161,49 @@ module.exports = createCoreController('api::service-request.service-request', ({
     }
   },
 
+  // Reject a service request
+  async rejectServiceRequest(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { doctorId, reason } = ctx.request.body;
+
+      // Get the service request
+      const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
+        populate: ['business', 'doctor'],
+      });
+
+      if (!serviceRequest) {
+        return ctx.notFound('Service request not found');
+      }
+
+      if (serviceRequest.status !== 'pending') {
+        return ctx.badRequest('Service request is no longer available');
+      }
+
+      // Get doctor details
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId);
+      
+      if (!doctor) {
+        return ctx.badRequest('Doctor not found');
+      }
+
+      // Update the service request
+      const updatedServiceRequest = await strapi.entityService.update('api::service-request.service-request', id, {
+        data: {
+          status: 'rejected',
+          rejectedAt: new Date(),
+          rejectionReason: reason || 'No reason provided',
+          rejectedBy: doctorId,
+        },
+        populate: ['business', 'doctor'],
+      });
+
+      return updatedServiceRequest;
+    } catch (error) {
+      ctx.throw(500, `Error rejecting service request: ${error.message}`);
+    }
+  },
+
   // Complete a service request
   async completeServiceRequest(ctx) {
     try {
@@ -239,6 +282,66 @@ module.exports = createCoreController('api::service-request.service-request', ({
       return serviceRequests;
     } catch (error) {
       ctx.throw(500, `Error getting business requests: ${error.message}`);
+    }
+  },
+
+  // Create a direct service request to a specific doctor
+  async createDirectRequest(ctx) {
+    try {
+      const { 
+        businessId, 
+        doctorId, 
+        urgencyLevel, 
+        serviceType, 
+        description, 
+        estimatedDuration 
+      } = ctx.request.body;
+      
+      console.log('Creating direct request with data:', {
+        businessId, doctorId, urgencyLevel, serviceType, description, estimatedDuration
+      });
+      
+      // Validate business exists
+      const business = await strapi.entityService.findOne('api::business.business', businessId);
+      if (!business) {
+        return ctx.badRequest('Business not found');
+      }
+
+      // Validate doctor exists and is available
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId);
+      if (!doctor) {
+        return ctx.badRequest('Doctor not found');
+      }
+
+      if (!doctor.isAvailable) {
+        return ctx.badRequest('Doctor is currently unavailable');
+      }
+
+      // Create the service request
+      const serviceRequest = await strapi.entityService.create('api::service-request.service-request', {
+        data: {
+          business: businessId,
+          doctor: doctorId,
+          urgencyLevel: urgencyLevel || 'medium',
+          serviceType: serviceType || 'Medical Consultation',
+          description,
+          estimatedDuration: parseFloat(estimatedDuration) || 1,
+          requestedAt: new Date(),
+          status: 'pending',
+          publishedAt: new Date(),
+        },
+        populate: ['business', 'doctor'],
+      });
+
+      console.log('Direct service request created:', serviceRequest.id);
+
+      return {
+        serviceRequest,
+        message: 'Service request sent to doctor successfully'
+      };
+    } catch (error) {
+      console.error('Error creating direct service request:', error);
+      ctx.throw(500, `Error creating service request: ${error.message}`);
     }
   },
 }));
