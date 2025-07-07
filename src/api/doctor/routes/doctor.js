@@ -10,6 +10,14 @@ module.exports = {
     },
     {
       method: 'GET',
+      path: '/doctors/available',
+      handler: 'doctor.findAvailable',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'GET',
       path: '/doctors/:id',
       handler: 'doctor.findOne',
       config: {
@@ -36,14 +44,6 @@ module.exports = {
       method: 'DELETE',
       path: '/doctors/:id',
       handler: 'doctor.delete',
-      config: {
-        auth: false,
-      },
-    },
-    {
-      method: 'GET',
-      path: '/doctors/available',
-      handler: 'doctor.findAvailable',
       config: {
         auth: false,
       },

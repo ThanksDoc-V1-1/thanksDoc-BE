@@ -77,7 +77,8 @@ module.exports = createCoreController('api::doctor.doctor', ({ strapi }) => ({
       const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
         filters: {
           isAvailable: true,
-          isVerified: true,
+          // TEMPORARY: Allow unverified doctors for development
+          // TODO: In production, add back: isVerified: true,
         },
         populate: ['profilePicture'],
       });
