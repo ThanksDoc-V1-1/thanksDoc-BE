@@ -106,6 +106,14 @@ module.exports = {
     },
     {
       method: 'GET',
+      path: '/service-requests/available/:doctorId',
+      handler: 'service-request.getAvailableRequests',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'GET',
       path: '/service-requests/business/:businessId',
       handler: 'service-request.getBusinessRequests',
       config: {

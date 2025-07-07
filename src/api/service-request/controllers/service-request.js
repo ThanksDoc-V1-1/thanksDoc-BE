@@ -344,6 +344,37 @@ module.exports = createCoreController('api::service-request.service-request', ({
       ctx.throw(500, `Error creating service request: ${error.message}`);
     }
   },
+
+  // Get available service requests for a specific doctor (unassigned or assigned to them)
+  async getAvailableRequests(ctx) {
+    try {
+      const { doctorId } = ctx.params;
+      
+      console.log('Getting available requests for doctor:', doctorId);
+      
+      // Get all pending requests that are either:
+      // 1. Unassigned (no doctor) - general requests that any doctor can accept
+      // 2. Specifically assigned to this doctor
+      const requests = await strapi.entityService.findMany('api::service-request.service-request', {
+        filters: {
+          status: 'pending',
+          $or: [
+            { doctor: null }, // Unassigned requests
+            { doctor: doctorId } // Requests specifically for this doctor
+          ]
+        },
+        populate: ['business', 'doctor'],
+        sort: 'requestedAt:desc',
+      });
+
+      console.log(`Found ${requests.length} available requests for doctor ${doctorId}`);
+      
+      return requests;
+    } catch (error) {
+      console.error('Error fetching available requests:', error);
+      ctx.throw(500, `Error fetching available requests: ${error.message}`);
+    }
+  },
 }));
 
 // Helper function to calculate distance between two coordinates
