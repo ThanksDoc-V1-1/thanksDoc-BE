@@ -77,15 +77,20 @@ module.exports = createCoreController('api::doctor.doctor', ({ strapi }) => ({
       const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
         filters: {
           isAvailable: true,
-          // TEMPORARY: Allow unverified doctors for development
-          // TODO: In production, add back: isVerified: true,
+          isVerified: true, // Only show verified doctors to businesses
         },
         populate: ['profilePicture'],
       });
 
+      // Remove sensitive contact information for business access
+      const filteredDoctors = doctors.map(doctor => {
+        const { email, phone, password, emergencyContact, ...publicData } = doctor;
+        return publicData;
+      });
+
       if (latitude && longitude) {
         // Filter by distance if coordinates provided
-        const nearbyDoctors = doctors.filter(doctor => {
+        const nearbyDoctors = filteredDoctors.filter(doctor => {
           const distance = calculateDistance(
             parseFloat(latitude),
             parseFloat(longitude),
@@ -106,7 +111,7 @@ module.exports = createCoreController('api::doctor.doctor', ({ strapi }) => ({
         return nearbyDoctors;
       }
 
-      return doctors;
+      return filteredDoctors;
     } catch (error) {
       ctx.throw(500, `Error finding available doctors: ${error.message}`);
     }
