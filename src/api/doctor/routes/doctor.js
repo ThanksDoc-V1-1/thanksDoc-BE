@@ -56,5 +56,13 @@ module.exports = {
         auth: false,
       },
     },
+    {
+      method: 'GET',
+      path: '/doctors/:id/stats',
+      handler: 'doctor.getStats',
+      config: {
+        auth: false,
+      },
+    },
   ],
 };

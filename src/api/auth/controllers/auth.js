@@ -39,6 +39,10 @@ module.exports = {
         console.log('🔍 Attempting password verification...');
         console.log('📝 Password provided:', password ? 'YES' : 'NO');
         console.log('🔐 Hashed password exists:', user.password ? 'YES' : 'NO');
+        console.log('🔐 Raw password length:', password.length);
+        console.log('🔐 Hashed password length:', user.password ? user.password.length : 'N/A');
+        console.log('🔐 Hashed password starts with $2:', user.password ? user.password.startsWith('$2') : 'N/A');
+        console.log('🔐 First 10 chars of hash:', user.password ? user.password.substring(0, 10) : 'N/A');
         
         const isValidPassword = await bcrypt.compare(password, user.password);
         console.log('✅ Password valid:', isValidPassword);
@@ -60,6 +64,9 @@ module.exports = {
         );
 
         console.log('Doctor login successful:', user.email);
+        console.log('👤 Doctor ID being returned:', user.id);
+        console.log('📊 Full doctor user object:', JSON.stringify(user, null, 2));
+        
         return ctx.send({
           jwt: token,
           user: {
@@ -161,6 +168,11 @@ module.exports = {
         ...userData,
         password: hashedPassword,
       };
+
+      // Add name field if not present but firstName and lastName are
+      if (!userDataWithHashedPassword.name && userDataWithHashedPassword.firstName && userDataWithHashedPassword.lastName) {
+        userDataWithHashedPassword.name = `${userDataWithHashedPassword.firstName} ${userDataWithHashedPassword.lastName}`;
+      }
 
       let user;
       if (type === 'doctor') {

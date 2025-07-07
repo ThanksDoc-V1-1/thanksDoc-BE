@@ -10,6 +10,27 @@ const { createCoreController } = require('@strapi/strapi').factories;
 
 module.exports = createCoreController('api::doctor.doctor', ({ strapi }) => ({
   
+  async findOne(ctx) {
+    try {
+      const { id } = ctx.params;
+      console.log('🔍 Looking for doctor with ID:', id);
+      
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', id);
+      console.log('👤 Found doctor:', doctor ? 'YES' : 'NO');
+      
+      if (!doctor) {
+        console.log('❌ Doctor not found with ID:', id);
+        return ctx.notFound('Doctor not found');
+      }
+      
+      console.log('✅ Returning doctor:', doctor.email);
+      return { data: doctor };
+    } catch (error) {
+      console.error('💥 Error in findOne:', error);
+      ctx.throw(500, `Error finding doctor: ${error.message}`);
+    }
+  },
+
   async create(ctx) {
     try {
       const { data } = ctx.request.body;
@@ -104,6 +125,21 @@ module.exports = createCoreController('api::doctor.doctor', ({ strapi }) => ({
       return doctor;
     } catch (error) {
       ctx.throw(500, `Error updating doctor availability: ${error.message}`);
+    }
+  },
+
+  async getStats(ctx) {
+    try {
+      const { id } = ctx.params;
+      
+      // Use the service to get doctor statistics
+      const stats = await strapi.service('api::doctor.doctor').getDoctorStats(id);
+      
+      return ctx.send({
+        data: stats
+      });
+    } catch (error) {
+      ctx.throw(500, `Error fetching doctor stats: ${error.message}`);
     }
   },
 }));
