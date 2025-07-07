@@ -48,4 +48,48 @@ module.exports = createCoreController('api::business.business', ({ strapi }) => 
       ctx.throw(500, `Error updating business: ${error.message}`);
     }
   },
+
+  async getStats(ctx) {
+    try {
+      const { id } = ctx.params;
+      
+      // Use the service to get business statistics
+      const stats = await strapi.service('api::business.business').getBusinessStats(id);
+      
+      return ctx.send({
+        data: stats
+      });
+    } catch (error) {
+      ctx.throw(500, `Error fetching business stats: ${error.message}`);
+    }
+  },
+
+  async findOne(ctx) {
+    try {
+      const { id } = ctx.params;
+      console.log('🔍 Business findOne called with ID:', id);
+      console.log('🔍 ID type:', typeof id);
+      console.log('🔍 Params object:', ctx.params);
+      
+      const business = await strapi.entityService.findOne('api::business.business', id);
+      console.log('📡 Business found:', business ? 'YES' : 'NO');
+      console.log('👤 Business data keys:', business ? Object.keys(business) : 'N/A');
+      
+      if (!business) {
+        console.log('❌ Business not found with ID:', id);
+        return ctx.notFound('Business not found');
+      }
+
+      // Remove password from response
+      const { password, ...businessData } = business;
+      console.log('✅ Returning business data for:', businessData.businessName);
+      
+      return ctx.send({
+        data: businessData
+      });
+    } catch (error) {
+      console.error('❌ Error in business findOne:', error);
+      ctx.throw(500, `Error fetching business: ${error.message}`);
+    }
+  },
 }));

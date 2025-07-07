@@ -169,9 +169,13 @@ module.exports = {
         password: hashedPassword,
       };
 
-      // Add name field if not present but firstName and lastName are
-      if (!userDataWithHashedPassword.name && userDataWithHashedPassword.firstName && userDataWithHashedPassword.lastName) {
-        userDataWithHashedPassword.name = `${userDataWithHashedPassword.firstName} ${userDataWithHashedPassword.lastName}`;
+      // Add name field if not present
+      if (!userDataWithHashedPassword.name) {
+        if (type === 'doctor' && userDataWithHashedPassword.firstName && userDataWithHashedPassword.lastName) {
+          userDataWithHashedPassword.name = `${userDataWithHashedPassword.firstName} ${userDataWithHashedPassword.lastName}`;
+        } else if (type === 'business' && userDataWithHashedPassword.businessName) {
+          userDataWithHashedPassword.name = userDataWithHashedPassword.businessName;
+        }
       }
 
       let user;

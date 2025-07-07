@@ -40,5 +40,13 @@ module.exports = {
         auth: false,
       },
     },
+    {
+      method: 'GET',
+      path: '/businesses/:id/stats',
+      handler: 'business.getStats',
+      config: {
+        auth: false,
+      },
+    },
   ],
 };
