@@ -27,11 +27,24 @@ module.exports = {
       if (doctor.length > 0) {
         const user = doctor[0];
         console.log('Found doctor:', user.email);
+        console.log('Doctor verification status:', user.isVerified);
+        
+        // TEMPORARY: Allow unverified doctors for development
+        // TODO: Remove this in production - only verified doctors should be able to log in
+        if (!user.isVerified) {
+          console.log('⚠️ WARNING: Allowing unverified doctor login for development:', user.email);
+        }
         
         // Verify password
+        console.log('🔍 Attempting password verification...');
+        console.log('📝 Password provided:', password ? 'YES' : 'NO');
+        console.log('🔐 Hashed password exists:', user.password ? 'YES' : 'NO');
+        
         const isValidPassword = await bcrypt.compare(password, user.password);
+        console.log('✅ Password valid:', isValidPassword);
+        
         if (!isValidPassword) {
-          console.log('Invalid password for doctor:', user.email);
+          console.log('❌ Invalid password for doctor:', user.email);
           return ctx.badRequest('Invalid credentials');
         }
 
