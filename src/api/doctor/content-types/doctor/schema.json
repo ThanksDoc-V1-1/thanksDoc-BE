@@ -1,0 +1,100 @@
+{
+  "kind": "collectionType",
+  "collectionName": "doctors",
+  "info": {
+    "singularName": "doctor",
+    "pluralName": "doctors",
+    "displayName": "Doctor",
+    "description": "Doctor profiles for ThanksDoc platform"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "firstName": {
+      "type": "string",
+      "required": true
+    },
+    "lastName": {
+      "type": "string",
+      "required": true
+    },
+    "email": {
+      "type": "email",
+      "required": true,
+      "unique": true
+    },
+    "phone": {
+      "type": "string",
+      "required": true
+    },
+    "specialization": {
+      "type": "string",
+      "required": true
+    },
+    "licenseNumber": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "yearsOfExperience": {
+      "type": "integer",
+      "required": true
+    },
+    "profilePicture": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "latitude": {
+      "type": "decimal",
+      "required": true
+    },
+    "longitude": {
+      "type": "decimal",
+      "required": true
+    },
+    "address": {
+      "type": "text",
+      "required": true
+    },
+    "city": {
+      "type": "string",
+      "required": true
+    },
+    "state": {
+      "type": "string",
+      "required": true
+    },
+    "zipCode": {
+      "type": "string",
+      "required": true
+    },
+    "hourlyRate": {
+      "type": "decimal",
+      "required": true
+    },
+    "isAvailable": {
+      "type": "boolean",
+      "default": true
+    },
+    "isVerified": {
+      "type": "boolean",
+      "default": false
+    },
+    "bio": {
+      "type": "text"
+    },
+    "emergencyContact": {
+      "type": "string"
+    },
+    "languages": {
+      "type": "json"
+    },
+    "certifications": {
+      "type": "json"
+    }
+  }
+}

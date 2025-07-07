@@ -1,0 +1,85 @@
+{
+  "kind": "collectionType",
+  "collectionName": "businesses",
+  "info": {
+    "singularName": "business",
+    "pluralName": "businesses",
+    "displayName": "Business",
+    "description": "Business profiles for ThanksDoc platform"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "businessName": {
+      "type": "string",
+      "required": true
+    },
+    "businessType": {
+      "type": "enumeration",
+      "enum": ["pharmacy", "clinic", "hospital", "other"],
+      "required": true
+    },
+    "contactPersonName": {
+      "type": "string",
+      "required": true
+    },
+    "email": {
+      "type": "email",
+      "required": true,
+      "unique": true
+    },
+    "phone": {
+      "type": "string",
+      "required": true
+    },
+    "latitude": {
+      "type": "decimal",
+      "required": true
+    },
+    "longitude": {
+      "type": "decimal",
+      "required": true
+    },
+    "address": {
+      "type": "text",
+      "required": true
+    },
+    "city": {
+      "type": "string",
+      "required": true
+    },
+    "state": {
+      "type": "string",
+      "required": true
+    },
+    "zipCode": {
+      "type": "string",
+      "required": true
+    },
+    "businessLicense": {
+      "type": "string",
+      "required": true
+    },
+    "isVerified": {
+      "type": "boolean",
+      "default": false
+    },
+    "operatingHours": {
+      "type": "json"
+    },
+    "emergencyContact": {
+      "type": "string"
+    },
+    "description": {
+      "type": "text"
+    },
+    "paymentMethods": {
+      "type": "json"
+    },
+    "stripeCustomerId": {
+      "type": "string"
+    }
+  }
+}
