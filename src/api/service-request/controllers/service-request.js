@@ -290,7 +290,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
     }
   },
 
-  // Get service requests for a specific doctor
+  // Get service requests for a specific doctor (completed ones)
   async getDoctorRequests(ctx) {
     try {
       const { doctorId } = ctx.params;
@@ -298,6 +298,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const serviceRequests = await strapi.entityService.findMany('api::service-request.service-request', {
         filters: {
           doctor: doctorId,
+          status: 'completed', // Only get completed requests
         },
         populate: ['business', 'doctor'],
         sort: { createdAt: 'desc' },
@@ -318,7 +319,12 @@ module.exports = createCoreController('api::service-request.service-request', ({
         filters: {
           business: businessId,
         },
-        populate: ['business', 'doctor'],
+        populate: {
+          business: true,
+          doctor: {
+            fields: ['firstName', 'lastName', 'specialization', 'phone', 'email']
+          }
+        },
         sort: { createdAt: 'desc' },
       });
 
@@ -395,18 +401,31 @@ module.exports = createCoreController('api::service-request.service-request', ({
       
       console.log('Getting available requests for doctor:', doctorId);
       
-      // Get all pending requests that are either:
+      // Get all pending or accepted requests that are either:
       // 1. Unassigned (no doctor) - general requests that any doctor can accept
-      // 2. Specifically assigned to this doctor
+      // 2. Specifically assigned to this doctor (both pending and accepted)
       const requests = await strapi.entityService.findMany('api::service-request.service-request', {
         filters: {
-          status: 'pending',
           $or: [
-            { doctor: null }, // Unassigned requests
-            { doctor: doctorId } // Requests specifically for this doctor
+            { 
+              status: 'pending',
+              $or: [
+                { doctor: null }, // Unassigned requests
+                { doctor: doctorId } // Pending requests specifically for this doctor
+              ]
+            },
+            {
+              status: 'accepted',
+              doctor: doctorId // Accepted requests by this doctor
+            }
           ]
         },
-        populate: ['business', 'doctor'],
+        populate: {
+          business: { 
+            fields: ['businessName', 'contactPersonName', 'phone', 'address', 'city', 'state', 'zipCode'] 
+          },
+          doctor: true
+        },
         sort: 'requestedAt:desc',
       });
 
