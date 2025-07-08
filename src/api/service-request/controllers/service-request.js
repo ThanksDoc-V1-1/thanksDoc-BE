@@ -247,6 +247,49 @@ module.exports = createCoreController('api::service-request.service-request', ({
     }
   },
 
+  // Cancel a service request
+  async cancelServiceRequest(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { reason } = ctx.request.body;
+
+      const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
+        populate: ['doctor'],
+      });
+
+      if (!serviceRequest) {
+        return ctx.notFound('Service request not found');
+      }
+
+      if (serviceRequest.status === 'completed' || serviceRequest.status === 'cancelled') {
+        return ctx.badRequest('Service request cannot be cancelled');
+      }
+
+      // Update the service request
+      const updatedServiceRequest = await strapi.entityService.update('api::service-request.service-request', id, {
+        data: {
+          status: 'cancelled',
+          cancelledAt: new Date(),
+          cancellationReason: reason,
+        },
+        populate: ['business', 'doctor'],
+      });
+
+      // Set doctor as available again if they were assigned
+      if (serviceRequest.doctor) {
+        await strapi.entityService.update('api::doctor.doctor', serviceRequest.doctor.id, {
+          data: {
+            isAvailable: true,
+          },
+        });
+      }
+
+      return updatedServiceRequest;
+    } catch (error) {
+      ctx.throw(500, `Error cancelling service request: ${error.message}`);
+    }
+  },
+
   // Get service requests for a specific doctor
   async getDoctorRequests(ctx) {
     try {

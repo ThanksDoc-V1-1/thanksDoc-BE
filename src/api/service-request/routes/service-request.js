@@ -97,6 +97,14 @@ module.exports = {
       },
     },
     {
+      method: 'PUT',
+      path: '/service-requests/:id/cancel',
+      handler: 'service-request.cancelServiceRequest',
+      config: {
+        auth: false,
+      },
+    },
+    {
       method: 'GET',
       path: '/service-requests/doctor/:doctorId',
       handler: 'service-request.getDoctorRequests',
