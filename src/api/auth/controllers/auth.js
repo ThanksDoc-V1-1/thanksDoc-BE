@@ -17,6 +17,46 @@ module.exports = {
       }
 
       console.log('Login attempt for:', email);
+      
+      // Check if user is an admin
+      const admin = await strapi.entityService.findMany('api::admin.admin', {
+        filters: { email },
+        limit: 1,
+      });
+      
+      if (admin.length > 0) {
+        const user = admin[0];
+        console.log('Found admin user:', user.email);
+        
+        // Verify password
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+          console.log('❌ Invalid password for admin:', user.email);
+          return ctx.badRequest('Invalid credentials');
+        }
+        
+        // Generate JWT token
+        const token = jwt.sign(
+          { 
+            id: user.id, 
+            email: user.email, 
+            role: 'admin' 
+          },
+          process.env.JWT_SECRET || 'your-secret-key',
+          { expiresIn: '7d' }
+        );
+        
+        console.log('✅ Admin login successful:', user.email);
+        return ctx.send({
+          jwt: token,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Admin',
+            role: 'admin'
+          }
+        });
+      }
 
       // Check if user is a doctor
       const doctor = await strapi.entityService.findMany('api::doctor.doctor', {
@@ -134,7 +174,7 @@ module.exports = {
     try {
       const { type, ...userData } = ctx.request.body;
 
-      if (!type || !['doctor', 'business'].includes(type)) {
+      if (!type || !['doctor', 'business', 'admin'].includes(type)) {
         return ctx.badRequest('Invalid user type');
       }
 
@@ -154,8 +194,13 @@ module.exports = {
         filters: { email: userData.email },
         limit: 1,
       });
+      
+      const existingAdmin = await strapi.entityService.findMany('api::admin.admin', {
+        filters: { email: userData.email },
+        limit: 1,
+      });
 
-      if (existingDoctor.length > 0 || existingBusiness.length > 0) {
+      if (existingDoctor.length > 0 || existingBusiness.length > 0 || existingAdmin.length > 0) {
         console.log('User already exists:', userData.email);
         return ctx.badRequest('User already exists with this email');
       }
@@ -183,8 +228,12 @@ module.exports = {
         user = await strapi.entityService.create('api::doctor.doctor', {
           data: userDataWithHashedPassword,
         });
-      } else {
+      } else if (type === 'business') {
         user = await strapi.entityService.create('api::business.business', {
+          data: userDataWithHashedPassword,
+        });
+      } else if (type === 'admin') {
+        user = await strapi.entityService.create('api::admin.admin', {
           data: userDataWithHashedPassword,
         });
       }
@@ -237,6 +286,8 @@ module.exports = {
         user = await strapi.entityService.findOne('api::doctor.doctor', payload.id);
       } else if (payload.role === 'business') {
         user = await strapi.entityService.findOne('api::business.business', payload.id);
+      } else if (payload.role === 'admin') {
+        user = await strapi.entityService.findOne('api::admin.admin', payload.id);
       }
 
       if (!user) {
