@@ -10,6 +10,24 @@ const { createCoreController } = require('@strapi/strapi').factories;
 
 module.exports = createCoreController('api::doctor.doctor', ({ strapi }) => ({
   
+  async find(ctx) {
+    try {
+      const { query } = ctx;
+      
+      // Use the default strapi find method but ensure we get all the fields
+      const result = await strapi.entityService.findMany('api::doctor.doctor', {
+        ...query,
+        populate: query.populate || ['profilePicture'],
+      });
+      
+      // Return the results in the standard format
+      return { data: result };
+    } catch (error) {
+      console.error('Error in find:', error);
+      ctx.throw(500, `Error finding doctors: ${error.message}`);
+    }
+  },
+
   async findOne(ctx) {
     try {
       const { id } = ctx.params;
@@ -131,6 +149,29 @@ module.exports = createCoreController('api::doctor.doctor', ({ strapi }) => ({
       return doctor;
     } catch (error) {
       ctx.throw(500, `Error updating doctor availability: ${error.message}`);
+    }
+  },
+
+  async getOverallStats(ctx) {
+    try {
+      const totalDoctors = await strapi.entityService.count('api::doctor.doctor');
+      const verifiedDoctors = await strapi.entityService.count('api::doctor.doctor', {
+        filters: { isVerified: true }
+      });
+      const availableDoctors = await strapi.entityService.count('api::doctor.doctor', {
+        filters: { 
+          isAvailable: true,
+          isVerified: true
+        }
+      });
+
+      return {
+        totalDoctors,
+        verifiedDoctors,
+        availableDoctors
+      };
+    } catch (error) {
+      ctx.throw(500, `Error getting doctor stats: ${error.message}`);
     }
   },
 

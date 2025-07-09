@@ -10,6 +10,14 @@ module.exports = {
     },
     {
       method: 'GET',
+      path: '/doctors/stats',
+      handler: 'doctor.getOverallStats',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'GET',
       path: '/doctors/available',
       handler: 'doctor.findAvailable',
       config: {
