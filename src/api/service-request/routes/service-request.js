@@ -17,6 +17,14 @@ module.exports = {
     },
     {
       method: 'GET',
+      path: '/service-requests/stats',
+      handler: 'service-request.getOverallStats',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'GET',
       path: '/service-requests/:id',
       handler: 'service-request.findOne',
       config: {

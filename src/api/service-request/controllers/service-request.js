@@ -9,6 +9,50 @@ const { createCoreController } = require('@strapi/strapi').factories;
 
 module.exports = createCoreController('api::service-request.service-request', ({ strapi }) => ({
   
+  async find(ctx) {
+    try {
+      const { query } = ctx;
+      
+      // Use the default strapi find method but ensure we populate the relationships
+      const result = await strapi.entityService.findMany('api::service-request.service-request', {
+        ...query,
+        populate: {
+          business: true,
+          doctor: true,
+          ...query.populate,
+        },
+      });
+      
+      // Return the results in the standard format
+      return { data: result };
+    } catch (error) {
+      console.error('Error in find:', error);
+      ctx.throw(500, `Error finding service requests: ${error.message}`);
+    }
+  },
+
+  async findOne(ctx) {
+    try {
+      const { id } = ctx.params;
+      
+      const result = await strapi.entityService.findOne('api::service-request.service-request', id, {
+        populate: {
+          business: true,
+          doctor: true,
+        },
+      });
+      
+      if (!result) {
+        return ctx.notFound('Service request not found');
+      }
+      
+      return { data: result };
+    } catch (error) {
+      console.error('Error in findOne:', error);
+      ctx.throw(500, `Error finding service request: ${error.message}`);
+    }
+  },
+
   // Find nearby doctors when a service request is created
   async findNearbyDoctors(ctx) {
     try {
@@ -435,6 +479,30 @@ module.exports = createCoreController('api::service-request.service-request', ({
     } catch (error) {
       console.error('Error fetching available requests:', error);
       ctx.throw(500, `Error fetching available requests: ${error.message}`);
+    }
+  },
+
+  async getOverallStats(ctx) {
+    try {
+      const totalRequests = await strapi.entityService.count('api::service-request.service-request');
+      const pendingRequests = await strapi.entityService.count('api::service-request.service-request', {
+        filters: { status: 'pending' }
+      });
+      const completedRequests = await strapi.entityService.count('api::service-request.service-request', {
+        filters: { status: 'completed' }
+      });
+      const acceptedRequests = await strapi.entityService.count('api::service-request.service-request', {
+        filters: { status: 'accepted' }
+      });
+
+      return {
+        totalRequests,
+        pendingRequests,
+        completedRequests,
+        acceptedRequests
+      };
+    } catch (error) {
+      ctx.throw(500, `Error getting service request stats: ${error.message}`);
     }
   },
 }));
