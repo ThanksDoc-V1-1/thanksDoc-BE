@@ -10,6 +10,24 @@ const { createCoreController } = require('@strapi/strapi').factories;
 
 module.exports = createCoreController('api::business.business', ({ strapi }) => ({
   
+  async find(ctx) {
+    try {
+      const { query } = ctx;
+      
+      // Use the default strapi find method but ensure we get all the fields
+      const result = await strapi.entityService.findMany('api::business.business', {
+        ...query,
+        populate: query.populate || [],
+      });
+      
+      // Return the results in the standard format
+      return { data: result };
+    } catch (error) {
+      console.error('Error in find:', error);
+      ctx.throw(500, `Error finding businesses: ${error.message}`);
+    }
+  },
+
   async create(ctx) {
     try {
       const { data } = ctx.request.body;
@@ -46,6 +64,22 @@ module.exports = createCoreController('api::business.business', ({ strapi }) => 
       return business;
     } catch (error) {
       ctx.throw(500, `Error updating business: ${error.message}`);
+    }
+  },
+
+  async getOverallStats(ctx) {
+    try {
+      const totalBusinesses = await strapi.entityService.count('api::business.business');
+      const verifiedBusinesses = await strapi.entityService.count('api::business.business', {
+        filters: { isVerified: true }
+      });
+
+      return {
+        totalBusinesses,
+        verifiedBusinesses
+      };
+    } catch (error) {
+      ctx.throw(500, `Error getting business stats: ${error.message}`);
     }
   },
 

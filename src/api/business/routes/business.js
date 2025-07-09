@@ -10,6 +10,14 @@ module.exports = {
     },
     {
       method: 'GET',
+      path: '/businesses/stats',
+      handler: 'business.getOverallStats',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'GET',
       path: '/businesses/:id',
       handler: 'business.findOne',
       config: {
