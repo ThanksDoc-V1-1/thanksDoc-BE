@@ -547,6 +547,7 @@ export interface ApiServiceRequestServiceRequest
     doctor: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
     estimatedDuration: Schema.Attribute.Integer;
     feedback: Schema.Attribute.Text;
+    isPaid: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -554,7 +555,9 @@ export interface ApiServiceRequestServiceRequest
     > &
       Schema.Attribute.Private;
     notes: Schema.Attribute.Text;
+    paidAt: Schema.Attribute.DateTime;
     paymentIntentId: Schema.Attribute.String;
+    paymentMethod: Schema.Attribute.String;
     paymentStatus: Schema.Attribute.Enumeration<
       ['pending', 'paid', 'failed', 'refunded']
     > &

@@ -76,6 +76,16 @@
       "enum": ["pending", "paid", "failed", "refunded"],
       "default": "pending"
     },
+    "isPaid": {
+      "type": "boolean",
+      "default": false
+    },
+    "paidAt": {
+      "type": "datetime"
+    },
+    "paymentMethod": {
+      "type": "string"
+    },
     "paymentIntentId": {
       "type": "string"
     },

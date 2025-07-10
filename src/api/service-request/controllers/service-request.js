@@ -512,19 +512,26 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const { id } = ctx.params;
       const { paymentMethod, paymentDetails } = ctx.request.body;
 
+      console.log(`Processing payment for service request ${id} with method ${paymentMethod}`);
+
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
         populate: ['doctor', 'business'],
       });
 
       if (!serviceRequest) {
+        console.log(`Service request ${id} not found`);
         return ctx.notFound('Service request not found');
       }
 
+      console.log(`Service request ${id} status: ${serviceRequest.status}`);
+
       if (serviceRequest.status !== 'completed') {
+        console.log(`Cannot process payment for request ${id} with status ${serviceRequest.status}`);
         return ctx.badRequest('Can only process payment for completed service requests');
       }
 
       if (serviceRequest.isPaid) {
+        console.log(`Service request ${id} has already been paid`);
         return ctx.badRequest('Service request has already been paid');
       }
 
@@ -534,18 +541,24 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const hours = serviceRequest.estimatedDuration || 1;
       const amount = hourlyRate * hours;
 
+      console.log(`Payment amount for request ${id}: ${amount}`);
+
       // Update the service request with payment information
+      // Keep the status as 'completed' but mark as paid
       const updatedServiceRequest = await strapi.entityService.update('api::service-request.service-request', id, {
         data: {
-          isPaid: true,
+          isPaid: true, // This is the flag we use to track payment status
           paidAt: new Date(),
           paymentMethod,
           paymentDetails: JSON.stringify(paymentDetails),
           totalAmount: amount,
+          // Don't change the status since 'paid' is not a valid status in our schema
+          // Maintain the 'completed' status
         },
         populate: ['business', 'doctor'],
       });
 
+      console.log(`Payment processed successfully for request ${id}`);
       return updatedServiceRequest;
     } catch (error) {
       ctx.throw(500, `Error processing payment: ${error.message}`);
