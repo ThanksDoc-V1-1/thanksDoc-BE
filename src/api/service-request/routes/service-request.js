@@ -113,6 +113,14 @@ module.exports = {
       },
     },
     {
+      method: 'PUT',
+      path: '/service-requests/:id/payment',
+      handler: 'service-request.processPayment',
+      config: {
+        auth: false,
+      },
+    },
+    {
       method: 'GET',
       path: '/service-requests/doctor/:doctorId',
       handler: 'service-request.getDoctorRequests',

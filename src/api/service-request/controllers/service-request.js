@@ -505,6 +505,52 @@ module.exports = createCoreController('api::service-request.service-request', ({
       ctx.throw(500, `Error getting service request stats: ${error.message}`);
     }
   },
+
+  // Process payment for a service request
+  async processPayment(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { paymentMethod, paymentDetails } = ctx.request.body;
+
+      const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
+        populate: ['doctor', 'business'],
+      });
+
+      if (!serviceRequest) {
+        return ctx.notFound('Service request not found');
+      }
+
+      if (serviceRequest.status !== 'completed') {
+        return ctx.badRequest('Can only process payment for completed service requests');
+      }
+
+      if (serviceRequest.isPaid) {
+        return ctx.badRequest('Service request has already been paid');
+      }
+
+      // Calculate payment amount based on doctor rate and service duration
+      const doctor = serviceRequest.doctor;
+      const hourlyRate = doctor?.hourlyRate || 0;
+      const hours = serviceRequest.estimatedDuration || 1;
+      const amount = hourlyRate * hours;
+
+      // Update the service request with payment information
+      const updatedServiceRequest = await strapi.entityService.update('api::service-request.service-request', id, {
+        data: {
+          isPaid: true,
+          paidAt: new Date(),
+          paymentMethod,
+          paymentDetails: JSON.stringify(paymentDetails),
+          totalAmount: amount,
+        },
+        populate: ['business', 'doctor'],
+      });
+
+      return updatedServiceRequest;
+    } catch (error) {
+      ctx.throw(500, `Error processing payment: ${error.message}`);
+    }
+  },
 }));
 
 // Helper function to calculate distance between two coordinates
