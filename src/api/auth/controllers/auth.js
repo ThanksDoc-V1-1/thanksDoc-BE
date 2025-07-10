@@ -69,10 +69,10 @@ module.exports = {
         console.log('Found doctor:', user.email);
         console.log('Doctor verification status:', user.isVerified);
         
-        // TEMPORARY: Allow unverified doctors for development
-        // TODO: Remove this in production - only verified doctors should be able to log in
+        // Check if doctor is verified
         if (!user.isVerified) {
-          console.log('⚠️ WARNING: Allowing unverified doctor login for development:', user.email);
+          console.log('❌ Unverified doctor attempted login:', user.email);
+          return ctx.forbidden('Account not verified. Please wait for admin approval.');
         }
         
         // Verify password
@@ -129,6 +129,13 @@ module.exports = {
       if (business.length > 0) {
         const user = business[0];
         console.log('Found business:', user.email);
+        console.log('Business verification status:', user.isVerified);
+        
+        // Check if business is verified
+        if (!user.isVerified) {
+          console.log('❌ Unverified business attempted login:', user.email);
+          return ctx.forbidden('Account not verified. Please wait for admin approval.');
+        }
         
         // Verify password
         const isValidPassword = await bcrypt.compare(password, user.password);
