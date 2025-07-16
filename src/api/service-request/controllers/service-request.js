@@ -400,22 +400,41 @@ module.exports = createCoreController('api::service-request.service-request', ({
   async createDirectRequest(ctx) {
     try {
       const { 
+        // Business portal fields
         businessId, 
         doctorId, 
         urgencyLevel, 
         serviceType, 
         description, 
-        estimatedDuration 
+        estimatedDuration,
+        // Patient portal fields
+        firstName,
+        lastName,
+        phoneNumber,
+        urgency,
+        symptoms,
+        notes
       } = ctx.request.body;
       
       console.log('Creating direct request with data:', {
-        businessId, doctorId, urgencyLevel, serviceType, description, estimatedDuration
+        businessId, doctorId, urgencyLevel, serviceType, description, estimatedDuration,
+        firstName, lastName, phoneNumber, urgency, symptoms, notes
       });
       
-      // Validate business exists
-      const business = await strapi.entityService.findOne('api::business.business', businessId);
-      if (!business) {
-        return ctx.badRequest('Business not found');
+      // Determine if this is from business portal or patient portal
+      const isBusinessRequest = !!businessId;
+      const isPatientRequest = !!(firstName && lastName && phoneNumber);
+      
+      if (!isBusinessRequest && !isPatientRequest) {
+        return ctx.badRequest('Invalid request: must provide either business info or patient info');
+      }
+      
+      // Validate business exists (for business requests)
+      if (isBusinessRequest) {
+        const business = await strapi.entityService.findOne('api::business.business', businessId);
+        if (!business) {
+          return ctx.badRequest('Business not found');
+        }
       }
 
       // Validate doctor exists and is available
@@ -428,23 +447,66 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return ctx.badRequest('Doctor is currently unavailable');
       }
 
+      // Prepare service request data based on request type
+      const requestData = isBusinessRequest ? {
+        business: businessId,
+        doctor: doctorId,
+        urgencyLevel: urgencyLevel || 'medium',
+        serviceType: serviceType || 'Medical Consultation',
+        description,
+        estimatedDuration: parseInt(estimatedDuration) || 1,
+        requestedAt: new Date(),
+        status: 'pending'
+      } : {
+        // Patient request data
+        doctor: doctorId,
+        patientName: `${firstName} ${lastName}`,
+        patientPhone: phoneNumber,
+        urgencyLevel: urgency || 'medium',
+        serviceType: serviceType || 'consultation',
+        description: symptoms || 'Not specified',
+        notes: notes || '',
+        requestedAt: new Date(),
+        status: 'pending'
+      };
+
       // Create the service request
       const serviceRequest = await strapi.entityService.create('api::service-request.service-request', {
-        data: {
-          business: businessId,
-          doctor: doctorId,
-          urgencyLevel: urgencyLevel || 'medium',
-          serviceType: serviceType || 'Medical Consultation',
-          description,
-          estimatedDuration: parseInt(estimatedDuration) || 1,
-          requestedAt: new Date(),
-          status: 'pending',
-          publishedAt: new Date(),
-        },
+        data: requestData,
         populate: ['business', 'doctor'],
       });
 
       console.log('Direct service request created:', serviceRequest.id);
+
+      // Send WhatsApp notification to the selected doctor
+      try {
+        console.log('Attempting to send WhatsApp notification to selected doctor...');
+        const whatsappService = strapi.service('whatsapp');
+        console.log('WhatsApp service retrieved:', !!whatsappService);
+        
+        if (whatsappService) {
+          console.log('Sending notification to doctor:', {
+            id: doctor.id,
+            name: `${doctor.firstName} ${doctor.lastName}`,
+            phone: doctor.phone
+          });
+          
+          // Get business data for the notification (for business requests)
+          let businessForNotification = null;
+          if (isBusinessRequest) {
+            businessForNotification = await strapi.entityService.findOne('api::business.business', businessId);
+          }
+          
+          await whatsappService.sendServiceRequestNotification(doctor, serviceRequest, businessForNotification);
+          console.log(`WhatsApp notification sent to selected doctor: ${doctor.firstName} ${doctor.lastName}`);
+        } else {
+          console.error('WhatsApp service not found!');
+        }
+      } catch (whatsappError) {
+        console.error('Failed to send WhatsApp notification to selected doctor:', whatsappError.message);
+        console.error('WhatsApp error details:', whatsappError);
+        // Don't fail the request if WhatsApp fails
+      }
 
       return {
         serviceRequest,

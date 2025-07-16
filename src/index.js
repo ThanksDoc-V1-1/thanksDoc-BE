@@ -7,7 +7,24 @@ module.exports = {
    *
    * This gives you an opportunity to extend code.
    */
-  register(/*{ strapi }*/) {},
+  register({ strapi }) {
+    // Register WhatsApp service - make it accessible globally
+    const WhatsAppService = require('./services/whatsapp');
+    const whatsappServiceInstance = new WhatsAppService();
+    
+    // Store original service method
+    const originalService = strapi.service;
+    
+    // Override service method to handle our custom WhatsApp service
+    strapi.service = function(serviceName) {
+      if (serviceName === 'whatsapp') {
+        return whatsappServiceInstance;
+      }
+      return originalService.call(this, serviceName);
+    };
+    
+    console.log('✅ WhatsApp service registered successfully');
+  },
 
   /**
    * An asynchronous bootstrap function that runs before

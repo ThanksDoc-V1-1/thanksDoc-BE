@@ -78,16 +78,17 @@ class WhatsAppService {
    * Get doctor display name
    */
   getDoctorDisplayName(doctor) {
-    if (doctor.name && doctor.name !== 'null' && doctor.name.trim() !== '' && doctor.name.toLowerCase() !== 'null') {
-      return doctor.name;
-    }
-    
-    // Fallback to firstName + lastName
+    // Prioritize firstName and lastName over name field
     const firstName = doctor.firstName || '';
     const lastName = doctor.lastName || '';
     
     if (firstName || lastName) {
       return `${firstName} ${lastName}`.trim();
+    }
+    
+    // Fallback to name field if firstName/lastName not available
+    if (doctor.name && doctor.name !== 'null' && doctor.name.trim() !== '' && doctor.name.toLowerCase() !== 'null') {
+      return doctor.name;
     }
     
     return 'Unknown Doctor';
@@ -275,30 +276,52 @@ class WhatsAppService {
     const serviceEmoji = this.getServiceEmoji(serviceRequest.serviceType);
     const doctorName = doctor ? this.getDoctorDisplayName(doctor) : 'Doctor';
 
-    const messageText = `🏥 *NEW SERVICE REQUEST* ${urgencyEmoji}
+    // Handle both business requests and direct patient requests
+    const isBusinessRequest = business && business.name;
+    
+    let messageText;
+    
+    if (isBusinessRequest) {
+      // Business request message
+      messageText = `🏥 *NEW SERVICE REQUEST* ${urgencyEmoji}
 
 👨‍⚕️ *Hello Dr. ${doctorName}*
 
 ${serviceEmoji} *Service:* ${serviceRequest.serviceType}
 🏢 *Business:* ${business.name}
 📍 *Location:* ${business.address}
-⏱️ *Duration:* ${serviceRequest.estimatedDuration} hour(s)
+⏱️ *Duration:* ${serviceRequest.estimatedDuration || 1} hour(s)
 ${serviceRequest.urgencyLevel === 'emergency' ? '🚨 *EMERGENCY REQUEST*' : ''}
 
 📝 *Details:* ${serviceRequest.description || 'No additional details'}
-
-💰 *Estimated Payment:* Contact business for details
 
 ⚡ *Quick Actions:*
 ✅ Accept: ${acceptUrl}
 ❌ Decline: ${rejectUrl}
 
-📱 Or reply with:
-• "ACCEPT" to accept this request
-• "DECLINE" to decline this request
+⏰ This request expires in 24 hours.
+🔒 Secure links - only you can use these.`;
+    } else {
+      // Direct patient request message
+      messageText = `🏥 *NEW PATIENT REQUEST* ${urgencyEmoji}
+
+👨‍⚕️ *Hello Dr. ${doctorName}*
+
+${serviceEmoji} *Service:* ${serviceRequest.serviceType}
+👤 *Patient:* ${serviceRequest.patientName || 'Not specified'}
+📞 *Contact:* ${serviceRequest.patientPhone || 'Not provided'}
+${serviceRequest.urgencyLevel === 'emergency' ? '🚨 *EMERGENCY REQUEST*' : ''}
+
+📝 *Symptoms:* ${serviceRequest.description || 'Not specified'}
+📋 *Notes:* ${serviceRequest.notes || 'None'}
+
+⚡ *Quick Actions:*
+✅ Accept: ${acceptUrl}
+❌ Decline: ${rejectUrl}
 
 ⏰ This request expires in 24 hours.
 🔒 Secure links - only you can use these.`;
+    }
 
     return {
       messaging_product: "whatsapp",
