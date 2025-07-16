@@ -144,5 +144,54 @@ module.exports = {
         auth: false,
       },
     },
+    // WhatsApp integration routes
+    {
+      method: 'GET',
+      path: '/service-requests/whatsapp-accept/:token',
+      handler: 'service-request.whatsappAcceptRequest',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'GET',
+      path: '/service-requests/whatsapp-reject/:token',
+      handler: 'service-request.whatsappRejectRequest',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'GET',
+      path: '/service-requests/whatsapp-webhook',
+      handler: 'service-request.handleWhatsappWebhook',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'POST',
+      path: '/service-requests/whatsapp-webhook',
+      handler: 'service-request.handleWhatsappWebhook',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'POST',
+      path: '/service-requests/test-whatsapp',
+      handler: 'service-request.testWhatsappNotification',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'POST',
+      path: '/service-requests/admin/format-phone-numbers',
+      handler: 'service-request.formatDoctorPhoneNumbers',
+      config: {
+        auth: false,
+      },
+    },
   ],
 };

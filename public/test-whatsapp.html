@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Integration Test - ThanksDoc</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background: #27ae60;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #219a52;
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .doctor-list {
+            margin-bottom: 20px;
+        }
+        .doctor-item {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+        }
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+        .warning-box {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 WhatsApp Integration Test</h1>
+        
+        <div class="warning-box">
+            <strong>⚠️ Important:</strong> Make sure you have configured your WhatsApp Business API credentials in the .env file and completed Facebook business verification before testing.
+        </div>
+
+        <div class="info-box">
+            <strong>📱 How to test:</strong>
+            <ol>
+                <li>First, load doctors from the database</li>
+                <li>Select a doctor (preferably with your phone number for testing)</li>
+                <li>Send a test WhatsApp notification</li>
+                <li>Check your WhatsApp for the message</li>
+                <li>Test the Accept/Decline links in the message</li>
+            </ol>
+        </div>
+
+        <!-- Load Doctors Section -->
+        <div class="form-group">
+            <button onclick="loadDoctors()" id="loadDoctorsBtn">📋 Load Doctors from Database</button>
+        </div>
+
+        <div id="doctorsList" class="doctor-list" style="display: none;"></div>
+
+        <!-- Test Form -->
+        <form id="testForm" style="display: none;">
+            <div class="form-group">
+                <label for="doctorSelect">Select Doctor:</label>
+                <select id="doctorSelect" required>
+                    <option value="">Choose a doctor...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="testMessage">Test Message (optional):</label>
+                <textarea id="testMessage" placeholder="Custom test message (optional)"></textarea>
+            </div>
+
+            <button type="submit" id="sendBtn">📱 Send Test WhatsApp Notification</button>
+        </form>
+
+        <div id="result" class="result"></div>
+
+        <!-- Instructions -->
+        <div class="info-box" style="margin-top: 30px;">
+            <h3>📖 Setup Instructions:</h3>
+            <p><strong>1. WhatsApp Business API Setup:</strong></p>
+            <ul>
+                <li>Create Facebook Business account at <a href="https://business.facebook.com" target="_blank">business.facebook.com</a></li>
+                <li>Go to <a href="https://developers.facebook.com" target="_blank">developers.facebook.com</a> and create WhatsApp Business API app</li>
+                <li>Complete business verification process</li>
+                <li>Get your Access Token, Phone Number ID, and Business Account ID</li>
+            </ul>
+            
+            <p><strong>2. Environment Variables:</strong></p>
+            <pre>WHATSAPP_ACCESS_TOKEN=your_permanent_access_token
+WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
+WHATSAPP_BUSINESS_ACCOUNT_ID=your_business_account_id
+WHATSAPP_WEBHOOK_VERIFY_TOKEN=your_webhook_verify_token
+BASE_URL=http://localhost:3000</pre>
+
+            <p><strong>3. Testing:</strong></p>
+            <ul>
+                <li>Make sure your phone number is added to a doctor profile</li>
+                <li>Phone number format should include country code but NO + (e.g., 1234567890)</li>
+                <li>Check Facebook Developer Console for message delivery status</li>
+                <li>Use WhatsApp Business API is more cost-effective than Twilio</li>
+            </ul>
+            
+            <p><strong>4. Cost Benefits:</strong></p>
+            <ul>
+                <li>📉 <strong>Lower costs:</strong> ~$0.005-0.05 per conversation vs Twilio's ~$0.05-0.10 per message</li>
+                <li>🆓 <strong>Free tier:</strong> 1,000 conversations per month</li>
+                <li>💬 <strong>Conversation-based:</strong> Multiple messages in 24 hours = 1 conversation</li>
+                <li>🏢 <strong>Official API:</strong> Direct integration with WhatsApp</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:1337/api';
+
+        async function loadDoctors() {
+            const btn = document.getElementById('loadDoctorsBtn');
+            btn.disabled = true;
+            btn.textContent = '🔄 Loading...';
+
+            try {
+                const response = await fetch(`${API_BASE}/doctors`);
+                const data = await response.json();
+                
+                if (data.data && data.data.length > 0) {
+                    displayDoctors(data.data);
+                    populateDoctorSelect(data.data);
+                    document.getElementById('testForm').style.display = 'block';
+                    showResult('✅ Loaded ' + data.data.length + ' doctors successfully!', 'success');
+                } else {
+                    showResult('❌ No doctors found in database. Please add some doctors first.', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading doctors:', error);
+                showResult('❌ Error loading doctors: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📋 Reload Doctors';
+            }
+        }
+
+        function displayDoctors(doctors) {
+            const doctorsList = document.getElementById('doctorsList');
+            doctorsList.innerHTML = '<h3>👨‍⚕️ Available Doctors:</h3>';
+            
+            doctors.forEach(doctor => {
+                const doctorDiv = document.createElement('div');
+                doctorDiv.className = 'doctor-item';
+                doctorDiv.innerHTML = `
+                    <strong>Dr. ${doctor.name}</strong><br>
+                    📞 Phone: ${doctor.phone || 'Not provided'}<br>
+                    🏥 Specialization: ${doctor.specialization || 'Not specified'}<br>
+                    📧 Email: ${doctor.email}
+                `;
+                doctorsList.appendChild(doctorDiv);
+            });
+            
+            doctorsList.style.display = 'block';
+        }
+
+        function populateDoctorSelect(doctors) {
+            const select = document.getElementById('doctorSelect');
+            select.innerHTML = '<option value="">Choose a doctor...</option>';
+            
+            doctors.forEach(doctor => {
+                const option = document.createElement('option');
+                option.value = doctor.id;
+                option.textContent = `Dr. ${doctor.name} (${doctor.phone || 'No phone'})`;
+                select.appendChild(option);
+            });
+        }
+
+        document.getElementById('testForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const doctorId = document.getElementById('doctorSelect').value;
+            const testMessage = document.getElementById('testMessage').value;
+            const sendBtn = document.getElementById('sendBtn');
+            
+            if (!doctorId) {
+                showResult('❌ Please select a doctor first.', 'error');
+                return;
+            }
+            
+            sendBtn.disabled = true;
+            sendBtn.textContent = '📤 Sending...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/service-requests/test-whatsapp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        doctorId: doctorId,
+                        testMessage: testMessage
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showResult(`✅ Test WhatsApp notification sent successfully to Dr. ${result.doctor.name} (${result.doctor.phone})!<br><br>📱 Check your WhatsApp for the message.<br>🔗 Twilio Message SID: ${result.twilioSid}`, 'success');
+                } else {
+                    showResult('❌ ' + (result.message || 'Failed to send notification'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showResult('❌ Error sending notification: ' + error.message, 'error');
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = '📱 Send Test WhatsApp Notification';
+            }
+        });
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = message;
+            resultDiv.style.display = 'block';
+            
+            // Scroll to result
+            resultDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Load doctors on page load
+        window.addEventListener('load', () => {
+            // Auto-load doctors when page loads
+            // loadDoctors();
+        });
+    </script>
+</body>
+</html>

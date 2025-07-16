@@ -18,8 +18,10 @@
     "@strapi/plugin-cloud": "5.17.0",
     "@strapi/plugin-users-permissions": "5.17.0",
     "@strapi/strapi": "5.17.0",
+    "axios": "^1.10.0",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "11.3.0",
+    "crypto": "^1.0.1",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.14.1",
     "nodemailer": "^6.9.8",
@@ -27,7 +29,8 @@
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.0.0",
     "stripe": "^14.17.0",
-    "styled-components": "^6.0.0"
+    "styled-components": "^6.0.0",
+    "whatsapp-business-api": "^0.0.4"
   },
   "engines": {
     "node": ">=18.0.0 <=22.x.x",

@@ -72,6 +72,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
           isVerified: true,
         },
         populate: ['profilePicture'],
+        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization', 'isAvailable', 'isVerified', 'latitude', 'longitude'],
       });
 
       // Calculate distance and filter doctors within radius
@@ -146,9 +147,26 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // For now, we'll just log the notification
       console.log(`Notifying ${nearbyDoctorsResponse.count} nearby doctors about new service request ${serviceRequest.id}`);
 
+      // Send WhatsApp notifications to nearby doctors
+      const WhatsAppService = require('../../../services/whatsapp');
+      const whatsappService = new WhatsAppService();
+      
+      let notificationsSent = 0;
+      for (const doctor of nearbyDoctorsResponse.doctors) {
+        try {
+          await whatsappService.sendServiceRequestNotification(doctor, serviceRequest, business);
+          notificationsSent++;
+        } catch (error) {
+          console.error(`Failed to send WhatsApp notification to Dr. ${doctor.name}:`, error);
+        }
+      }
+      
+      console.log(`WhatsApp notifications sent to ${notificationsSent} out of ${nearbyDoctorsResponse.count} doctors`);
+
       return {
         serviceRequest,
-        notifiedDoctors: nearbyDoctorsResponse.count
+        notifiedDoctors: nearbyDoctorsResponse.count,
+        whatsappNotificationsSent: notificationsSent
       };
     } catch (error) {
       ctx.throw(500, `Error creating service request: ${error.message}`);
@@ -562,6 +580,407 @@ module.exports = createCoreController('api::service-request.service-request', ({
       return updatedServiceRequest;
     } catch (error) {
       ctx.throw(500, `Error processing payment: ${error.message}`);
+    }
+  },
+
+  // WhatsApp Integration Methods
+  async whatsappAcceptRequest(ctx) {
+    try {
+      const { token } = ctx.params;
+      const WhatsAppService = require('../../../services/whatsapp');
+      const whatsappService = new WhatsAppService();
+
+      // Verify and decode the token
+      const { serviceRequestId, doctorId } = whatsappService.verifyAcceptanceToken(token);
+
+      // Get the service request
+      const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', serviceRequestId, {
+        populate: ['business', 'doctor'],
+      });
+
+      if (!serviceRequest) {
+        return ctx.notFound('Service request not found');
+      }
+
+      if (serviceRequest.status !== 'pending') {
+        // Generate a response page for already accepted/expired request
+        const html = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Request No Longer Available</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+              body { font-family: Arial, sans-serif; margin: 40px; text-align: center; background: #f5f5f5; }
+              .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+              .icon { font-size: 60px; margin-bottom: 20px; }
+              h1 { color: #e74c3c; margin-bottom: 20px; }
+              p { color: #666; line-height: 1.6; }
+              .btn { background: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="icon">⚠️</div>
+              <h1>Request No Longer Available</h1>
+              <p>This service request has already been accepted by another doctor or has expired.</p>
+              <p>Thank you for your quick response!</p>
+              <a href="${process.env.BASE_URL || 'http://localhost:3000'}/doctor/dashboard" class="btn">Go to Dashboard</a>
+            </div>
+          </body>
+          </html>
+        `;
+        ctx.type = 'text/html';
+        return html;
+      }
+
+      // Get doctor details
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId);
+      
+      if (!doctor) {
+        return ctx.badRequest('Doctor not found');
+      }
+
+      // Accept the service request (same logic as dashboard acceptance)
+      const updatedServiceRequest = await strapi.entityService.update('api::service-request.service-request', serviceRequestId, {
+        data: {
+          doctor: doctorId,
+          status: 'accepted',
+          acceptedAt: new Date(),
+          totalAmount: doctor.hourlyRate * (serviceRequest.estimatedDuration || 1),
+        },
+        populate: ['business', 'doctor'],
+      });
+
+      // Set doctor as temporarily unavailable
+      await strapi.entityService.update('api::doctor.doctor', doctorId, {
+        data: {
+          isAvailable: false,
+        },
+      });
+
+      // Send confirmation messages
+      await whatsappService.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
+      await whatsappService.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
+
+      // Generate success page
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Request Accepted Successfully</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; text-align: center; background: #f5f5f5; }
+            .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+            .icon { font-size: 60px; margin-bottom: 20px; }
+            h1 { color: #27ae60; margin-bottom: 20px; }
+            p { color: #666; line-height: 1.6; margin-bottom: 15px; }
+            .detail { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; text-left; }
+            .detail strong { color: #333; }
+            .btn { background: #27ae60; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">✅</div>
+            <h1>Request Accepted Successfully!</h1>
+            <p>You have successfully accepted the service request.</p>
+            
+            <div class="detail">
+              <strong>Business:</strong> ${serviceRequest.business.name}<br>
+              <strong>Service:</strong> ${serviceRequest.serviceType}<br>
+              <strong>Duration:</strong> ${serviceRequest.estimatedDuration} hour(s)<br>
+              <strong>Contact:</strong> ${serviceRequest.business.phone}<br>
+              <strong>Address:</strong> ${serviceRequest.business.address}
+            </div>
+            
+            <p><strong>Next Steps:</strong></p>
+            <p>1. Contact the business directly to coordinate your visit</p>
+            <p>2. Update your status through your dashboard</p>
+            <p>3. Complete the service when finished</p>
+            
+            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/doctor/dashboard" class="btn">Go to Dashboard</a>
+          </div>
+        </body>
+        </html>
+      `;
+
+      ctx.type = 'text/html';
+      return html;
+    } catch (error) {
+      console.error('Error in whatsappAcceptRequest:', error);
+      
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Error</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; text-align: center; background: #f5f5f5; }
+            .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+            .icon { font-size: 60px; margin-bottom: 20px; }
+            h1 { color: #e74c3c; margin-bottom: 20px; }
+            p { color: #666; line-height: 1.6; }
+            .btn { background: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">❌</div>
+            <h1>Error</h1>
+            <p>There was an error processing your request. The link may be invalid or expired.</p>
+            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/doctor/dashboard" class="btn">Go to Dashboard</a>
+          </div>
+        </body>
+        </html>
+      `;
+      
+      ctx.type = 'text/html';
+      return html;
+    }
+  },
+
+  async whatsappRejectRequest(ctx) {
+    try {
+      const { token } = ctx.params;
+      const WhatsAppService = require('../../../services/whatsapp');
+      const whatsappService = new WhatsAppService();
+
+      // Verify and decode the token
+      const { serviceRequestId, doctorId } = whatsappService.verifyAcceptanceToken(token);
+
+      // Get the service request
+      const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', serviceRequestId, {
+        populate: ['business', 'doctor'],
+      });
+
+      if (!serviceRequest) {
+        return ctx.notFound('Service request not found');
+      }
+
+      if (serviceRequest.status !== 'pending') {
+        const html = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Request No Longer Available</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+              body { font-family: Arial, sans-serif; margin: 40px; text-align: center; background: #f5f5f5; }
+              .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+              .icon { font-size: 60px; margin-bottom: 20px; }
+              h1 { color: #e74c3c; margin-bottom: 20px; }
+              p { color: #666; line-height: 1.6; }
+              .btn { background: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="icon">⚠️</div>
+              <h1>Request No Longer Available</h1>
+              <p>This service request has already been handled or has expired.</p>
+              <a href="${process.env.BASE_URL || 'http://localhost:3000'}/doctor/dashboard" class="btn">Go to Dashboard</a>
+            </div>
+          </body>
+          </html>
+        `;
+        ctx.type = 'text/html';
+        return html;
+      }
+
+      // Get doctor details
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId);
+      
+      if (!doctor) {
+        return ctx.badRequest('Doctor not found');
+      }
+
+      // Send confirmation message
+      await whatsappService.sendConfirmationMessage(doctor.phone, 'reject', serviceRequest, serviceRequest.business);
+
+      // Generate success page
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Request Declined</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; text-align: center; background: #f5f5f5; }
+            .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+            .icon { font-size: 60px; margin-bottom: 20px; }
+            h1 { color: #f39c12; margin-bottom: 20px; }
+            p { color: #666; line-height: 1.6; }
+            .btn { background: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">👋</div>
+            <h1>Request Declined</h1>
+            <p>You have declined this service request.</p>
+            <p>The request will be offered to other available doctors.</p>
+            <p>Thank you for your quick response!</p>
+            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/doctor/dashboard" class="btn">Go to Dashboard</a>
+          </div>
+        </body>
+        </html>
+      `;
+
+      ctx.type = 'text/html';
+      return html;
+    } catch (error) {
+      console.error('Error in whatsappRejectRequest:', error);
+      
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Error</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; text-align: center; background: #f5f5f5; }
+            .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+            .icon { font-size: 60px; margin-bottom: 20px; }
+            h1 { color: #e74c3c; margin-bottom: 20px; }
+            p { color: #666; line-height: 1.6; }
+            .btn { background: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">❌</div>
+            <h1>Error</h1>
+            <p>There was an error processing your request. The link may be invalid or expired.</p>
+            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/doctor/dashboard" class="btn">Go to Dashboard</a>
+          </div>
+        </body>
+        </html>
+      `;
+      
+      ctx.type = 'text/html';
+      return html;
+    }
+  },
+
+  async handleWhatsappWebhook(ctx) {
+    try {
+      const { query, body } = ctx.request;
+      
+      // Handle webhook verification (GET request)
+      if (ctx.method === 'GET') {
+        const mode = query['hub.mode'];
+        const token = query['hub.verify_token'];
+        const challenge = query['hub.challenge'];
+        
+        const WhatsAppService = require('../../../services/whatsapp');
+        const whatsappService = new WhatsAppService();
+        
+        try {
+          const verificationResult = whatsappService.verifyWebhook(mode, token, challenge);
+          ctx.body = verificationResult;
+          return;
+        } catch (error) {
+          console.error('Webhook verification failed:', error);
+          return ctx.forbidden('Webhook verification failed');
+        }
+      }
+      
+      // Handle incoming messages (POST request)
+      if (ctx.method === 'POST') {
+        const WhatsAppService = require('../../../services/whatsapp');
+        const whatsappService = new WhatsAppService();
+        
+        await whatsappService.handleIncomingMessage(body);
+        
+        ctx.body = { status: 'ok' };
+        return;
+      }
+      
+      return ctx.badRequest('Invalid request method');
+    } catch (error) {
+      console.error('Error in handleWhatsappWebhook:', error);
+      return ctx.badRequest(`Webhook error: ${error.message}`);
+    }
+  },
+
+  // Test endpoint for WhatsApp notifications
+  async testWhatsappNotification(ctx) {
+    try {
+      const { doctorId, testMessage } = ctx.request.body;
+
+      if (!doctorId) {
+        return ctx.badRequest('Doctor ID is required');
+      }
+
+      // Get doctor details
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
+        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization'],
+      });
+      
+      if (!doctor) {
+        return ctx.badRequest('Doctor not found');
+      }
+
+      const WhatsAppService = require('../../../services/whatsapp');
+      const whatsappService = new WhatsAppService();
+
+      // Create a mock service request for testing
+      const mockServiceRequest = {
+        id: 'test-' + Date.now(),
+        serviceType: 'consultation',
+        urgencyLevel: 'medium',
+        estimatedDuration: 1,
+        description: testMessage || 'This is a test notification from ThanksDoc system'
+      };
+
+      const mockBusiness = {
+        name: 'Test Clinic',
+        address: '123 Test Street, Test City',
+        phone: '+1234567890'
+      };
+
+      // Send test notification
+      const result = await whatsappService.sendServiceRequestNotification(
+        doctor, 
+        mockServiceRequest, 
+        mockBusiness
+      );
+
+      const doctorDisplayName = whatsappService.getDoctorDisplayName(doctor);
+
+      return {
+        success: true,
+        message: 'Test WhatsApp notification sent successfully',
+        doctor: {
+          id: doctor.id,
+          name: doctorDisplayName,
+          phone: doctor.phone
+        },
+        messageId: result.messages?.[0]?.id || 'N/A'
+      };
+    } catch (error) {
+      console.error('Error in testWhatsappNotification:', error);
+      return ctx.badRequest(`Error sending test notification: ${error.message}`);
+    }
+  },
+
+  // Admin endpoint to format doctor phone numbers
+  async formatDoctorPhoneNumbers(ctx) {
+    try {
+      const WhatsAppUtils = require('../../../utils/whatsapp-utils');
+      const result = await WhatsAppUtils.formatDoctorPhoneNumbers(strapi);
+      
+      return {
+        success: true,
+        message: `Phone number formatting completed`,
+        summary: result
+      };
+    } catch (error) {
+      console.error('Error in formatDoctorPhoneNumbers:', error);
+      return ctx.badRequest(`Error formatting phone numbers: ${error.message}`);
     }
   },
 }));
