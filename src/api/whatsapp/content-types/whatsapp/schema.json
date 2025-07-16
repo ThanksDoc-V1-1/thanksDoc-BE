@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "whatsapps",
+  "info": {
+    "singularName": "whatsapp",
+    "pluralName": "whatsapps",
+    "displayName": "WhatsApp",
+    "description": "WhatsApp message logs and webhook data"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "messageId": {
+      "type": "string",
+      "unique": true
+    },
+    "phoneNumber": {
+      "type": "string",
+      "required": true
+    },
+    "messageType": {
+      "type": "enumeration",
+      "enum": ["text", "template", "webhook"],
+      "default": "text"
+    },
+    "content": {
+      "type": "text"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["sent", "delivered", "read", "failed"],
+      "default": "sent"
+    },
+    "webhookData": {
+      "type": "json"
+    }
+  }
+}

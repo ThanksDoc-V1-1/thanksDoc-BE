@@ -661,7 +661,35 @@ module.exports = createCoreController('api::service-request.service-request', ({
       });
 
       if (!serviceRequest) {
-        return ctx.notFound('Service request not found');
+        // Generate a friendly HTML page for missing/expired service request
+        const html = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Link Expired</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+              body { font-family: Arial, sans-serif; margin: 40px; text-align: center; background: #f5f5f5; }
+              .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+              .icon { font-size: 60px; margin-bottom: 20px; }
+              h1 { color: #e74c3c; margin-bottom: 20px; }
+              p { color: #666; line-height: 1.6; }
+              .btn { background: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="icon">⏰</div>
+              <h1>Link Expired</h1>
+              <p>This service request link has expired or is no longer valid.</p>
+              <p>If you're looking for new service requests, please check your dashboard.</p>
+              <a href="${process.env.BASE_URLL}/doctor/dashboard" class="btn">Go to Dashboard</a>
+            </div>
+          </body>
+          </html>
+        `;
+        ctx.type = 'text/html';
+        return html;
       }
 
       if (serviceRequest.status !== 'pending') {
@@ -819,7 +847,35 @@ module.exports = createCoreController('api::service-request.service-request', ({
       });
 
       if (!serviceRequest) {
-        return ctx.notFound('Service request not found');
+        // Generate a friendly HTML page for missing/expired service request
+        const html = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Link Expired</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+              body { font-family: Arial, sans-serif; margin: 40px; text-align: center; background: #f5f5f5; }
+              .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+              .icon { font-size: 60px; margin-bottom: 20px; }
+              h1 { color: #e74c3c; margin-bottom: 20px; }
+              p { color: #666; line-height: 1.6; }
+              .btn { background: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="icon">⏰</div>
+              <h1>Link Expired</h1>
+              <p>This service request link has expired or is no longer valid.</p>
+              <p>If you're looking for new service requests, please check your dashboard.</p>
+              <a href="${process.env.BASE_URLL}/doctor/dashboard" class="btn">Go to Dashboard</a>
+            </div>
+          </body>
+          </html>
+        `;
+        ctx.type = 'text/html';
+        return html;
       }
 
       if (serviceRequest.status !== 'pending') {

@@ -599,6 +599,44 @@ export interface ApiServiceRequestServiceRequest
   };
 }
 
+export interface ApiWhatsappWhatsapp extends Struct.CollectionTypeSchema {
+  collectionName: 'whatsapps';
+  info: {
+    description: 'WhatsApp message logs and webhook data';
+    displayName: 'WhatsApp';
+    pluralName: 'whatsapps';
+    singularName: 'whatsapp';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    content: Schema.Attribute.Text;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::whatsapp.whatsapp'
+    > &
+      Schema.Attribute.Private;
+    messageId: Schema.Attribute.String & Schema.Attribute.Unique;
+    messageType: Schema.Attribute.Enumeration<['text', 'template', 'webhook']> &
+      Schema.Attribute.DefaultTo<'text'>;
+    phoneNumber: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<
+      ['sent', 'delivered', 'read', 'failed']
+    > &
+      Schema.Attribute.DefaultTo<'sent'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    webhookData: Schema.Attribute.JSON;
+  };
+}
+
 export interface PluginContentReleasesRelease
   extends Struct.CollectionTypeSchema {
   collectionName: 'strapi_releases';
@@ -1112,6 +1150,7 @@ declare module '@strapi/strapi' {
       'api::business.business': ApiBusinessBusiness;
       'api::doctor.doctor': ApiDoctorDoctor;
       'api::service-request.service-request': ApiServiceRequestServiceRequest;
+      'api::whatsapp.whatsapp': ApiWhatsappWhatsapp;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;
