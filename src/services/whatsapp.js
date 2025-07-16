@@ -416,7 +416,7 @@ Thank you for accepting the service request!
 2. Coordinate arrival time
 3. Update status in your dashboard
 
-📱 *Dashboard:* ${this.baseUrl}/doctor/dashboard
+📱 *Dashboard:* ${this.baseUrll}/doctor/dashboard
 
 Good luck with your service! 👨‍⚕️`;
       } else {
