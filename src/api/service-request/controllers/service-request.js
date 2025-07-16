@@ -687,7 +687,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
               <h1>Request No Longer Available</h1>
               <p>This service request has already been accepted by another doctor or has expired.</p>
               <p>Thank you for your quick response!</p>
-              <a href="${process.env.BASE_URL || 'http://localhost:3000'}/doctor/dashboard" class="btn">Go to Dashboard</a>
+              <a href="${process.env.BASE_URLL}/doctor/dashboard" class="btn">Go to Dashboard</a>
             </div>
           </body>
           </html>
@@ -762,7 +762,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
             <p>2. Update your status through your dashboard</p>
             <p>3. Complete the service when finished</p>
             
-            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/doctor/dashboard" class="btn">Go to Dashboard</a>
+            <a href="${process.env.BASE_URLL}/doctor/dashboard" class="btn">Go to Dashboard</a>
           </div>
         </body>
         </html>
@@ -793,7 +793,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
             <div class="icon">❌</div>
             <h1>Error</h1>
             <p>There was an error processing your request. The link may be invalid or expired.</p>
-            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/doctor/dashboard" class="btn">Go to Dashboard</a>
+            <a href="${process.env.BASE_URLL}/doctor/dashboard" class="btn">Go to Dashboard</a>
           </div>
         </body>
         </html>
@@ -843,7 +843,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
               <div class="icon">⚠️</div>
               <h1>Request No Longer Available</h1>
               <p>This service request has already been handled or has expired.</p>
-              <a href="${process.env.BASE_URL || 'http://localhost:3000'}/doctor/dashboard" class="btn">Go to Dashboard</a>
+              <a href="${process.env.BASE_URLL}/doctor/dashboard" class="btn">Go to Dashboard</a>
             </div>
           </body>
           </html>
@@ -885,7 +885,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
             <p>You have declined this service request.</p>
             <p>The request will be offered to other available doctors.</p>
             <p>Thank you for your quick response!</p>
-            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/doctor/dashboard" class="btn">Go to Dashboard</a>
+            <a href="${process.env.BASE_URLL}/doctor/dashboard" class="btn">Go to Dashboard</a>
           </div>
         </body>
         </html>
@@ -916,7 +916,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
             <div class="icon">❌</div>
             <h1>Error</h1>
             <p>There was an error processing your request. The link may be invalid or expired.</p>
-            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/doctor/dashboard" class="btn">Go to Dashboard</a>
+            <a href="${process.env.BASE_URLL}/doctor/dashboard" class="btn">Go to Dashboard</a>
           </div>
         </body>
         </html>
