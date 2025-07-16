@@ -9,7 +9,8 @@ class WhatsAppService {
     this.phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
     this.businessAccountId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
     this.webhookVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
-    this.baseUrl = process.env.BASE_URL || 'http://localhost:1337';
+    this.baseUrl = process.env.BASE_URL;
+    this.baseUrll = process.env.FRONTEND_DASHBOARD_URL;
     this.apiUrl = `https://graph.facebook.com/v18.0/${this.phoneNumberId}/messages`;
   }
 
@@ -428,7 +429,7 @@ You have declined the service request.
 
 The request will be offered to other available doctors.
 
-📱 *Dashboard:* ${this.baseUrl}/doctor/dashboard
+📱 *Dashboard:* ${this.baseUrll}/doctor/dashboard
 
 Thank you for your response! 👨‍⚕️`;
       }
@@ -476,7 +477,7 @@ Great news! A doctor has accepted your service request.
 ⏱️ *Service:* ${serviceRequest.serviceType}
 🕐 *Duration:* ${serviceRequest.estimatedDuration} hour(s)
 
-📱 *Track Progress:* ${this.baseUrl}/business/dashboard
+📱 *Track Progress:* ${this.baseUrll}/business/dashboard
 
 The doctor will contact you shortly to coordinate the visit.`;
 
