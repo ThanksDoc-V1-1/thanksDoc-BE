@@ -304,7 +304,6 @@ class WhatsAppService {
    */
   buildDoctorAcceptRequestTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor = null) {
     const doctorName = doctor ? this.getDoctorDisplayName(doctor) : 'Doctor';
-    const urgencyEmoji = this.getUrgencyEmoji(serviceRequest.urgencyLevel);
     
     return {
       messaging_product: "whatsapp",
@@ -341,11 +340,11 @@ class WhatsAppService {
               },
               {
                 type: "text",
-                text: `${urgencyEmoji} ${serviceRequest.urgencyLevel.charAt(0).toUpperCase() + serviceRequest.urgencyLevel.slice(1)}`
+                text: acceptUrl
               },
               {
                 type: "text",
-                text: serviceRequest.description || 'No additional details provided'
+                text: rejectUrl
               }
             ]
           }
@@ -593,6 +592,8 @@ The doctor will contact you shortly to coordinate the visit.`;
    */
   async handleIncomingMessage(webhookData) {
     try {
+      console.log('📨 Received WhatsApp webhook data:', JSON.stringify(webhookData, null, 2));
+      
       const { entry } = webhookData;
       
       for (const entryItem of entry) {
@@ -603,8 +604,13 @@ The doctor will contact you shortly to coordinate the visit.`;
             const { messages } = change.value;
             
             for (const message of messages || []) {
+              console.log('🔍 Processing message type:', message.type);
+              console.log('📱 Message details:', JSON.stringify(message, null, 2));
+              
               if (message.type === 'text') {
                 await this.processTextMessage(message);
+              } else if (message.type === 'interactive') {
+                await this.processInteractiveMessage(message);
               }
             }
           }
@@ -612,6 +618,37 @@ The doctor will contact you shortly to coordinate the visit.`;
       }
     } catch (error) {
       console.error('Error handling incoming WhatsApp message:', error);
+    }
+  }
+
+  /**
+   * Process incoming interactive messages (Quick Reply buttons)
+   */
+  async processInteractiveMessage(message) {
+    try {
+      console.log('🔄 Processing interactive message:', JSON.stringify(message, null, 2));
+      
+      const { from, interactive } = message;
+      
+      // Handle Quick Reply button responses
+      if (interactive.type === 'button_reply') {
+        const buttonId = interactive.button_reply.id;
+        const buttonTitle = interactive.button_reply.title;
+        
+        console.log(`🎯 Button clicked - ID: ${buttonId}, Title: ${buttonTitle}, From: ${from}`);
+        
+        // Process as if it's a text message with the button title
+        const simulatedTextMessage = {
+          from: from,
+          text: {
+            body: buttonTitle.toLowerCase()
+          }
+        };
+        
+        await this.processTextMessage(simulatedTextMessage);
+      }
+    } catch (error) {
+      console.error('Error processing interactive message:', error);
     }
   }
 
