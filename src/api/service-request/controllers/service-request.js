@@ -1101,6 +1101,126 @@ module.exports = createCoreController('api::service-request.service-request', ({
       return ctx.badRequest(`Error formatting phone numbers: ${error.message}`);
     }
   },
+
+  // Test endpoint to diagnose WhatsApp phone number verification issues
+  async diagnoseWhatsappSetup(ctx) {
+    try {
+      const { phoneNumber } = ctx.request.body;
+
+      if (!phoneNumber) {
+        return ctx.badRequest('Phone number is required for diagnosis');
+      }
+
+      const WhatsAppService = require('../../../services/whatsapp');
+      const whatsappService = new WhatsAppService();
+
+      console.log('🔧 Starting WhatsApp setup diagnosis...');
+
+      const results = {
+        phoneNumber: phoneNumber,
+        timestamp: new Date().toISOString(),
+        diagnosis: {},
+        recommendations: []
+      };
+
+      // 1. Check phone number formatting
+      try {
+        const formattedPhone = whatsappService.formatPhoneNumber(phoneNumber);
+        results.diagnosis.phoneFormatting = {
+          success: true,
+          original: phoneNumber,
+          formatted: formattedPhone,
+          apiFormat: formattedPhone.replace('+', '')
+        };
+        console.log('✅ Phone number formatting: OK');
+      } catch (error) {
+        results.diagnosis.phoneFormatting = {
+          success: false,
+          error: error.message
+        };
+        results.recommendations.push('Fix phone number format - ensure it includes country code');
+        console.log('❌ Phone number formatting: FAILED');
+      }
+
+      // 2. Check WhatsApp Business API credentials
+      results.diagnosis.credentials = {
+        hasAccessToken: !!process.env.WHATSAPP_ACCESS_TOKEN,
+        hasPhoneNumberId: !!process.env.WHATSAPP_PHONE_NUMBER_ID,
+        hasBusinessAccountId: !!process.env.WHATSAPP_BUSINESS_ACCOUNT_ID,
+        phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+        businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID
+      };
+
+      if (!results.diagnosis.credentials.hasAccessToken) {
+        results.recommendations.push('Set WHATSAPP_ACCESS_TOKEN environment variable');
+      }
+
+      // 3. Get verified phone numbers
+      try {
+        const verifiedNumbers = await whatsappService.getVerifiedPhoneNumbers();
+        results.diagnosis.verifiedNumbers = verifiedNumbers;
+        console.log('✅ Retrieved verified numbers list');
+      } catch (error) {
+        results.diagnosis.verifiedNumbers = { error: error.message };
+        results.recommendations.push('Check WhatsApp Business account permissions');
+        console.log('❌ Failed to get verified numbers');
+      }
+
+      // 4. Test phone verification status
+      try {
+        const verificationStatus = await whatsappService.checkPhoneVerificationStatus(phoneNumber);
+        results.diagnosis.phoneVerification = verificationStatus;
+        
+        // Additional check: Compare against known working number
+        const knownWorkingNumber = '256784528444'; // Your verified number
+        const isKnownWorking = phoneNumber.replace(/[\s+\-]/g, '').includes(knownWorkingNumber);
+        
+        results.diagnosis.phoneVerification.isKnownWorkingNumber = isKnownWorking;
+        results.diagnosis.phoneVerification.sandboxMode = {
+          detected: !isKnownWorking && verificationStatus.verified,
+          explanation: 'API returns success but messages may not be delivered in sandbox mode'
+        };
+        
+        if (!verificationStatus.verified) {
+          results.recommendations.push('Add this phone number to your verified list in Meta Business Manager');
+          results.recommendations.push('Go to https://business.facebook.com -> WhatsApp Business -> Phone Numbers');
+        } else if (!isKnownWorking) {
+          results.recommendations.push('⚠️  SANDBOX MODE DETECTED: Messages may show as sent but not be delivered');
+          results.recommendations.push('Add recipient phone numbers to your verified list in Meta Business Manager');
+          results.recommendations.push('Go to https://business.facebook.com -> WhatsApp Business -> Phone Numbers -> Add phone numbers');
+          results.recommendations.push('Or upgrade your WhatsApp Business app to production mode');
+        }
+      } catch (error) {
+        results.diagnosis.phoneVerification = { error: error.message };
+      }
+
+      // 5. Generate recommendations
+      if (results.recommendations.length === 0) {
+        results.recommendations.push('Phone number appears to be properly configured');
+      }
+
+      // Add general recommendations
+      results.recommendations.push('Ensure your WhatsApp Business account is fully verified');
+      results.recommendations.push('Check that your app is approved for production (not sandbox mode)');
+
+      console.log('🔧 Diagnosis complete:', JSON.stringify(results, null, 2));
+
+      return {
+        success: true,
+        diagnosis: results,
+        troubleshootingSteps: [
+          '1. Verify your WhatsApp Business account is approved for production',
+          '2. Add recipient phone numbers to your verified list',
+          '3. Check Meta Business Manager settings',
+          '4. Ensure your access token has proper permissions',
+          '5. Contact Meta support if issues persist'
+        ]
+      };
+    } catch (error) {
+      console.error('Error in diagnoseWhatsappSetup:', error);
+      return ctx.badRequest(`Diagnosis error: ${error.message}`);
+    }
+  },
 }));
 
 // Helper function to calculate distance between two coordinates

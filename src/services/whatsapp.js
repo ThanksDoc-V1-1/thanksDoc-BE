@@ -11,7 +11,7 @@ class WhatsAppService {
     this.webhookVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
     this.baseUrl = process.env.BASE_URL;
     this.baseUrll = process.env.FRONTEND_DASHBOARD_URL;
-    this.apiUrl = `https://graph.facebook.com/v18.0/${this.phoneNumberId}/messages`;
+    this.apiUrl = `https://graph.facebook.com/v20.0/${this.phoneNumberId}/messages`;
   }
 
   /**
@@ -127,15 +127,11 @@ class WhatsAppService {
         doctor
       );
 
-      const response = await axios.post(this.apiUrl, messageData, {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Use the new diagnostic send method
+      const response = await this.sendWhatsAppMessage(messageData);
 
-      console.log(`WhatsApp notification sent to Dr. ${this.getDoctorDisplayName(doctor)}: ${response.data.messages[0].id}`);
-      return response.data;
+      console.log(`WhatsApp notification sent to Dr. ${this.getDoctorDisplayName(doctor)}: ${response.messages[0].id}`);
+      return response;
     } catch (error) {
       console.error(`Failed to send WhatsApp notification to Dr. ${this.getDoctorDisplayName(doctor)}:`);
       console.error('Error details:', error.response?.data || error.message);
@@ -176,6 +172,10 @@ class WhatsAppService {
     // Handle different template types
     if (templateName === 'hello_world') {
       return this.buildHelloWorldTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
+    } else if (templateName === 'sample_issue_resolution') {
+      return this.buildIssueResolutionTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
+    } else if (templateName === 'doctor_accept_request') {
+      return this.buildDoctorAcceptRequestTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
     }
     
     // Default template structure for custom ThanksDoc templates
@@ -265,6 +265,91 @@ class WhatsAppService {
         language: {
           code: "en_US"
         }
+      }
+    };
+  }
+
+  /**
+   * Build Issue Resolution template message
+   */
+  buildIssueResolutionTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor = null) {
+    const doctorName = doctor ? this.getDoctorDisplayName(doctor) : 'Doctor';
+    
+    return {
+      messaging_product: "whatsapp",
+      to: doctorPhone,
+      type: "template",
+      template: {
+        name: "sample_issue_resolution",
+        language: {
+          code: "en_US"
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: doctorName
+              }
+            ]
+          }
+        ]
+      }
+    };
+  }
+
+  /**
+   * Build Doctor Accept Request template message
+   */
+  buildDoctorAcceptRequestTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor = null) {
+    const doctorName = doctor ? this.getDoctorDisplayName(doctor) : 'Doctor';
+    const urgencyEmoji = this.getUrgencyEmoji(serviceRequest.urgencyLevel);
+    
+    return {
+      messaging_product: "whatsapp",
+      to: doctorPhone,
+      type: "template",
+      template: {
+        name: "doctor_accept_request",
+        language: {
+          code: "en_GB" // UK English
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: doctorName
+              },
+              {
+                type: "text",
+                text: serviceRequest.serviceType
+              },
+              {
+                type: "text",
+                text: business.name || business.businessName
+              },
+              {
+                type: "text",
+                text: business.address
+              },
+              {
+                type: "text",
+                text: serviceRequest.estimatedDuration.toString()
+              },
+              {
+                type: "text",
+                text: `${urgencyEmoji} ${serviceRequest.urgencyLevel.charAt(0).toUpperCase() + serviceRequest.urgencyLevel.slice(1)}`
+              },
+              {
+                type: "text",
+                text: serviceRequest.description || 'No additional details provided'
+              }
+            ]
+          }
+        ]
       }
     };
   }
@@ -538,7 +623,10 @@ The doctor will contact you shortly to coordinate the visit.`;
       const { from, text } = message;
       const messageText = text.body.toLowerCase().trim();
       
-      if (messageText === 'accept' || messageText === 'decline') {
+      // Handle both old format and new template Quick Reply responses
+      if (messageText === 'accept' || messageText === 'decline' || 
+          messageText === 'accept request' || messageText === 'decline request') {
+        
         // Find doctor by phone number
         const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
           filters: {
@@ -576,12 +664,12 @@ The doctor will contact you shortly to coordinate the visit.`;
 
         const serviceRequest = pendingRequests[0];
 
-        if (messageText === 'accept') {
+        if (messageText === 'accept' || messageText === 'accept request') {
           // Accept the service request
           await this.acceptServiceRequest(serviceRequest.id, doctor.id);
           await this.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
           await this.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
-        } else if (messageText === 'decline') {
+        } else if (messageText === 'decline' || messageText === 'decline request') {
           await this.sendConfirmationMessage(doctor.phone, 'reject', serviceRequest, serviceRequest.business);
         }
       }
@@ -609,6 +697,114 @@ The doctor will contact you shortly to coordinate the visit.`;
         isAvailable: false,
       },
     });
+  }
+
+  /**
+   * Send WhatsApp message with detailed error logging for debugging
+   */
+  async sendWhatsAppMessage(payload) {
+    try {
+      console.log('📱 Sending WhatsApp message to:', payload.to);
+      console.log('📱 Message type:', payload.type);
+      console.log('📱 Full payload:', JSON.stringify(payload, null, 2));
+      
+      const response = await axios.post(this.apiUrl, payload, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('✅ WhatsApp API Response:', response.status, response.statusText);
+      console.log('✅ Response data:', JSON.stringify(response.data, null, 2));
+      
+      return response.data;
+    } catch (error) {
+      // Enhanced error logging for debugging
+      console.error('❌ WhatsApp API Error Details:');
+      console.error('Phone number:', payload.to);
+      console.error('Error status:', error.response?.status);
+      console.error('Error message:', error.response?.statusText);
+      console.error('Error data:', JSON.stringify(error.response?.data, null, 2));
+      
+      // Check for specific WhatsApp API errors
+      if (error.response?.data?.error) {
+        const whatsappError = error.response.data.error;
+        console.error('WhatsApp specific error:', whatsappError);
+        
+        // Common error codes and their meanings
+        if (whatsappError.code === 131026) {
+          console.error('🚫 PHONE NUMBER RESTRICTION: This number is not verified for your WhatsApp Business account');
+          console.error('💡 Solution: Add this number to your verified numbers in Meta Business Manager');
+        } else if (whatsappError.code === 131047) {
+          console.error('🚫 RATE LIMIT: Too many messages sent recently');
+          console.error('💡 Solution: Wait before sending more messages');
+        } else if (whatsappError.code === 131051) {
+          console.error('🚫 UNSUPPORTED MESSAGE TYPE: This message type is not supported');
+        } else if (whatsappError.code === 100) {
+          console.error('🚫 INVALID PARAMETER: Check your message format and phone number');
+        }
+      }
+      
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a phone number is verified for your WhatsApp Business account
+   */
+  async checkPhoneVerificationStatus(phoneNumber) {
+    try {
+      const formattedPhone = this.formatPhoneNumber(phoneNumber);
+      console.log(`🔍 Checking verification status for: ${formattedPhone}`);
+      
+      // Try sending a test message to see if the number is verified
+      const testPayload = {
+        messaging_product: "whatsapp",
+        to: formattedPhone,
+        type: "text",
+        text: {
+          body: "🔍 Test message - checking verification status"
+        }
+      };
+      
+      try {
+        await this.sendWhatsAppMessage(testPayload);
+        console.log(`✅ Phone number ${formattedPhone} is verified and can receive messages`);
+        return { verified: true, phone: formattedPhone };
+      } catch (error) {
+        if (error.response?.data?.error?.code === 131026) {
+          console.log(`❌ Phone number ${formattedPhone} is NOT verified for your WhatsApp Business account`);
+          return { verified: false, phone: formattedPhone, reason: 'Not verified' };
+        } else {
+          console.log(`⚠️ Unable to determine verification status for ${formattedPhone}: ${error.message}`);
+          return { verified: false, phone: formattedPhone, reason: error.message };
+        }
+      }
+    } catch (error) {
+      console.error(`Error checking phone verification:`, error);
+      return { verified: false, phone: phoneNumber, reason: 'Format error' };
+    }
+  }
+
+  /**
+   * Get list of verified phone numbers from Meta Business Manager
+   */
+  async getVerifiedPhoneNumbers() {
+    try {
+      const url = `https://graph.facebook.com/v18.0/${this.businessAccountId}/phone_numbers`;
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+        },
+      });
+      
+      console.log('📋 Verified phone numbers:', response.data);
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Error fetching verified phone numbers:', error.response?.data || error.message);
+      return [];
+    }
   }
 }
 

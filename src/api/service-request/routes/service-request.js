@@ -187,6 +187,14 @@ module.exports = {
     },
     {
       method: 'POST',
+      path: '/service-requests/diagnose-whatsapp',
+      handler: 'service-request.diagnoseWhatsappSetup',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'POST',
       path: '/service-requests/admin/format-phone-numbers',
       handler: 'service-request.formatDoctorPhoneNumbers',
       config: {
