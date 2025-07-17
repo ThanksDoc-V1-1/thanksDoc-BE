@@ -12,6 +12,12 @@ class WhatsAppService {
     this.baseUrl = process.env.BASE_URL;
     this.baseUrll = process.env.FRONTEND_DASHBOARD_URL;
     this.apiUrl = `https://graph.facebook.com/v20.0/${this.phoneNumberId}/messages`;
+    
+    // Template configurations
+    this.useTemplate = process.env.WHATSAPP_USE_TEMPLATE === 'true';
+    this.templateName = process.env.WHATSAPP_TEMPLATE_NAME || 'doctor_accept_request';
+    this.doctorConfirmationTemplate = process.env.WHATSAPP_TEMPLATE_DOCTOR_CONFIRMATION || 'doctor_confirmation';
+    this.businessNotificationTemplate = process.env.WHATSAPP_TEMPLATE_BUSINESS_NOTIFICATION || 'doctor_assigned';
   }
 
   /**
@@ -354,6 +360,102 @@ class WhatsAppService {
   }
 
   /**
+   * Build doctor confirmation template message (when doctor accepts a request)
+   */
+  buildDoctorConfirmationTemplate(doctorPhone, serviceRequest, business) {
+    const dashboardUrl = `${this.baseUrll}/doctor/dashboard`;
+    
+    return {
+      messaging_product: "whatsapp",
+      to: doctorPhone,
+      type: "template",
+      template: {
+        name: this.doctorConfirmationTemplate,
+        language: {
+          code: "en_GB"
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: business.name || business.businessName // {{1}} Business
+              },
+              {
+                type: "text", 
+                text: business.address // {{2}} Address
+              },
+              {
+                type: "text",
+                text: dashboardUrl // {{3}} Dashboard
+              },
+              {
+                type: "text",
+                text: business.phone // {{4}} Contact
+              }
+            ]
+          }
+        ]
+      }
+    };
+  }
+
+  /**
+   * Build business notification template message (when doctor is assigned)
+   */
+  buildBusinessNotificationTemplate(businessPhone, doctor, serviceRequest) {
+    const dashboardUrl = `${this.baseUrll}/business/dashboard`;
+    
+    return {
+      messaging_product: "whatsapp",
+      to: businessPhone,
+      type: "template", 
+      template: {
+        name: this.businessNotificationTemplate,
+        language: {
+          code: "en_GB"
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: doctor.name || doctor.firstName + ' ' + doctor.lastName || "Doctor" // {{1}} Doctor
+              },
+              {
+                type: "text",
+                text: doctor.specialization || "General Practice" // {{2}} Specialisation
+              },
+              {
+                type: "text",
+                text: (doctor.yearsOfExperience || 0).toString() // {{3}} Experience
+              },
+              {
+                type: "text",
+                text: doctor.phone || "N/A" // {{4}} Phone
+              },
+              {
+                type: "text",
+                text: serviceRequest.serviceType // {{5}} Service
+              },
+              {
+                type: "text",
+                text: serviceRequest.estimatedDuration.toString() // {{6}} Duration
+              },
+              {
+                type: "text",
+                text: dashboardUrl // {{7}} Track Progress
+              }
+            ]
+          }
+        ]
+      }
+    };
+  }
+
+  /**
    * Build text message (fallback when no template is approved)
    */
   buildTextMessage(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor = null) {
@@ -485,6 +587,29 @@ ${serviceRequest.urgencyLevel === 'emergency' ? '🚨 *EMERGENCY REQUEST*' : ''}
     try {
       const formattedPhone = this.formatPhoneNumber(doctorPhone);
       
+      if (action === 'accept' && this.useTemplate) {
+        // Use template for doctor confirmation
+        const templateMessage = this.buildDoctorConfirmationTemplate(
+          formattedPhone, 
+          serviceRequest, 
+          business
+        );
+        
+        console.log('📱 Sending doctor confirmation template message');
+        console.log('📱 Full payload:', JSON.stringify(templateMessage, null, 2));
+        
+        const response = await axios.post(this.apiUrl, templateMessage, {
+          headers: {
+            'Authorization': `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('✅ Doctor confirmation template sent successfully');
+        return;
+      }
+      
+      // Fallback to text message
       let messageText;
       if (action === 'accept') {
         messageText = `✅ *REQUEST ACCEPTED*
@@ -549,6 +674,29 @@ Thank you for your response! 👨‍⚕️`;
 
       const formattedPhone = this.formatPhoneNumber(businessPhone);
       
+      if (this.useTemplate) {
+        // Use template for business notification
+        const templateMessage = this.buildBusinessNotificationTemplate(
+          formattedPhone,
+          doctor,
+          serviceRequest
+        );
+        
+        console.log('📱 Sending business notification template message');
+        console.log('📱 Full payload:', JSON.stringify(templateMessage, null, 2));
+        
+        const response = await axios.post(this.apiUrl, templateMessage, {
+          headers: {
+            'Authorization': `Bearer ${this.accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('✅ Business notification template sent successfully');
+        return;
+      }
+      
+      // Fallback to text message
       const messageText = `🎉 *DOCTOR ASSIGNED*
 
 Great news! A doctor has accepted your service request.
