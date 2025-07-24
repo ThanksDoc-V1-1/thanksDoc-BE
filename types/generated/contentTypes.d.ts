@@ -512,6 +512,7 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
     phone: Schema.Attribute.String & Schema.Attribute.Required;
     profilePicture: Schema.Attribute.Media<'images'>;
     publishedAt: Schema.Attribute.DateTime;
+    services: Schema.Attribute.Relation<'manyToMany', 'api::service.service'>;
     specialization: Schema.Attribute.String & Schema.Attribute.Required;
     state: Schema.Attribute.String & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
@@ -597,6 +598,43 @@ export interface ApiServiceRequestServiceRequest
       ['low', 'medium', 'high', 'emergency']
     > &
       Schema.Attribute.Required;
+  };
+}
+
+export interface ApiServiceService extends Struct.CollectionTypeSchema {
+  collectionName: 'services';
+  info: {
+    description: 'Medical services that doctors can offer';
+    displayName: 'Service';
+    pluralName: 'services';
+    singularName: 'service';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    category: Schema.Attribute.Enumeration<['in-person', 'online']> &
+      Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    displayOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    doctors: Schema.Attribute.Relation<'manyToMany', 'api::doctor.doctor'>;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::service.service'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -1151,6 +1189,7 @@ declare module '@strapi/strapi' {
       'api::business.business': ApiBusinessBusiness;
       'api::doctor.doctor': ApiDoctorDoctor;
       'api::service-request.service-request': ApiServiceRequestServiceRequest;
+      'api::service.service': ApiServiceService;
       'api::whatsapp.whatsapp': ApiWhatsappWhatsapp;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;

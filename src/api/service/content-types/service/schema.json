@@ -1,0 +1,43 @@
+{
+  "kind": "collectionType",
+  "collectionName": "services",
+  "info": {
+    "singularName": "service",
+    "pluralName": "services",
+    "displayName": "Service",
+    "description": "Medical services that doctors can offer"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": ["in-person", "online"],
+      "required": true
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "displayOrder": {
+      "type": "integer",
+      "default": 0
+    },
+    "doctors": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::doctor.doctor",
+      "mappedBy": "services"
+    }
+  }
+}

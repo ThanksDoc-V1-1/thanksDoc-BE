@@ -104,6 +104,12 @@
     },
     "certifications": {
       "type": "json"
+    },
+    "services": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::service.service",
+      "inversedBy": "doctors"
     }
   }
 }
