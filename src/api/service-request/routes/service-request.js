@@ -40,6 +40,14 @@ module.exports = {
       },
     },
     {
+      method: 'POST',
+      path: '/service-requests/create',
+      handler: 'service-request.createServiceRequest',
+      config: {
+        auth: false,
+      },
+    },
+    {
       method: 'PUT',
       path: '/service-requests/:id',
       handler: 'service-request.update',

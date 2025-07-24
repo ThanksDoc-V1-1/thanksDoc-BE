@@ -68,6 +68,10 @@
     "scheduledAt": {
       "type": "datetime"
     },
+    "requestedServiceDateTime": {
+      "type": "datetime",
+      "required": false
+    },
     "totalAmount": {
       "type": "decimal"
     },

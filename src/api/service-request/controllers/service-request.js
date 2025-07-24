@@ -106,13 +106,27 @@ module.exports = createCoreController('api::service-request.service-request', ({
   // Create a new service request and notify nearby doctors
   async createServiceRequest(ctx) {
     try {
-      const { businessId, urgencyLevel, serviceType, description, estimatedDuration, scheduledAt } = ctx.request.body;
+      const { businessId, urgencyLevel, serviceType, description, estimatedDuration, scheduledAt, serviceDateTime } = ctx.request.body;
       
       // Get business details
       const business = await strapi.entityService.findOne('api::business.business', businessId);
       
       if (!business) {
         return ctx.badRequest('Business not found');
+      }
+
+      // Validate serviceDateTime if provided
+      let requestedServiceDateTime = null;
+      if (serviceDateTime) {
+        requestedServiceDateTime = new Date(serviceDateTime);
+        if (isNaN(requestedServiceDateTime.getTime())) {
+          return ctx.badRequest('Invalid service date/time format');
+        }
+        
+        // Check if the requested time is in the future
+        if (requestedServiceDateTime <= new Date()) {
+          return ctx.badRequest('Service date/time must be in the future');
+        }
       }
 
       // Create the service request
@@ -124,6 +138,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
           description,
           estimatedDuration: parseInt(estimatedDuration) || 1,
           scheduledAt,
+          requestedServiceDateTime: requestedServiceDateTime,
           requestedAt: new Date(),
           status: 'pending',
           publishedAt: new Date(),
@@ -407,6 +422,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         serviceType, 
         description, 
         estimatedDuration,
+        serviceDateTime, // New field for requested service date/time
         // Patient portal fields
         firstName,
         lastName,
@@ -417,7 +433,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       } = ctx.request.body;
       
       console.log('Creating direct request with data:', {
-        businessId, doctorId, urgencyLevel, serviceType, description, estimatedDuration,
+        businessId, doctorId, urgencyLevel, serviceType, description, estimatedDuration, serviceDateTime,
         firstName, lastName, phoneNumber, urgency, symptoms, notes
       });
       
@@ -447,6 +463,20 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return ctx.badRequest('Doctor is currently unavailable');
       }
 
+      // Validate serviceDateTime if provided
+      let requestedServiceDateTime = null;
+      if (serviceDateTime) {
+        requestedServiceDateTime = new Date(serviceDateTime);
+        if (isNaN(requestedServiceDateTime.getTime())) {
+          return ctx.badRequest('Invalid service date/time format');
+        }
+        
+        // Check if the requested time is in the future
+        if (requestedServiceDateTime <= new Date()) {
+          return ctx.badRequest('Service date/time must be in the future');
+        }
+      }
+
       // Prepare service request data based on request type
       const requestData = isBusinessRequest ? {
         business: businessId,
@@ -456,6 +486,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         description,
         estimatedDuration: parseInt(estimatedDuration) || 1,
         requestedAt: new Date(),
+        requestedServiceDateTime: requestedServiceDateTime,
         status: 'pending'
       } : {
         // Patient request data
@@ -467,6 +498,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         description: symptoms || 'Not specified',
         notes: notes || '',
         requestedAt: new Date(),
+        requestedServiceDateTime: requestedServiceDateTime,
         status: 'pending'
       };
 
