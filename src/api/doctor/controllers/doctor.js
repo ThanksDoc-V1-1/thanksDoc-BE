@@ -31,10 +31,15 @@ module.exports = createCoreController('api::doctor.doctor', ({ strapi }) => ({
   async findOne(ctx) {
     try {
       const { id } = ctx.params;
+      const { populate } = ctx.query;
       console.log('🔍 Looking for doctor with ID:', id);
+      console.log('🔗 Populate query:', populate);
       
-      const doctor = await strapi.entityService.findOne('api::doctor.doctor', id);
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', id, {
+        populate: populate ? (typeof populate === 'string' ? populate.split(',') : populate) : ['services'],
+      });
       console.log('👤 Found doctor:', doctor ? 'YES' : 'NO');
+      console.log('🔧 Doctor services:', doctor?.services?.length || 0);
       
       if (!doctor) {
         console.log('❌ Doctor not found with ID:', id);
@@ -78,8 +83,12 @@ module.exports = createCoreController('api::doctor.doctor', ({ strapi }) => ({
         data.password = await bcrypt.hash(data.password, 10);
       }
 
+      // Update the doctor and automatically publish the changes
       const doctor = await strapi.entityService.update('api::doctor.doctor', id, {
-        data,
+        data: {
+          ...data,
+          publishedAt: new Date(), // Automatically publish the changes
+        },
       });
 
       return doctor;
