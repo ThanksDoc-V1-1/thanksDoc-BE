@@ -106,7 +106,7 @@ module.exports = createCoreController('api::doctor.doctor', ({ strapi }) => ({
           isAvailable: true,
           isVerified: true, // Only show verified doctors to businesses
         },
-        populate: ['profilePicture'],
+        populate: ['profilePicture', 'services'], // Include services in the population
       });
 
       // Remove sensitive contact information for business access
