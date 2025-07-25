@@ -179,12 +179,24 @@ module.exports = createCoreController('api::service-request.service-request', ({
       }
 
       // Create the service request
+      console.log('🔍 About to save serviceRequestData:', {
+        requestedServiceDateTime: serviceRequestData.requestedServiceDateTime,
+        serviceDateTime: serviceRequestData.serviceDateTime,
+        keys: Object.keys(serviceRequestData)
+      });
+      
       const serviceRequest = await strapi.entityService.create('api::service-request.service-request', {
         data: serviceRequestData,
         populate: ['business', 'doctor', 'service'],
       });
 
       console.log('Service request created:', serviceRequest.id);
+      console.log('🔍 Created serviceRequest object:', {
+        id: serviceRequest.id,
+        requestedServiceDateTime: serviceRequest.requestedServiceDateTime,
+        serviceDateTime: serviceRequest.serviceDateTime,
+        keys: Object.keys(serviceRequest)
+      });
 
       let whatsappNotificationsSent = 0;
       let notifiedDoctorsCount = 0;

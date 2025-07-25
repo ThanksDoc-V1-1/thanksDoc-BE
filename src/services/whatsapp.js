@@ -108,6 +108,13 @@ class WhatsAppService {
     let doctorPhone = null;
     let messageData = null;
     
+    console.log('🔍 WhatsApp sendServiceRequestNotification called with serviceRequest:', {
+      id: serviceRequest.id,
+      serviceDateTime: serviceRequest.serviceDateTime,
+      requestedServiceDateTime: serviceRequest.requestedServiceDateTime,
+      keys: Object.keys(serviceRequest)
+    });
+    
     try {
       const WhatsAppUtils = require('../utils/whatsapp-utils');
       
@@ -311,6 +318,46 @@ class WhatsAppService {
   buildDoctorAcceptRequestTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor = null) {
     const doctorName = doctor ? this.getDoctorDisplayName(doctor) : 'Doctor';
     
+    // Format service date and time for display
+    const formatServiceDateTime = (dateTimeString) => {
+      console.log('🔍 formatServiceDateTime called with:', dateTimeString, 'Type:', typeof dateTimeString);
+      
+      if (!dateTimeString) {
+        console.log('🔍 formatServiceDateTime: No dateTimeString provided');
+        return 'Not specified';
+      }
+      
+      try {
+        console.log('🔍 formatServiceDateTime: Creating date from:', dateTimeString);
+        const date = new Date(dateTimeString);
+        console.log('🔍 Date object created:', date);
+        console.log('🔍 Date.getTime():', date.getTime());
+        
+        if (isNaN(date.getTime())) {
+          console.log('🔍 formatServiceDateTime: Invalid date');
+          return 'Not specified';
+        }
+        
+        const formatted = date.toLocaleString('en-GB', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+          timeZone: 'Africa/Nairobi' // East Africa Time
+        });
+        
+        console.log('🔍 formatServiceDateTime formatted output:', formatted);
+        return `Scheduled for ${formatted}`;
+      } catch (error) {
+        console.error('❌ formatServiceDateTime error:', error);
+        return 'Not specified';
+      }
+    };
+    
+    const serviceDateTime = formatServiceDateTime(serviceRequest.requestedServiceDateTime);
+    
     return {
       messaging_product: "whatsapp",
       to: doctorPhone,
@@ -330,19 +377,19 @@ class WhatsAppService {
               },
               {
                 type: "text",
-                text: serviceRequest.serviceType
+                text: serviceRequest.serviceType || "Medical service"
               },
               {
                 type: "text",
-                text: business.name || business.businessName
+                text: business.name || business.businessName || "Healthcare provider"
               },
               {
                 type: "text",
-                text: business.address
+                text: business.address || "Location not specified"
               },
               {
                 type: "text",
-                text: serviceRequest.estimatedDuration.toString()
+                text: serviceRequest.estimatedDuration?.toString() || "Not specified"
               },
               {
                 type: "text",
@@ -351,6 +398,10 @@ class WhatsAppService {
               {
                 type: "text",
                 text: rejectUrl
+              },
+              {
+                type: "text",
+                text: serviceDateTime
               }
             ]
           }
