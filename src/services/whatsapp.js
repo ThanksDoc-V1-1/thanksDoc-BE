@@ -349,7 +349,7 @@ class WhatsAppService {
         });
         
         console.log('🔍 formatServiceDateTime formatted output:', formatted);
-        return `Scheduled for ${formatted}`;
+        return formatted; // Don't add "Scheduled for" here as it's already in the Facebook template
       } catch (error) {
         console.error('❌ formatServiceDateTime error:', error);
         return 'Not specified';
