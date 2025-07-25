@@ -23,6 +23,11 @@
       "relation": "manyToOne",
       "target": "api::doctor.doctor"
     },
+    "service": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::service.service"
+    },
     "urgencyLevel": {
       "type": "enumeration",
       "enum": ["low", "medium", "high", "emergency"],

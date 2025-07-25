@@ -578,6 +578,7 @@ export interface ApiServiceRequestServiceRequest
     requestedAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
     requestedServiceDateTime: Schema.Attribute.DateTime;
     scheduledAt: Schema.Attribute.DateTime;
+    service: Schema.Attribute.Relation<'manyToOne', 'api::service.service'>;
     serviceType: Schema.Attribute.String & Schema.Attribute.Required;
     status: Schema.Attribute.Enumeration<
       [

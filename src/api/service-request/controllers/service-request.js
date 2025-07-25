@@ -106,7 +106,23 @@ module.exports = createCoreController('api::service-request.service-request', ({
   // Create a new service request and notify nearby doctors
   async createServiceRequest(ctx) {
     try {
-      const { businessId, urgencyLevel, serviceType, description, estimatedDuration, scheduledAt, serviceDateTime } = ctx.request.body;
+      const { 
+        businessId, 
+        urgencyLevel, 
+        serviceType, 
+        serviceId,
+        description, 
+        estimatedDuration, 
+        scheduledAt, 
+        serviceDateTime,
+        preferredDoctorId,
+        doctorSelectionType
+      } = ctx.request.body;
+      
+      console.log('Creating service request with data:', {
+        businessId, urgencyLevel, serviceType, serviceId, description, estimatedDuration, 
+        serviceDateTime, preferredDoctorId, doctorSelectionType
+      });
       
       // Get business details
       const business = await strapi.entityService.findOne('api::business.business', businessId);
@@ -129,61 +145,117 @@ module.exports = createCoreController('api::service-request.service-request', ({
         }
       }
 
+      // Prepare service request data
+      const serviceRequestData = {
+        business: businessId,
+        urgencyLevel,
+        serviceType,
+        description,
+        estimatedDuration: parseInt(estimatedDuration) || 1,
+        scheduledAt,
+        requestedServiceDateTime: requestedServiceDateTime,
+        requestedAt: new Date(),
+        status: 'pending',
+        publishedAt: new Date(),
+      };
+
+      // Add service ID if provided
+      if (serviceId) {
+        serviceRequestData.service = serviceId;
+      }
+
+      // Add doctor if specific doctor is selected
+      if (preferredDoctorId && (doctorSelectionType === 'previous' || doctorSelectionType === 'any')) {
+        // Validate that the doctor exists and is available
+        const selectedDoctor = await strapi.entityService.findOne('api::doctor.doctor', preferredDoctorId);
+        if (!selectedDoctor) {
+          return ctx.badRequest('Selected doctor not found');
+        }
+        if (!selectedDoctor.isAvailable) {
+          return ctx.badRequest('Selected doctor is currently unavailable');
+        }
+        
+        serviceRequestData.doctor = preferredDoctorId;
+      }
+
       // Create the service request
       const serviceRequest = await strapi.entityService.create('api::service-request.service-request', {
-        data: {
-          business: businessId,
-          urgencyLevel,
-          serviceType,
-          description,
-          estimatedDuration: parseInt(estimatedDuration) || 1,
-          scheduledAt,
-          requestedServiceDateTime: requestedServiceDateTime,
-          requestedAt: new Date(),
-          status: 'pending',
-          publishedAt: new Date(),
-        },
-        populate: ['business'],
+        data: serviceRequestData,
+        populate: ['business', 'doctor', 'service'],
       });
 
-      // Find nearby doctors
-      const nearbyDoctorsResponse = await this.findNearbyDoctors({
-        request: {
-          body: {
-            businessId,
-            latitude: business.latitude,
-            longitude: business.longitude,
-            radius: 10
-          }
-        }
-      });
+      console.log('Service request created:', serviceRequest.id);
 
-      // In a real application, you would send notifications to nearby doctors
-      // For now, we'll just log the notification
-      console.log(`Notifying ${nearbyDoctorsResponse.count} nearby doctors about new service request ${serviceRequest.id}`);
+      let whatsappNotificationsSent = 0;
+      let notifiedDoctorsCount = 0;
 
-      // Send WhatsApp notifications to nearby doctors
-      const WhatsAppService = require('../../../services/whatsapp');
-      const whatsappService = new WhatsAppService();
-      
-      let notificationsSent = 0;
-      for (const doctor of nearbyDoctorsResponse.doctors) {
+      // Handle WhatsApp notifications
+      if (preferredDoctorId && (doctorSelectionType === 'previous' || doctorSelectionType === 'any')) {
+        // Send notification to the selected doctor
         try {
-          await whatsappService.sendServiceRequestNotification(doctor, serviceRequest, business);
-          notificationsSent++;
+          const selectedDoctor = await strapi.entityService.findOne('api::doctor.doctor', preferredDoctorId);
+          
+          console.log('Sending WhatsApp notification to selected doctor:', {
+            id: selectedDoctor.id,
+            name: `${selectedDoctor.firstName} ${selectedDoctor.lastName}`,
+            phone: selectedDoctor.phone
+          });
+          
+          const whatsappService = strapi.service('whatsapp');
+          if (whatsappService) {
+            await whatsappService.sendServiceRequestNotification(selectedDoctor, serviceRequest, business);
+            whatsappNotificationsSent = 1;
+            notifiedDoctorsCount = 1;
+            console.log(`WhatsApp notification sent to selected doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`);
+          } else {
+            console.error('WhatsApp service not found!');
+          }
+        } catch (whatsappError) {
+          console.error('Failed to send WhatsApp notification to selected doctor:', whatsappError);
+        }
+      } else {
+        // No specific doctor selected - find nearby doctors (old behavior)
+        try {
+          const nearbyDoctorsResponse = await this.findNearbyDoctors({
+            request: {
+              body: {
+                businessId,
+                latitude: business.latitude,
+                longitude: business.longitude,
+                radius: 10
+              }
+            }
+          });
+
+          console.log(`Found ${nearbyDoctorsResponse.count} nearby doctors`);
+          notifiedDoctorsCount = nearbyDoctorsResponse.count;
+
+          // Send WhatsApp notifications to nearby doctors
+          const whatsappService = strapi.service('whatsapp');
+          if (whatsappService) {
+            for (const doctor of nearbyDoctorsResponse.doctors) {
+              try {
+                await whatsappService.sendServiceRequestNotification(doctor, serviceRequest, business);
+                whatsappNotificationsSent++;
+              } catch (error) {
+                console.error(`Failed to send WhatsApp notification to Dr. ${doctor.firstName} ${doctor.lastName}:`, error);
+              }
+            }
+          }
+          
+          console.log(`WhatsApp notifications sent to ${whatsappNotificationsSent} out of ${nearbyDoctorsResponse.count} doctors`);
         } catch (error) {
-          console.error(`Failed to send WhatsApp notification to Dr. ${doctor.name}:`, error);
+          console.error('Error finding nearby doctors or sending notifications:', error);
         }
       }
-      
-      console.log(`WhatsApp notifications sent to ${notificationsSent} out of ${nearbyDoctorsResponse.count} doctors`);
 
       return {
         serviceRequest,
-        notifiedDoctors: nearbyDoctorsResponse.count,
-        whatsappNotificationsSent: notificationsSent
+        notifiedDoctors: notifiedDoctorsCount,
+        whatsappNotificationsSent: whatsappNotificationsSent
       };
     } catch (error) {
+      console.error('Error creating service request:', error);
       ctx.throw(500, `Error creating service request: ${error.message}`);
     }
   },
