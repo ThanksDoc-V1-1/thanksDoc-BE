@@ -398,9 +398,9 @@ module.exports = {
 
           // Get user name for personalized message
           const userName = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'User';
-          
-          // Use the dedicated password reset method
-          await whatsappService.sendPasswordResetToken(phoneNumber, resetToken, userName);
+
+          // Use the dedicated password reset method, pass email as 4th argument
+          await whatsappService.sendPasswordResetToken(phoneNumber, resetToken, userName, user.email);
           console.log(`Password reset token sent to WhatsApp: ${phoneNumber}`);
         } else {
           console.error('WhatsApp service not found!');
