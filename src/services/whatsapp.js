@@ -1053,14 +1053,15 @@ The doctor will contact you shortly to coordinate the visit.`;
       
       const formattedPhone = this.formatPhoneNumber(phoneNumber);
       
-      // Create the password reset URL (include both token and email)
-      const frontendUrl = process.env.FRONTEND_DASHBOARD_URL || process.env.BASE_URLL || 'http://localhost:3000';
+      // Always use the correct frontend URL for the reset link
+      // Use FRONTEND_DASHBOARD_URL, fallback to BASE_URL if needed
+      const frontendUrl = process.env.FRONTEND_DASHBOARD_URL || process.env.BASE_URL || 'http://localhost:3000';
       // Try to get the user's email from the context if available
       let email = '';
       if (typeof arguments[3] === 'string') {
         email = arguments[3];
       }
-      // If email is not provided, fallback to empty string (link will still work for token-only flows)
+      // The reset link must always point to the frontend reset-password page
       const resetUrl = email
         ? `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`
         : `${frontendUrl}/reset-password?token=${resetToken}`;
