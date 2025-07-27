@@ -18,7 +18,7 @@ class WhatsAppService {
     this.templateName = process.env.WHATSAPP_TEMPLATE_NAME || 'doctor_accept_request';
     this.doctorConfirmationTemplate = process.env.WHATSAPP_TEMPLATE_DOCTOR_CONFIRMATION || 'doctor_confirmation';
     this.businessNotificationTemplate = process.env.WHATSAPP_TEMPLATE_BUSINESS_NOTIFICATION || 'doctor_assigned';
-    this.passwordResetTemplate = process.env.WHATSAPP_TEMPLATE_PASSWORD_RESET || 'password_reset_tdoc';
+    this.passwordResetTemplate = process.env.WHATSAPP_TEMPLATE_PASSWORD_RESET || 'password_reset_doc';
   }
 
   /**
@@ -1056,12 +1056,12 @@ The doctor will contact you shortly to coordinate the visit.`;
       // Create the password reset URL
       const frontendUrl = process.env.FRONTEND_DASHBOARD_URL || process.env.BASE_URLL || 'http://localhost:3000';
       const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
-      
+
       // Use template if available, otherwise fall back to text message
       let messageData;
-      
+
       if (this.useTemplate && this.passwordResetTemplate) {
-        // Use approved WhatsApp template for password reset
+        // Use approved WhatsApp template for password reset (2 parameters: name, link)
         messageData = {
           messaging_product: 'whatsapp',
           to: formattedPhone,
@@ -1080,10 +1080,6 @@ The doctor will contact you shortly to coordinate the visit.`;
                     text: userName
                   },
                   {
-                    type: 'text', 
-                    text: resetToken
-                  },
-                  {
                     type: 'text',
                     text: resetUrl
                   }
@@ -1094,8 +1090,7 @@ The doctor will contact you shortly to coordinate the visit.`;
         };
       } else {
         // Fallback to text message (may not work in production without prior conversation)
-        const message = `🔐 ThanksDoc Password Reset\n\nHello ${userName},\n\nClick the link below to reset your password:\n\n${resetUrl}\n\nOr use this reset code: ${resetToken}\n\nThis link and code will expire in 10 minutes.\n\nIf you didn't request this, please ignore this message.`;
-        
+        const message = `🔐 ThanksDoc Password Reset\n\nHello ${userName},\n\nClick the link below to reset your password:\n\n${resetUrl}\n\nIf you didn't request this, please ignore this message.`;
         messageData = {
           messaging_product: 'whatsapp',
           to: formattedPhone,

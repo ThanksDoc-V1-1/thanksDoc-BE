@@ -6,7 +6,7 @@ For the password reset functionality to work properly in production, you need to
 ## Template Requirements
 
 ### Template Name
-`password_reset_tdoc`
+`password_reset_doc`
 
 ### Template Category
 `AUTHENTICATION`
@@ -51,7 +51,7 @@ If you didn't request this, please ignore this message.
    - Go to WhatsApp Manager > Message Templates
    - Click "Create Template"
    - Choose category: "AUTHENTICATION"
-   - Template name: `password_reset_tdoc`
+   - Template name: `password_reset_doc`
 
 3. **Add Template Content**
    - Copy the body text exactly as shown above
@@ -65,7 +65,7 @@ If you didn't request this, please ignore this message.
 5. **Update Environment**
    - Ensure your `.env` file has:
    ```
-   WHATSAPP_TEMPLATE_PASSWORD_RESET=password_reset_tdoc
+   WHATSAPP_TEMPLATE_PASSWORD_RESET=password_reset_doc
    ```
 
 ## Alternative Solutions
