@@ -39,6 +39,14 @@
       "required": true,
       "private": true
     },
+    "passwordResetToken": {
+      "type": "string",
+      "private": true
+    },
+    "passwordResetExpires": {
+      "type": "datetime",
+      "private": true
+    },
     "phone": {
       "type": "string",
       "required": true

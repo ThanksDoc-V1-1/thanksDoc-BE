@@ -2,6 +2,7 @@
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 /**
  * Custom authentication controller
@@ -315,6 +316,226 @@ module.exports = {
     } catch (error) {
       console.error('Me endpoint error:', error);
       return ctx.unauthorized('Invalid token');
+    }
+  },
+
+  async forgotPassword(ctx) {
+    try {
+      const { email } = ctx.request.body;
+
+      if (!email) {
+        return ctx.badRequest('Email is required');
+      }
+
+      console.log('Forgot password request for:', email);
+
+      // Find user in all user types
+      let user = null;
+      let userType = null;
+
+      // Check if user is a doctor
+      const doctor = await strapi.entityService.findMany('api::doctor.doctor', {
+        filters: { email },
+        limit: 1,
+      });
+
+      if (doctor.length > 0) {
+        user = doctor[0];
+        userType = 'doctor';
+      } else {
+        // Check if user is a business
+        const business = await strapi.entityService.findMany('api::business.business', {
+          filters: { email },
+          limit: 1,
+        });
+
+        if (business.length > 0) {
+          user = business[0];
+          userType = 'business';
+        } else {
+          // Check if user is an admin
+          const admin = await strapi.entityService.findMany('api::admin.admin', {
+            filters: { email },
+            limit: 1,
+          });
+
+          if (admin.length > 0) {
+            user = admin[0];
+            userType = 'admin';
+          }
+        }
+      }
+
+      if (!user) {
+        // Don't reveal if user exists or not for security
+        return ctx.send({
+          message: 'If an account with that email exists, a password reset token has been sent to your registered WhatsApp number.'
+        });
+      }
+
+      // Generate a secure random token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+      // Update user with reset token
+      await strapi.entityService.update(`api::${userType}.${userType}`, user.id, {
+        data: {
+          passwordResetToken: resetToken,
+          passwordResetExpires: resetExpires,
+        }
+      });
+
+      // Send WhatsApp message with reset token
+      try {
+        const whatsappService = strapi.service('whatsapp');
+        if (whatsappService) {
+          const phoneNumber = user.phone || user.phoneNumber;
+          
+          if (!phoneNumber) {
+            console.error('No phone number found for user:', email);
+            return ctx.badRequest('No WhatsApp number registered for this account. Please contact support.');
+          }
+
+          // Get user name for personalized message
+          const userName = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'User';
+          
+          // Use the dedicated password reset method
+          await whatsappService.sendPasswordResetToken(phoneNumber, resetToken, userName);
+          console.log(`Password reset token sent to WhatsApp: ${phoneNumber}`);
+        } else {
+          console.error('WhatsApp service not found!');
+          return ctx.internalServerError('WhatsApp service unavailable');
+        }
+      } catch (whatsappError) {
+        console.error('Failed to send WhatsApp message:', whatsappError);
+        return ctx.internalServerError('Failed to send reset token via WhatsApp');
+      }
+
+      return ctx.send({
+        message: 'Password reset token has been sent to your registered WhatsApp number.'
+      });
+
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      return ctx.internalServerError('An error occurred while processing your request');
+    }
+  },
+
+  async resetPassword(ctx) {
+    try {
+      const { email, token, newPassword } = ctx.request.body;
+
+      if (!email || !token || !newPassword) {
+        return ctx.badRequest('Email, token, and new password are required');
+      }
+
+      if (newPassword.length < 6) {
+        return ctx.badRequest('Password must be at least 6 characters long');
+      }
+
+      console.log('Password reset attempt for:', email);
+
+      // Find user in all user types
+      let user = null;
+      let userType = null;
+
+      // Check if user is a doctor
+      const doctor = await strapi.entityService.findMany('api::doctor.doctor', {
+        filters: { 
+          email,
+          passwordResetToken: token,
+          passwordResetExpires: { $gt: new Date() }
+        },
+        limit: 1,
+      });
+
+      if (doctor.length > 0) {
+        user = doctor[0];
+        userType = 'doctor';
+      } else {
+        // Check if user is a business
+        const business = await strapi.entityService.findMany('api::business.business', {
+          filters: { 
+            email,
+            passwordResetToken: token,
+            passwordResetExpires: { $gt: new Date() }
+          },
+          limit: 1,
+        });
+
+        if (business.length > 0) {
+          user = business[0];
+          userType = 'business';
+        } else {
+          // Check if user is an admin
+          const admin = await strapi.entityService.findMany('api::admin.admin', {
+            filters: { 
+              email,
+              passwordResetToken: token,
+              passwordResetExpires: { $gt: new Date() }
+            },
+            limit: 1,
+          });
+
+          if (admin.length > 0) {
+            user = admin[0];
+            userType = 'admin';
+          }
+        }
+      }
+
+      if (!user) {
+        return ctx.badRequest('Invalid or expired reset token');
+      }
+
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+      // Update user with new password and clear reset token
+      await strapi.entityService.update(`api::${userType}.${userType}`, user.id, {
+        data: {
+          password: hashedPassword,
+          passwordResetToken: null,
+          passwordResetExpires: null,
+        }
+      });
+
+      console.log('Password reset successful for:', email);
+
+      // Send confirmation WhatsApp message
+      try {
+        const whatsappService = strapi.service('whatsapp');
+        if (whatsappService) {
+          const phoneNumber = user.phone || user.phoneNumber;
+          
+          if (phoneNumber) {
+            const message = `✅ ThanksDoc Password Reset Successful\n\nYour password has been successfully updated.\n\nIf you didn't make this change, please contact support immediately.`;
+
+            const messageData = {
+              messaging_product: 'whatsapp',
+              to: phoneNumber.replace(/^\+/, ''),
+              type: 'text',
+              text: {
+                body: message
+              }
+            };
+
+            await whatsappService.sendWhatsAppMessage(messageData);
+            console.log(`Password reset confirmation sent to WhatsApp: ${phoneNumber}`);
+          }
+        }
+      } catch (whatsappError) {
+        console.error('Failed to send confirmation WhatsApp message:', whatsappError);
+        // Don't fail the password reset if confirmation message fails
+      }
+
+      return ctx.send({
+        message: 'Password has been successfully reset. You can now login with your new password.'
+      });
+
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return ctx.internalServerError('An error occurred while resetting your password');
     }
   }
 };

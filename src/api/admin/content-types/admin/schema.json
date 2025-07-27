@@ -22,6 +22,14 @@
       "required": true,
       "private": true
     },
+    "passwordResetToken": {
+      "type": "string",
+      "private": true
+    },
+    "passwordResetExpires": {
+      "type": "datetime",
+      "private": true
+    },
     "firstName": {
       "type": "string"
     },

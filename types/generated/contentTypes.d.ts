@@ -401,6 +401,8 @@ export interface ApiAdminAdmin extends Struct.CollectionTypeSchema {
     password: Schema.Attribute.Password &
       Schema.Attribute.Required &
       Schema.Attribute.Private;
+    passwordResetExpires: Schema.Attribute.DateTime & Schema.Attribute.Private;
+    passwordResetToken: Schema.Attribute.String & Schema.Attribute.Private;
     phone: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
     role: Schema.Attribute.String & Schema.Attribute.DefaultTo<'admin'>;
@@ -453,6 +455,8 @@ export interface ApiBusinessBusiness extends Struct.CollectionTypeSchema {
     password: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Private;
+    passwordResetExpires: Schema.Attribute.DateTime & Schema.Attribute.Private;
+    passwordResetToken: Schema.Attribute.String & Schema.Attribute.Private;
     paymentMethods: Schema.Attribute.JSON;
     phone: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
@@ -509,6 +513,8 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
     password: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Private;
+    passwordResetExpires: Schema.Attribute.DateTime & Schema.Attribute.Private;
+    passwordResetToken: Schema.Attribute.String & Schema.Attribute.Private;
     phone: Schema.Attribute.String & Schema.Attribute.Required;
     profilePicture: Schema.Attribute.Media<'images'>;
     publishedAt: Schema.Attribute.DateTime;

@@ -18,6 +18,7 @@ class WhatsAppService {
     this.templateName = process.env.WHATSAPP_TEMPLATE_NAME || 'doctor_accept_request';
     this.doctorConfirmationTemplate = process.env.WHATSAPP_TEMPLATE_DOCTOR_CONFIRMATION || 'doctor_confirmation';
     this.businessNotificationTemplate = process.env.WHATSAPP_TEMPLATE_BUSINESS_NOTIFICATION || 'doctor_assigned';
+    this.passwordResetTemplate = process.env.WHATSAPP_TEMPLATE_PASSWORD_RESET || 'password_reset_tdoc';
   }
 
   /**
@@ -1040,6 +1041,78 @@ The doctor will contact you shortly to coordinate the visit.`;
     } catch (error) {
       console.error('Error fetching verified phone numbers:', error.response?.data || error.message);
       return [];
+    }
+  }
+
+  /**
+   * Send password reset token via WhatsApp using approved template
+   */
+  async sendPasswordResetToken(phoneNumber, resetToken, userName = 'User') {
+    try {
+      console.log(`📱 Sending password reset token to: ${phoneNumber}`);
+      
+      const formattedPhone = this.formatPhoneNumber(phoneNumber);
+      
+      // Create the password reset URL
+      const frontendUrl = process.env.FRONTEND_DASHBOARD_URL || process.env.BASE_URLL || 'http://localhost:3000';
+      const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+      
+      // Use template if available, otherwise fall back to text message
+      let messageData;
+      
+      if (this.useTemplate && this.passwordResetTemplate) {
+        // Use approved WhatsApp template for password reset
+        messageData = {
+          messaging_product: 'whatsapp',
+          to: formattedPhone,
+          type: 'template',
+          template: {
+            name: this.passwordResetTemplate,
+            language: {
+              code: 'en_GB'
+            },
+            components: [
+              {
+                type: 'body',
+                parameters: [
+                  {
+                    type: 'text',
+                    text: userName
+                  },
+                  {
+                    type: 'text', 
+                    text: resetToken
+                  },
+                  {
+                    type: 'text',
+                    text: resetUrl
+                  }
+                ]
+              }
+            ]
+          }
+        };
+      } else {
+        // Fallback to text message (may not work in production without prior conversation)
+        const message = `🔐 ThanksDoc Password Reset\n\nHello ${userName},\n\nClick the link below to reset your password:\n\n${resetUrl}\n\nOr use this reset code: ${resetToken}\n\nThis link and code will expire in 10 minutes.\n\nIf you didn't request this, please ignore this message.`;
+        
+        messageData = {
+          messaging_product: 'whatsapp',
+          to: formattedPhone,
+          type: 'text',
+          text: {
+            body: message
+          }
+        };
+      }
+      
+      const response = await this.sendWhatsAppMessage(messageData);
+      console.log(`✅ Password reset token sent successfully to: ${phoneNumber}`);
+      return response;
+      
+    } catch (error) {
+      console.error(`❌ Failed to send password reset token to ${phoneNumber}:`, error);
+      throw error;
     }
   }
 }
