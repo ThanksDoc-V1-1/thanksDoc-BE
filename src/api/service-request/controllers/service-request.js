@@ -1430,6 +1430,25 @@ module.exports = createCoreController('api::service-request.service-request', ({
       console.error('Error cancelling related requests:', error);
     }
   },
+
+  // Deprecated endpoint - automatic broadcasting is now handled by cron job
+  async getFallbackStatus(ctx) {
+    try {
+      const { id } = ctx.params;
+      
+      // Return a simple response indicating that this functionality 
+      // is now handled automatically by the cron job
+      return {
+        requestId: id,
+        message: 'Automatic broadcasting is handled by cron job',
+        broadcastingEnabled: true,
+        cronJobActive: true
+      };
+    } catch (error) {
+      console.error('Error in getFallbackStatus:', error);
+      ctx.throw(500, `Error checking fallback status: ${error.message}`);
+    }
+  },
 }));
 
 // Helper function to calculate distance between two coordinates

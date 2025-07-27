@@ -83,10 +83,23 @@ module.exports = {
               originalRequestId: request.id, // Link to the original request
             };
 
-            await strapi.entityService.create('api::service-request.service-request', {
+            const newServiceRequest = await strapi.entityService.create('api::service-request.service-request', {
               data: newRequestData
             });
             console.log(`Successfully created new request for doctor ID: ${doctor.id}`);
+
+            // Send WhatsApp notification to the doctor
+            try {
+              const whatsappService = strapi.service('whatsapp');
+              if (whatsappService) {
+                await whatsappService.sendServiceRequestNotification(doctor, newServiceRequest, request.business);
+                console.log(`WhatsApp notification sent to Dr. ${doctor.firstName} ${doctor.lastName} (${doctor.phoneNumber}) for broadcasted request`);
+              } else {
+                console.error('WhatsApp service not found!');
+              }
+            } catch (whatsappError) {
+              console.error(`Failed to send WhatsApp notification to Dr. ${doctor.firstName} ${doctor.lastName}:`, whatsappError);
+            }
           }
 
           console.log(`Request ID ${request.id} has been successfully broadcasted to ${otherDoctors.length} other doctors.`);

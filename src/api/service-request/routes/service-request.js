@@ -209,5 +209,14 @@ module.exports = {
         auth: false,
       },
     },
+    // Deprecated endpoint - now handled by cron job
+    {
+      method: 'GET',
+      path: '/service-requests/:id/fallback-status',
+      handler: 'service-request.getFallbackStatus',
+      config: {
+        auth: false,
+      },
+    },
   ],
 };
