@@ -111,6 +111,11 @@
     },
     "feedback": {
       "type": "text"
+    },
+    "isBroadcasted": {
+      "type": "boolean",
+      "default": false,
+      "private": true
     }
   }
 }

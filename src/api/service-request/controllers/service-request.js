@@ -502,6 +502,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         // Business portal fields
         businessId, 
         doctorId, 
+        serviceId, // Add serviceId parameter
         urgencyLevel, 
         serviceType, 
         description, 
@@ -517,7 +518,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       } = ctx.request.body;
       
       console.log('Creating direct request with data:', {
-        businessId, doctorId, urgencyLevel, serviceType, description, estimatedDuration, serviceDateTime,
+        businessId, doctorId, serviceId, urgencyLevel, serviceType, description, estimatedDuration, serviceDateTime,
         firstName, lastName, phoneNumber, urgency, symptoms, notes
       });
       
@@ -527,6 +528,16 @@ module.exports = createCoreController('api::service-request.service-request', ({
       
       if (!isBusinessRequest && !isPatientRequest) {
         return ctx.badRequest('Invalid request: must provide either business info or patient info');
+      }
+
+      // Validate required fields for business requests
+      if (isBusinessRequest) {
+        if (!doctorId) {
+          return ctx.badRequest('Doctor ID is required for business requests');
+        }
+        if (!serviceId) {
+          return ctx.badRequest('Service ID is required for business requests');
+        }
       }
       
       // Validate business exists (for business requests)
@@ -565,6 +576,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const requestData = isBusinessRequest ? {
         business: businessId,
         doctor: doctorId,
+        service: serviceId, // Add service relation
         urgencyLevel: urgencyLevel || 'medium',
         serviceType: serviceType || 'Medical Consultation',
         description,
@@ -575,6 +587,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       } : {
         // Patient request data
         doctor: doctorId,
+        service: serviceId, // Add service relation for patient requests too
         patientName: `${firstName} ${lastName}`,
         patientPhone: phoneNumber,
         urgencyLevel: urgency || 'medium',

@@ -548,6 +548,9 @@ export interface ApiServiceRequestServiceRequest
     doctor: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
     estimatedDuration: Schema.Attribute.Integer;
     feedback: Schema.Attribute.Text;
+    isBroadcasted: Schema.Attribute.Boolean &
+      Schema.Attribute.Private &
+      Schema.Attribute.DefaultTo<false>;
     isPaid: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
