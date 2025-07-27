@@ -2,8 +2,8 @@ module.exports = {
   '*/1 * * * *': async ({ strapi }) => {
     console.log('Cron job running - checking for unresponsive doctors...');
     // This cron job runs every minute to check for service requests that have not been responded to.
-    // For testing: 2 minutes timeout, for production: change to 24 hours (24 * 60 * 60 * 1000)
-    const timeoutDuration = 2 * 60 * 1000; // 2 minutes for testing
+    // Production setting: 24 hours timeout
+    const timeoutDuration = 24 * 60 * 60 * 1000; // 24 hours for production
     const timeoutAgo = new Date(Date.now() - timeoutDuration);
     console.log(`Checking for pending requests created before: ${timeoutAgo.toISOString()}`);
 
