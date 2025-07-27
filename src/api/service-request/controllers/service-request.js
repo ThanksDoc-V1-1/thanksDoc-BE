@@ -309,6 +309,9 @@ module.exports = createCoreController('api::service-request.service-request', ({
         populate: ['business', 'doctor'],
       });
 
+      // Cancel all related requests when this one is accepted
+      await this.cancelRelatedRequests(id, strapi);
+
       // Set doctor as temporarily unavailable
       await strapi.entityService.update('api::doctor.doctor', doctorId, {
         data: {
@@ -659,17 +662,24 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // 2. Specifically assigned to this doctor (both pending and accepted)
       const requests = await strapi.entityService.findMany('api::service-request.service-request', {
         filters: {
-          $or: [
-            { 
-              status: 'pending',
-              $or: [
-                { doctor: null }, // Unassigned requests
-                { doctor: doctorId } // Pending requests specifically for this doctor
-              ]
+          $and: [
+            {
+              status: { $ne: 'cancelled' } // Exclude cancelled requests
             },
             {
-              status: 'accepted',
-              doctor: doctorId // Accepted requests by this doctor
+              $or: [
+                { 
+                  status: 'pending',
+                  $or: [
+                    { doctor: null }, // Unassigned requests
+                    { doctor: doctorId } // Pending requests specifically for this doctor
+                  ]
+                },
+                {
+                  status: 'accepted',
+                  doctor: doctorId // Accepted requests by this doctor
+                }
+              ]
             }
           ]
         },
@@ -870,6 +880,9 @@ module.exports = createCoreController('api::service-request.service-request', ({
         },
         populate: ['business', 'doctor'],
       });
+
+      // Cancel all related requests when this one is accepted
+      await this.cancelRelatedRequests(serviceRequestId, strapi);
 
       // Set doctor as temporarily unavailable
       await strapi.entityService.update('api::doctor.doctor', doctorId, {
@@ -1348,6 +1361,73 @@ module.exports = createCoreController('api::service-request.service-request', ({
     } catch (error) {
       console.error('Error in diagnoseWhatsappSetup:', error);
       return ctx.badRequest(`Diagnosis error: ${error.message}`);
+    }
+  },
+
+  // Helper method to cancel all related requests when one is accepted
+  async cancelRelatedRequests(acceptedRequestId, strapi) {
+    try {
+      console.log(`Cancelling related requests for accepted request ID: ${acceptedRequestId}`);
+      
+      // Get the accepted request to find its originalRequestId
+      const acceptedRequest = await strapi.entityService.findOne('api::service-request.service-request', acceptedRequestId);
+      
+      if (!acceptedRequest) {
+        console.error('Accepted request not found');
+        return;
+      }
+
+      // Find all related requests that need to be cancelled
+      // This includes:
+      // 1. The original request (if this accepted request is a broadcasted one)
+      // 2. All other broadcasted requests from the same original request
+      const relatedRequestsFilters = [];
+
+      // If this request has an originalRequestId, it's a broadcasted request
+      if (acceptedRequest.originalRequestId) {
+        // Cancel the original request
+        relatedRequestsFilters.push({
+          id: acceptedRequest.originalRequestId,
+          status: 'pending'
+        });
+        
+        // Cancel other broadcasted requests from the same original
+        relatedRequestsFilters.push({
+          originalRequestId: acceptedRequest.originalRequestId,
+          status: 'pending',
+          id: { $ne: acceptedRequestId }
+        });
+      } else {
+        // This is an original request that was accepted, cancel all its broadcasted requests
+        relatedRequestsFilters.push({
+          originalRequestId: acceptedRequestId,
+          status: 'pending'
+        });
+      }
+
+      // Cancel all related requests
+      for (const filter of relatedRequestsFilters) {
+        const relatedRequests = await strapi.entityService.findMany('api::service-request.service-request', {
+          filters: filter,
+          populate: ['doctor']
+        });
+
+        for (const relatedRequest of relatedRequests) {
+          console.log(`Cancelling related request ID: ${relatedRequest.id} for doctor: ${relatedRequest.doctor?.id}`);
+          
+          await strapi.entityService.update('api::service-request.service-request', relatedRequest.id, {
+            data: {
+              status: 'cancelled',
+              cancelReason: 'Request was accepted by another doctor'
+            }
+          });
+        }
+        
+        console.log(`Cancelled ${relatedRequests.length} related requests with filter:`, filter);
+      }
+      
+    } catch (error) {
+      console.error('Error cancelling related requests:', error);
     }
   },
 }));

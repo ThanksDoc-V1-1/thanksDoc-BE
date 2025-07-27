@@ -559,6 +559,7 @@ export interface ApiServiceRequestServiceRequest
     > &
       Schema.Attribute.Private;
     notes: Schema.Attribute.Text;
+    originalRequestId: Schema.Attribute.Integer & Schema.Attribute.Private;
     paidAt: Schema.Attribute.DateTime;
     paymentIntentId: Schema.Attribute.String;
     paymentMethod: Schema.Attribute.String;

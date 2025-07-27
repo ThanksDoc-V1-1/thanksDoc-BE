@@ -80,6 +80,7 @@ module.exports = {
               status: 'pending',
               isBroadcasted: false,
               requestedAt: new Date(),
+              originalRequestId: request.id, // Link to the original request
             };
 
             await strapi.entityService.create('api::service-request.service-request', {

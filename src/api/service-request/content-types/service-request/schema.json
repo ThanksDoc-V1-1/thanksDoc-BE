@@ -116,6 +116,10 @@
       "type": "boolean",
       "default": false,
       "private": true
+    },
+    "originalRequestId": {
+      "type": "integer",
+      "private": true
     }
   }
 }
