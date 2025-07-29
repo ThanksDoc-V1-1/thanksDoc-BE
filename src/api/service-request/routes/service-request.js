@@ -218,5 +218,22 @@ module.exports = {
         auth: false,
       },
     },
+    // Transaction history endpoints
+    {
+      method: 'GET',
+      path: '/service-requests/transaction-history',
+      handler: 'service-request.getTransactionHistory',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'GET',
+      path: '/service-requests/doctor-earnings',
+      handler: 'service-request.getDoctorEarnings',
+      config: {
+        auth: false,
+      },
+    },
   ],
 };

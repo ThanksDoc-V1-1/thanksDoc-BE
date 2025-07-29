@@ -98,6 +98,16 @@
     "paymentIntentId": {
       "type": "string"
     },
+    "chargeId": {
+      "type": "string"
+    },
+    "currency": {
+      "type": "string",
+      "default": "GBP"
+    },
+    "paymentDetails": {
+      "type": "text"
+    },
     "notes": {
       "type": "text"
     },

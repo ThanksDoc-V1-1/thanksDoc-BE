@@ -546,10 +546,12 @@ export interface ApiServiceRequestServiceRequest
     business: Schema.Attribute.Relation<'manyToOne', 'api::business.business'> &
       Schema.Attribute.Required;
     cancelReason: Schema.Attribute.Text;
+    chargeId: Schema.Attribute.String;
     completedAt: Schema.Attribute.DateTime;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    currency: Schema.Attribute.String & Schema.Attribute.DefaultTo<'GBP'>;
     description: Schema.Attribute.Text & Schema.Attribute.Required;
     doctor: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
     estimatedDuration: Schema.Attribute.Integer;
@@ -567,6 +569,7 @@ export interface ApiServiceRequestServiceRequest
     notes: Schema.Attribute.Text;
     originalRequestId: Schema.Attribute.Integer & Schema.Attribute.Private;
     paidAt: Schema.Attribute.DateTime;
+    paymentDetails: Schema.Attribute.Text;
     paymentIntentId: Schema.Attribute.String;
     paymentMethod: Schema.Attribute.String;
     paymentStatus: Schema.Attribute.Enumeration<

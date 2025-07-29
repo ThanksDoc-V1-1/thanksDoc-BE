@@ -13,20 +13,44 @@ module.exports = createCoreController('api::service-request.service-request', ({
     try {
       const { query } = ctx;
       
-      // Use the default strapi find method but ensure we populate the relationships
-      const result = await strapi.entityService.findMany('api::service-request.service-request', {
-        ...query,
-        populate: {
-          business: true,
-          doctor: true,
-          ...query.populate,
-        },
-      });
+      console.log('Find query received:', JSON.stringify(query, null, 2));
+      
+      // Build the query parameters properly
+      const queryParams = {
+        populate: ['business', 'doctor'],
+        ...(query.sort && { sort: query.sort }),
+        ...(query.start && { start: parseInt(query.start) }),
+        ...(query.limit && { limit: parseInt(query.limit) }),
+      };
+
+      // Handle filters properly
+      if (query.filters) {
+        queryParams.filters = {};
+        
+        // Parse filters from URL query format
+        Object.keys(query.filters).forEach(key => {
+          if (key === 'isPaid' && query.filters[key]['$eq']) {
+            queryParams.filters.isPaid = {
+              $eq: query.filters[key]['$eq'] === 'true'
+            };
+          } else {
+            queryParams.filters[key] = query.filters[key];
+          }
+        });
+      }
+
+      console.log('Processed query params:', JSON.stringify(queryParams, null, 2));
+      
+      // Use the default strapi find method with properly formatted query
+      const result = await strapi.entityService.findMany('api::service-request.service-request', queryParams);
+      
+      console.log(`Found ${result.length} service requests`);
       
       // Return the results in the standard format
       return { data: result };
     } catch (error) {
       console.error('Error in find:', error);
+      console.error('Query that caused error:', JSON.stringify(ctx.query, null, 2));
       ctx.throw(500, `Error finding service requests: ${error.message}`);
     }
   },
@@ -729,9 +753,10 @@ module.exports = createCoreController('api::service-request.service-request', ({
   async processPayment(ctx) {
     try {
       const { id } = ctx.params;
-      const { paymentMethod, paymentDetails } = ctx.request.body;
+      const { paymentMethod, paymentDetails, paymentIntentId, chargeId, receiptUrl, currency = 'gbp' } = ctx.request.body;
 
       console.log(`Processing payment for service request ${id} with method ${paymentMethod}`);
+      console.log(`Payment intent ID: ${paymentIntentId}`);
 
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
         populate: ['doctor', 'business'],
@@ -756,30 +781,48 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       // Calculate payment amount based on doctor rate and service duration
       const doctor = serviceRequest.doctor;
+      const business = serviceRequest.business;
       const hourlyRate = doctor?.hourlyRate || 0;
       const hours = serviceRequest.estimatedDuration || 1;
       const amount = hourlyRate * hours;
 
       console.log(`Payment amount for request ${id}: ${amount}`);
 
-      // Update the service request with payment information
-      // Keep the status as 'completed' but mark as paid
+      // Create comprehensive payment details object
+      const completePaymentDetails = {
+        ...paymentDetails,
+        paymentIntentId,
+        chargeId,
+        receiptUrl,
+        currency,
+        amount,
+        processedAt: new Date().toISOString(),
+        businessName: business?.name || business?.companyName,
+        doctorName: doctor?.firstName && doctor?.lastName ? `${doctor.firstName} ${doctor.lastName}` : doctor?.name,
+        doctorEmail: doctor?.email,
+        businessEmail: business?.email
+      };
+
+      // Update the service request with comprehensive payment information
       const updatedServiceRequest = await strapi.entityService.update('api::service-request.service-request', id, {
         data: {
-          isPaid: true, // This is the flag we use to track payment status
+          isPaid: true,
           paidAt: new Date(),
           paymentMethod,
-          paymentDetails: JSON.stringify(paymentDetails),
+          paymentDetails: JSON.stringify(completePaymentDetails),
           totalAmount: amount,
-          // Don't change the status since 'paid' is not a valid status in our schema
+          paymentIntentId: paymentIntentId, // Store Stripe payment intent ID separately for easy querying
+          chargeId: chargeId, // Store Stripe charge ID
+          currency: currency.toUpperCase(),
           // Maintain the 'completed' status
         },
         populate: ['business', 'doctor'],
       });
 
-      console.log(`Payment processed successfully for request ${id}`);
+      console.log(`Payment processed successfully for request ${id} with payment intent ${paymentIntentId}`);
       return updatedServiceRequest;
     } catch (error) {
+      console.error(`Error processing payment for request ${id}:`, error);
       ctx.throw(500, `Error processing payment: ${error.message}`);
     }
   },
@@ -1447,6 +1490,200 @@ module.exports = createCoreController('api::service-request.service-request', ({
     } catch (error) {
       console.error('Error in getFallbackStatus:', error);
       ctx.throw(500, `Error checking fallback status: ${error.message}`);
+    }
+  },
+
+  // Get transaction history for admin dashboard
+  async getTransactionHistory(ctx) {
+    try {
+      const { query } = ctx.request;
+      const { 
+        doctorId, 
+        startDate, 
+        endDate, 
+        limit = 100, 
+        offset = 0,
+        search 
+      } = query;
+
+      console.log('Getting transaction history with params:', query);
+
+      // Build filter for paid service requests
+      const filters = {
+        isPaid: {
+          $eq: true
+        }
+      };
+
+      // Add date range filter
+      if (startDate && endDate) {
+        filters.paidAt = {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate),
+        };
+      } else if (startDate) {
+        filters.paidAt = {
+          $gte: new Date(startDate),
+        };
+      } else if (endDate) {
+        filters.paidAt = {
+          $lte: new Date(endDate),
+        };
+      }
+
+      // Add doctor filter
+      if (doctorId) {
+        filters.doctor = {
+          id: {
+            $eq: parseInt(doctorId)
+          }
+        };
+      }
+
+      console.log('Filters being used:', JSON.stringify(filters, null, 2));
+
+      // Get paid service requests with populated relations
+      const transactions = await strapi.entityService.findMany('api::service-request.service-request', {
+        filters,
+        populate: ['doctor', 'business'],
+        sort: { paidAt: 'desc' },
+        start: parseInt(offset),
+        limit: parseInt(limit),
+      });
+
+      console.log(`Found ${transactions.length} transactions`);
+
+      // Calculate summary statistics
+      const allPaidRequests = await strapi.entityService.findMany('api::service-request.service-request', {
+        filters: { 
+          isPaid: {
+            $eq: true
+          }
+        },
+        populate: ['doctor'],
+      });
+
+      const totalTransactions = allPaidRequests.length;
+      const totalRevenue = allPaidRequests.reduce((sum, req) => sum + (req.totalAmount || 0), 0);
+      const serviceCharge = 3.00; // £3 service charge
+      const totalServiceCharges = totalTransactions * serviceCharge;
+      const totalDoctorEarnings = Math.max(0, totalRevenue - totalServiceCharges);
+
+      // Format transactions for frontend
+      const formattedTransactions = transactions.map(transaction => {
+        const totalAmount = transaction.totalAmount || 0;
+        const doctorFee = Math.max(0, totalAmount - serviceCharge);
+        
+        return {
+          id: transaction.id,
+          paymentId: transaction.paymentIntentId || transaction.id,
+          serviceType: transaction.serviceType,
+          doctorId: transaction.doctor?.id,
+          doctorName: transaction.doctor ? 
+            `${transaction.doctor.firstName || ''} ${transaction.doctor.lastName || ''}`.trim() || 
+            transaction.doctor.name || 'Unknown Doctor' : 'Unknown Doctor',
+          businessName: transaction.business?.name || transaction.business?.companyName || 'Unknown Business',
+          totalAmount: totalAmount,
+          doctorFee: doctorFee,
+          serviceCharge: serviceCharge,
+          currency: transaction.currency || 'GBP',
+          paymentMethod: transaction.paymentMethod || 'card',
+          status: transaction.isPaid ? 'paid' : 'pending',
+          date: transaction.paidAt,
+          paymentIntentId: transaction.paymentIntentId,
+          chargeId: transaction.chargeId,
+        };
+      });
+
+      // Apply search filter if provided
+      let filteredTransactions = formattedTransactions;
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredTransactions = formattedTransactions.filter(transaction => 
+          transaction.doctorName.toLowerCase().includes(searchLower) ||
+          transaction.serviceType.toLowerCase().includes(searchLower) ||
+          transaction.businessName.toLowerCase().includes(searchLower) ||
+          transaction.paymentId.toLowerCase().includes(searchLower)
+        );
+      }
+
+      console.log(`Returning ${filteredTransactions.length} transactions after filtering`);
+
+      return {
+        transactions: filteredTransactions,
+        summary: {
+          totalTransactions,
+          totalRevenue,
+          totalDoctorEarnings,
+          totalServiceCharges,
+        },
+        pagination: {
+          total: filteredTransactions.length,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+        }
+      };
+
+    } catch (error) {
+      console.error('Error getting transaction history:', error);
+      ctx.throw(500, `Error getting transaction history: ${error.message}`);
+    }
+  },
+
+  // Get doctor earnings summary
+  async getDoctorEarnings(ctx) {
+    try {
+      console.log('Getting doctor earnings summary');
+
+      // Get all paid service requests with doctor information
+      const paidRequests = await strapi.entityService.findMany('api::service-request.service-request', {
+        filters: { 
+          isPaid: {
+            $eq: true
+          }
+        },
+        populate: ['doctor'],
+      });
+
+      console.log(`Found ${paidRequests.length} paid requests for doctor earnings calculation`);
+
+      // Group by doctor and calculate earnings
+      const doctorEarnings = {};
+      const serviceCharge = 3.00; // £3 service charge
+
+      paidRequests.forEach(request => {
+        const doctor = request.doctor;
+        if (!doctor) return;
+
+        const doctorId = doctor.id;
+        const doctorName = `${doctor.firstName || ''} ${doctor.lastName || ''}`.trim() || doctor.name || 'Unknown Doctor';
+        const totalAmount = request.totalAmount || 0;
+        const doctorFee = Math.max(0, totalAmount - serviceCharge);
+
+        if (!doctorEarnings[doctorId]) {
+          doctorEarnings[doctorId] = {
+            doctorId,
+            doctorName,
+            totalEarnings: 0,
+            totalTransactions: 0,
+            isPaid: false, // Track if doctor has been paid
+          };
+        }
+
+        doctorEarnings[doctorId].totalEarnings += doctorFee;
+        doctorEarnings[doctorId].totalTransactions += 1;
+      });
+
+      // Convert to array and sort by earnings
+      const earnings = Object.values(doctorEarnings).sort((a, b) => b.totalEarnings - a.totalEarnings);
+
+      console.log(`Found earnings for ${earnings.length} doctors`);
+
+      return earnings;
+
+    } catch (error) {
+      console.error('Error getting doctor earnings:', error);
+      ctx.throw(500, `Error getting doctor earnings: ${error.message}`);
     }
   },
 }));
