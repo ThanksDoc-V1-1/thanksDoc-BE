@@ -1,0 +1,46 @@
+{
+  "kind": "collectionType",
+  "collectionName": "doctor_payments",
+  "info": {
+    "singularName": "doctor-payment",
+    "pluralName": "doctor-payments",
+    "displayName": "Doctor Payment",
+    "description": "Track doctor payment records"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "doctor": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::doctor.doctor"
+    },
+    "paymentDate": {
+      "type": "datetime",
+      "required": true
+    },
+    "paymentMethod": {
+      "type": "enumeration",
+      "enum": ["bank_transfer", "paypal", "stripe", "cash"],
+      "default": "bank_transfer",
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "completed", "failed"],
+      "default": "completed",
+      "required": true
+    },
+    "amount": {
+      "type": "decimal"
+    },
+    "notes": {
+      "type": "text"
+    },
+    "transactionId": {
+      "type": "string"
+    }
+  }
+}

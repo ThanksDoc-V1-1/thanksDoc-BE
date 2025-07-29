@@ -82,8 +82,11 @@
     },
     "paymentStatus": {
       "type": "enumeration",
-      "enum": ["pending", "paid", "failed", "refunded"],
+      "enum": ["pending", "paid", "failed", "refunded", "doctor_paid"],
       "default": "pending"
+    },
+    "doctorPaidAt": {
+      "type": "datetime"
     },
     "isPaid": {
       "type": "boolean",

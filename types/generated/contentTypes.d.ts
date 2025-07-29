@@ -469,6 +469,48 @@ export interface ApiBusinessBusiness extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiDoctorPaymentDoctorPayment
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'doctor_payments';
+  info: {
+    description: 'Track doctor payment records';
+    displayName: 'Doctor Payment';
+    pluralName: 'doctor-payments';
+    singularName: 'doctor-payment';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    amount: Schema.Attribute.Decimal;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    doctor: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::doctor-payment.doctor-payment'
+    > &
+      Schema.Attribute.Private;
+    notes: Schema.Attribute.Text;
+    paymentDate: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    paymentMethod: Schema.Attribute.Enumeration<
+      ['bank_transfer', 'paypal', 'stripe', 'cash']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'bank_transfer'>;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<['pending', 'completed', 'failed']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'completed'>;
+    transactionId: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
   collectionName: 'doctors';
   info: {
@@ -554,6 +596,7 @@ export interface ApiServiceRequestServiceRequest
     currency: Schema.Attribute.String & Schema.Attribute.DefaultTo<'GBP'>;
     description: Schema.Attribute.Text & Schema.Attribute.Required;
     doctor: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
+    doctorPaidAt: Schema.Attribute.DateTime;
     estimatedDuration: Schema.Attribute.Integer;
     feedback: Schema.Attribute.Text;
     isBroadcasted: Schema.Attribute.Boolean &
@@ -573,7 +616,7 @@ export interface ApiServiceRequestServiceRequest
     paymentIntentId: Schema.Attribute.String;
     paymentMethod: Schema.Attribute.String;
     paymentStatus: Schema.Attribute.Enumeration<
-      ['pending', 'paid', 'failed', 'refunded']
+      ['pending', 'paid', 'failed', 'refunded', 'doctor_paid']
     > &
       Schema.Attribute.DefaultTo<'pending'>;
     publishedAt: Schema.Attribute.DateTime;
@@ -1201,6 +1244,7 @@ declare module '@strapi/strapi' {
       'admin::user': AdminUser;
       'api::admin.admin': ApiAdminAdmin;
       'api::business.business': ApiBusinessBusiness;
+      'api::doctor-payment.doctor-payment': ApiDoctorPaymentDoctorPayment;
       'api::doctor.doctor': ApiDoctorDoctor;
       'api::service-request.service-request': ApiServiceRequestServiceRequest;
       'api::service.service': ApiServiceService;
