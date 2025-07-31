@@ -535,7 +535,7 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
       Schema.Attribute.Unique;
     emergencyContact: Schema.Attribute.String;
     firstName: Schema.Attribute.String & Schema.Attribute.Required;
-    hourlyRate: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    hourlyRate: Schema.Attribute.Decimal;
     isAvailable: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     isVerified: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     languages: Schema.Attribute.JSON;
@@ -561,12 +561,12 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
     profilePicture: Schema.Attribute.Media<'images'>;
     publishedAt: Schema.Attribute.DateTime;
     services: Schema.Attribute.Relation<'manyToMany', 'api::service.service'>;
-    specialization: Schema.Attribute.String & Schema.Attribute.Required;
+    specialization: Schema.Attribute.String;
     state: Schema.Attribute.String & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    yearsOfExperience: Schema.Attribute.Integer & Schema.Attribute.Required;
+    yearsOfExperience: Schema.Attribute.Integer;
     zipCode: Schema.Attribute.String & Schema.Attribute.Required;
   };
 }

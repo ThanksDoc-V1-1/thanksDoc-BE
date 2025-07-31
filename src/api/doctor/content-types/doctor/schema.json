@@ -48,7 +48,7 @@
     },
     "specialization": {
       "type": "string",
-      "required": true
+      "required": false
     },
     "licenseNumber": {
       "type": "string",
@@ -57,7 +57,7 @@
     },
     "yearsOfExperience": {
       "type": "integer",
-      "required": true
+      "required": false
     },
     "profilePicture": {
       "type": "media",
@@ -91,7 +91,7 @@
     },
     "hourlyRate": {
       "type": "decimal",
-      "required": true
+      "required": false
     },
     "isAvailable": {
       "type": "boolean",
