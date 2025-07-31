@@ -1686,6 +1686,50 @@ module.exports = createCoreController('api::service-request.service-request', ({
       ctx.throw(500, `Error getting doctor earnings: ${error.message}`);
     }
   },
+
+  // Calculate cost based on service pricing
+  async calculateCost(ctx) {
+    try {
+      const { serviceId } = ctx.request.body;
+
+      if (!serviceId) {
+        return ctx.badRequest('Service ID is required');
+      }
+
+      // Get the service with pricing information
+      const service = await strapi.entityService.findOne('api::service.service', serviceId, {
+        fields: ['name', 'price', 'duration', 'category', 'serviceType']
+      });
+
+      if (!service) {
+        return ctx.notFound('Service not found');
+      }
+
+      const serviceCharge = 3.00; // £3 service charge for all requests
+      const servicePrice = parseFloat(service.price) || 0;
+      const totalAmount = servicePrice + serviceCharge;
+
+      return {
+        service: {
+          id: serviceId,
+          name: service.name,
+          price: servicePrice,
+          duration: service.duration,
+          category: service.category,
+          serviceType: service.serviceType
+        },
+        pricing: {
+          servicePrice: servicePrice,
+          serviceCharge: serviceCharge,
+          totalAmount: totalAmount
+        }
+      };
+
+    } catch (error) {
+      console.error('Error calculating service cost:', error);
+      ctx.throw(500, `Error calculating service cost: ${error.message}`);
+    }
+  },
 }));
 
 // Helper function to calculate distance between two coordinates

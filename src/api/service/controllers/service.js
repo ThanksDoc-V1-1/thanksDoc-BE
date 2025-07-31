@@ -19,6 +19,13 @@ module.exports = createCoreController('api::service.service', ({ strapi }) => ({
           doctors: {
             fields: ['id', 'firstName', 'lastName', 'specialization']
           },
+          parentService: {
+            fields: ['id', 'name', 'serviceType']
+          },
+          subServices: {
+            fields: ['id', 'name', 'price', 'duration', 'serviceType'],
+            sort: { displayOrder: 'asc' }
+          },
           ...query.populate,
         },
         sort: { displayOrder: 'asc', name: 'asc' }

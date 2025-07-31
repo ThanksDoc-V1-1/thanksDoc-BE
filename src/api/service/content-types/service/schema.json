@@ -22,7 +22,7 @@
     },
     "category": {
       "type": "enumeration",
-      "enum": ["in-person", "online"],
+      "enum": ["in-person", "online", "nhs"],
       "required": true
     },
     "isActive": {
@@ -32,6 +32,33 @@
     "displayOrder": {
       "type": "integer",
       "default": 0
+    },
+    "duration": {
+      "type": "integer",
+      "required": true,
+      "description": "Duration in minutes"
+    },
+    "price": {
+      "type": "decimal",
+      "required": true,
+      "description": "Price in GBP"
+    },
+    "parentService": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::service.service"
+    },
+    "subServices": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::service.service",
+      "mappedBy": "parentService"
+    },
+    "serviceType": {
+      "type": "enumeration",
+      "enum": ["main", "subcategory"],
+      "default": "main",
+      "required": true
     },
     "doctors": {
       "type": "relation",

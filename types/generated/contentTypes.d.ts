@@ -670,7 +670,7 @@ export interface ApiServiceService extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
-    category: Schema.Attribute.Enumeration<['in-person', 'online']> &
+    category: Schema.Attribute.Enumeration<['in-person', 'online', 'nhs']> &
       Schema.Attribute.Required;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -678,6 +678,7 @@ export interface ApiServiceService extends Struct.CollectionTypeSchema {
     description: Schema.Attribute.Text;
     displayOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     doctors: Schema.Attribute.Relation<'manyToMany', 'api::doctor.doctor'>;
+    duration: Schema.Attribute.Integer & Schema.Attribute.Required;
     isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -688,7 +689,16 @@ export interface ApiServiceService extends Struct.CollectionTypeSchema {
     name: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
+    parentService: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::service.service'
+    >;
+    price: Schema.Attribute.Decimal & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
+    serviceType: Schema.Attribute.Enumeration<['main', 'subcategory']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'main'>;
+    subServices: Schema.Attribute.Relation<'oneToMany', 'api::service.service'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
