@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "business_types",
+  "info": {
+    "singularName": "business-type",
+    "pluralName": "business-types",
+    "displayName": "Business Type",
+    "description": "Available business types for registration"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "maxLength": 100
+    },
+    "value": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "maxLength": 50
+    },
+    "description": {
+      "type": "text",
+      "maxLength": 500
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "displayOrder": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}
