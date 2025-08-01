@@ -43,8 +43,8 @@ module.exports = createCoreController('api::service.service', ({ strapi }) => ({
     try {
       const { category } = ctx.params;
       
-      if (!['in-person', 'online'].includes(category)) {
-        return ctx.badRequest('Invalid category. Must be "in-person" or "online"');
+      if (!['in-person', 'online', 'nhs'].includes(category)) {
+        return ctx.badRequest('Invalid category. Must be "in-person", "online", or "nhs"');
       }
       
       const services = await strapi.entityService.findMany('api::service.service', {
