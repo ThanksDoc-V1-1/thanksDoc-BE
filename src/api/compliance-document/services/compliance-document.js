@@ -287,17 +287,19 @@ module.exports = createCoreService('api::compliance-document.compliance-document
   // Get document configuration
   getDocumentConfig(documentType) {
     const configs = {
-      gmc_registration: { name: 'GMC Registration Certificate', required: true, autoExpiry: false },
-      current_performers_list: { name: 'Current Performers List', required: true, autoExpiry: false },
-      cct_certificate: { name: 'Certificate for completion of training (CCT)', required: true, autoExpiry: false },
-      medical_indemnity: { name: 'Medical Indemnity Insurance', required: true, autoExpiry: false },
-      dbs_check: { name: 'Enhanced DBS Check', required: true, autoExpiry: false },
-      right_to_work: { name: 'Right to Work in the UK', required: true, autoExpiry: false },
-      photo_id: { name: 'Photo ID', required: true, autoExpiry: false },
-      gp_cv: { name: 'GP CV', required: true, autoExpiry: false },
-      occupational_health: { name: 'Occupational Health Clearance', required: true, autoExpiry: false },
-      professional_references: { name: 'Professional References', required: true, autoExpiry: false },
-      appraisal_revalidation: { name: 'Appraisal & Revalidation Evidence', required: true, autoExpiry: false },
+      // Core Professional Documents - Extended validity periods for professional certifications
+      gmc_registration: { name: 'GMC Registration Certificate', required: true, autoExpiry: true, validityYears: 1 },
+      current_performers_list: { name: 'Current Performers List', required: true, autoExpiry: true, validityYears: 1 },
+      cct_certificate: { name: 'Certificate for completion of training (CCT)', required: true, autoExpiry: true, validityYears: 5 },
+      medical_indemnity: { name: 'Medical Indemnity Insurance', required: true, autoExpiry: true, validityYears: 1 },
+      dbs_check: { name: 'Enhanced DBS Check', required: true, autoExpiry: true, validityYears: 3 },
+      right_to_work: { name: 'Right to Work in the UK', required: true, autoExpiry: true, validityYears: 2 },
+      photo_id: { name: 'Photo ID', required: true, autoExpiry: true, validityYears: 5 },
+      gp_cv: { name: 'GP CV', required: true, autoExpiry: true, validityYears: 1 },
+      occupational_health: { name: 'Occupational Health Clearance', required: true, autoExpiry: true, validityYears: 2 },
+      professional_references: { name: 'Professional References', required: true, autoExpiry: true, validityYears: 3 },
+      appraisal_revalidation: { name: 'Appraisal & Revalidation Evidence', required: true, autoExpiry: true, validityYears: 1 },
+      // Training Certificates - Standardized validity periods
       basic_life_support: { name: 'Basic Life Support (BLS) + Anaphylaxis', required: true, autoExpiry: true, validityYears: 1 },
       level3_adult_safeguarding: { name: 'Level 3 Adult Safeguarding', required: true, autoExpiry: true, validityYears: 3 },
       level3_child_safeguarding: { name: 'Level 3 Child Safeguarding', required: true, autoExpiry: true, validityYears: 3 },
@@ -312,7 +314,7 @@ module.exports = createCoreService('api::compliance-document.compliance-document
       preventing_radicalisation: { name: 'Preventing Radicalisation', required: true, autoExpiry: true, validityYears: 3 }
     };
 
-    return configs[documentType] || { name: documentType, required: false, autoExpiry: false };
+    return configs[documentType] || { name: documentType, required: false, autoExpiry: true, validityYears: 3 };
   },
 
   // Get all required document types

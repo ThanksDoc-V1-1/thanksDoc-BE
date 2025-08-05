@@ -76,9 +76,9 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
           displayOrder: data.displayOrder || 0,
           allowedFileTypes: data.allowedFileTypes || ["pdf", "doc", "docx", "jpg", "jpeg", "png"],
           maxFileSize: data.maxFileSize || 10485760,
-          autoExpiry: data.autoExpiry !== undefined ? data.autoExpiry : false,
-          validityYears: data.autoExpiry && data.validityYears ? data.validityYears : null,
-          expiryWarningDays: data.autoExpiry && data.expiryWarningDays ? data.expiryWarningDays : 30
+          autoExpiry: data.autoExpiry !== undefined ? data.autoExpiry : true, // Enable auto-expiry by default
+          validityYears: data.validityYears || (data.autoExpiry !== false ? 3 : null), // Default to 3 years
+          expiryWarningDays: data.expiryWarningDays || 30 // Default warning 30 days before expiry
         }
       });
       
@@ -116,9 +116,9 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
           displayOrder: data.displayOrder,
           allowedFileTypes: data.allowedFileTypes,
           maxFileSize: data.maxFileSize,
-          autoExpiry: data.autoExpiry !== undefined ? data.autoExpiry : false,
-          validityYears: data.autoExpiry && data.validityYears ? data.validityYears : null,
-          expiryWarningDays: data.autoExpiry && data.expiryWarningDays ? data.expiryWarningDays : 30
+          autoExpiry: data.autoExpiry !== undefined ? data.autoExpiry : true, // Default to auto-expiry enabled
+          validityYears: data.validityYears || (data.autoExpiry !== false ? 3 : null), // Default to 3 years
+          expiryWarningDays: data.expiryWarningDays || 30 // Default warning 30 days before expiry
         }
       });
       
@@ -159,6 +159,25 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
     } catch (error) {
       console.error('❌ Error in delete compliance-document-type:', error);
       ctx.throw(500, 'Error deleting compliance document type');
+    }
+  },
+
+  // POST /api/compliance-document-types/enable-auto-expiry
+  async enableAutoExpiry(ctx) {
+    try {
+      console.log('🚀 Enable auto-expiry migration endpoint called');
+
+      // Call the migration service
+      const result = await strapi.service('api::compliance-document-type.auto-expiry-migration').enableAutoExpiryForAllDocuments();
+      
+      return {
+        success: true,
+        message: 'Auto-expiry tracking enabled for all compliance documents',
+        result
+      };
+    } catch (error) {
+      console.error('❌ Error in enable auto-expiry migration:', error);
+      ctx.throw(500, 'Error enabling auto-expiry for documents');
     }
   }
 }));
