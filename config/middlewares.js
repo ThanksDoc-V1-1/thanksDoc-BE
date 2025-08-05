@@ -9,8 +9,9 @@ module.exports = [
   'strapi::session',
   'strapi::favicon',
   'strapi::public',
-  {
-    name: 'global::file-upload',
-    config: {},
-  },
+  // Temporarily disabled to test
+  // {
+  //   name: 'global::file-upload',
+  //   config: {},
+  // },
 ];

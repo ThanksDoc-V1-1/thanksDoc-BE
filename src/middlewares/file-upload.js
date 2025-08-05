@@ -37,10 +37,15 @@ module.exports = (config, { strapi }) => {
   return async (ctx, next) => {
     // Only apply to compliance document upload routes
     if (ctx.request.path.includes('/compliance-documents/upload')) {
+      console.log('File upload middleware triggered for:', ctx.request.path);
+      console.log('Request method:', ctx.request.method);
+      console.log('Content-Type:', ctx.request.headers['content-type']);
+      
       try {
         await new Promise((resolve, reject) => {
           upload.single('file')(ctx.request, ctx.response, (err) => {
             if (err) {
+              console.log('Multer error:', err);
               if (err instanceof multer.MulterError) {
                 if (err.code === 'LIMIT_FILE_SIZE') {
                   return reject(new Error('File too large. Maximum size is 10MB.'));
@@ -54,6 +59,11 @@ module.exports = (config, { strapi }) => {
             
             // Transform the file for Strapi compatibility
             if (ctx.request.file) {
+              console.log('File received:', {
+                name: ctx.request.file.originalname,
+                size: ctx.request.file.size,
+                mimetype: ctx.request.file.mimetype
+              });
               ctx.request.files = {
                 file: {
                   name: ctx.request.file.originalname,
@@ -62,12 +72,15 @@ module.exports = (config, { strapi }) => {
                   mimetype: ctx.request.file.mimetype
                 }
               };
+            } else {
+              console.log('No file received in multer');
             }
             
             resolve();
           });
         });
       } catch (error) {
+        console.log('File upload middleware error:', error.message);
         return ctx.badRequest(error.message);
       }
     }

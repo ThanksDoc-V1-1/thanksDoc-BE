@@ -11,14 +11,20 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
   // Upload compliance document
   async upload(ctx) {
     try {
+      console.log('Upload request received:');
+      console.log('Body:', ctx.request.body);
+      console.log('Files:', ctx.request.files);
+      
       const { doctorId, documentType, issueDate, expiryDate, notes } = ctx.request.body;
       const files = ctx.request.files;
 
       if (!files || !files.file) {
+        console.log('No file provided error - files:', files);
         return ctx.badRequest('No file provided');
       }
 
       if (!doctorId || !documentType) {
+        console.log('Missing required fields - doctorId:', doctorId, 'documentType:', documentType);
         return ctx.badRequest('Doctor ID and document type are required');
       }
 

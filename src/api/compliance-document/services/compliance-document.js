@@ -13,7 +13,42 @@ module.exports = createCoreService('api::compliance-document.compliance-document
 
   // Get S3 service instance
   getS3Service() {
-    return new S3Service();
+    console.log('\n=== S3 Service Creation - Using Strapi ENV ===');
+    
+    // Import Strapi's env function to properly access environment variables
+    const strapi = require('@strapi/strapi');
+    
+    // Get AWS configuration using process.env since Strapi automatically loads .env
+    const awsConfig = {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      region: process.env.AWS_REGION || 'us-east-1',
+      bucketName: process.env.AWS_S3_BUCKET
+    };
+    
+    console.log('Environment variables loaded by Strapi:');
+    console.log('AWS_ACCESS_KEY_ID:', awsConfig.accessKeyId || 'MISSING');
+    console.log('AWS_SECRET_ACCESS_KEY:', awsConfig.secretAccessKey ? 'Set (length: ' + awsConfig.secretAccessKey.length + ')' : 'MISSING');
+    console.log('AWS_REGION:', awsConfig.region);
+    console.log('AWS_S3_BUCKET:', awsConfig.bucketName || 'MISSING');
+    
+    // Additional debugging - let's check what Strapi thinks the env vars are
+    console.log('\n=== Additional debugging ===');
+    try {
+      // Check if we can access Strapi's config
+      if (strapi.config && strapi.config.get) {
+        console.log('Strapi config AWS_ACCESS_KEY_ID:', strapi.config.get('AWS_ACCESS_KEY_ID'));
+        console.log('Strapi config AWS_S3_BUCKET:', strapi.config.get('AWS_S3_BUCKET'));
+      }
+    } catch (e) {
+      console.log('Could not access Strapi config:', e.message);
+    }
+    
+    console.log('Raw process.env AWS values:');
+    console.log('process.env.AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID);
+    console.log('process.env.AWS_S3_BUCKET:', process.env.AWS_S3_BUCKET);
+    
+    return new S3Service(awsConfig);
   },
 
   // Upload file to S3 and create database record
@@ -21,20 +56,37 @@ module.exports = createCoreService('api::compliance-document.compliance-document
     const s3Service = this.getS3Service();
     
     try {
+      // Handle different file object formats (multer vs Strapi native)
+      let fileName, fileData, fileMimeType;
+      
+      if (file.originalFilename) {
+        // Strapi native PersistentFile format
+        fileName = file.originalFilename;
+        fileMimeType = file.mimetype;
+        // Read file data from temporary file path
+        const fs = require('fs');
+        fileData = fs.readFileSync(file.filepath);
+      } else {
+        // Multer format
+        fileName = file.name;
+        fileData = file.data;
+        fileMimeType = file.mimetype;
+      }
+
       // Generate unique filename
-      const fileExtension = path.extname(file.name);
+      const fileExtension = path.extname(fileName);
       const uniqueFileName = `${documentType}-${doctorId}-${uuidv4()}${fileExtension}`;
       const s3Key = `compliance-documents/${doctorId}/${uniqueFileName}`;
 
       // Upload to S3
       const uploadResult = await s3Service.uploadFile(
         s3Key,
-        file.data,
-        file.mimetype,
+        fileData,
+        fileMimeType,
         {
           doctorId: doctorId.toString(),
           documentType: documentType,
-          originalFileName: file.name
+          originalFileName: fileName
         }
       );
 
@@ -63,9 +115,9 @@ module.exports = createCoreService('api::compliance-document.compliance-document
         documentType,
         documentName: documentConfig.name,
         fileName: uniqueFileName,
-        originalFileName: file.name,
-        fileSize: file.size,
-        fileType: file.mimetype,
+        originalFileName: fileName, // Use the fileName variable we extracted earlier
+        fileSize: fileData.length, // Use the actual file data length
+        fileType: fileMimeType, // Use the fileMimeType variable we extracted earlier
         s3Key,
         s3Url: uploadResult.location,
         s3Bucket: uploadResult.bucket,
