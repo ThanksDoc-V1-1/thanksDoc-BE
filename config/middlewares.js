@@ -5,6 +5,12 @@ module.exports = [
   'strapi::cors',
   'strapi::poweredBy',
   'strapi::query',
+  // Custom authentication middleware to handle custom JWT tokens
+  // Must be placed before body parser to intercept requests early
+  {
+    name: 'global::custom-auth',
+    config: {},
+  },
   'strapi::body',
   'strapi::session',
   'strapi::favicon',

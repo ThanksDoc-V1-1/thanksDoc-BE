@@ -48,11 +48,35 @@ If services populate other content types, also enable **find** permissions for:
 
 ## Test Results on Production Backend:
 ```
-❌ Without JWT: 200 OK (public access works)
+✅ Without JWT: 200 OK (public access works)
 ❌ With valid JWT: 401 Unauthorized (authenticated access blocked)
 ```
 
-This confirms that authenticated permissions are missing for the Service content type.
+## ✅ ROOT CAUSE IDENTIFIED:
+
+**AUTHENTICATION TOKEN MISMATCH**
+
+The issue is **NOT** permissions or controller configuration. The problem is:
+
+1. ✅ **Frontend admin login works**: `/api/auth/login` with `admin@gmail.com` / `12345678`
+2. ✅ **Custom JWT token generated**: Frontend receives valid custom JWT token
+3. ❌ **Strapi APIs reject custom tokens**: Built-in Strapi endpoints (`/api/services`, `/api/users`, etc.) expect **standard Strapi JWT tokens**, not **custom JWT tokens**
+
+## ✅ CONTROLLER FIX APPLIED:
+**DEPLOYED:** Removed custom `find` method override from service controller that was bypassing Strapi authentication.
+
+## 🔧 REAL FIX NEEDED: Authentication Integration
+
+The custom auth system generates incompatible JWT tokens. Need to either:
+
+**Option A:** Modify custom auth to generate Strapi-compatible JWT tokens
+**Option B:** Create middleware to validate custom JWT tokens for Strapi APIs  
+**Option C:** Use standard Strapi authentication for admin dashboard
+
+## ✅ CONFIRMED WORKING:
+- **Custom admin login**: `POST /api/auth/login` with `{"email":"admin@gmail.com","password":"12345678"}`
+- **JWT token generation**: Custom auth generates valid tokens
+- **Permissions configuration**: All Service permissions enabled in Strapi admin
 
 ## Verification
 
