@@ -21,7 +21,7 @@ module.exports = createCoreController('api::professional-reference.professional-
         },
         populate: {
           doctor: {
-            select: ['id', 'firstName', 'lastName', 'email']
+            fields: ['id', 'firstName', 'lastName', 'email']
           }
         },
         sort: { createdAt: 'desc' }
