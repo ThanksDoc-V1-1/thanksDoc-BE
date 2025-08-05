@@ -1,0 +1,127 @@
+{
+  "kind": "collectionType",
+  "collectionName": "compliance_documents",
+  "info": {
+    "singularName": "compliance-document",
+    "pluralName": "compliance-documents",
+    "displayName": "Compliance Document",
+    "description": "Doctor compliance documents with AWS S3 storage"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "doctor": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::doctor.doctor",
+      "inversedBy": "complianceDocuments"
+    },
+    "documentType": {
+      "type": "string",
+      "required": true,
+      "enum": [
+        "gmc_registration",
+        "current_performers_list", 
+        "cct_certificate",
+        "medical_indemnity",
+        "dbs_check",
+        "right_to_work",
+        "photo_id",
+        "gp_cv",
+        "occupational_health",
+        "professional_references",
+        "appraisal_revalidation",
+        "basic_life_support",
+        "level3_adult_safeguarding",
+        "level3_child_safeguarding",
+        "information_governance",
+        "autism_learning_disability",
+        "equality_diversity",
+        "health_safety_welfare",
+        "conflict_resolution",
+        "fire_safety",
+        "infection_prevention",
+        "moving_handling",
+        "preventing_radicalisation"
+      ]
+    },
+    "documentName": {
+      "type": "string",
+      "required": true
+    },
+    "fileName": {
+      "type": "string",
+      "required": true
+    },
+    "originalFileName": {
+      "type": "string",
+      "required": true
+    },
+    "fileSize": {
+      "type": "integer",
+      "required": true
+    },
+    "fileType": {
+      "type": "string",
+      "required": true
+    },
+    "s3Key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "s3Url": {
+      "type": "string",
+      "required": true
+    },
+    "s3Bucket": {
+      "type": "string",
+      "required": true
+    },
+    "issueDate": {
+      "type": "date"
+    },
+    "expiryDate": {
+      "type": "date"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["uploaded", "missing", "expiring", "expired"],
+      "default": "uploaded"
+    },
+    "isRequired": {
+      "type": "boolean",
+      "default": true
+    },
+    "autoExpiry": {
+      "type": "boolean",
+      "default": false
+    },
+    "validityYears": {
+      "type": "integer"
+    },
+    "uploadedAt": {
+      "type": "datetime",
+      "default": "CURRENT_TIMESTAMP"
+    },
+    "lastModified": {
+      "type": "datetime"
+    },
+    "notes": {
+      "type": "text"
+    },
+    "verificationStatus": {
+      "type": "enumeration",
+      "enum": ["pending", "verified", "rejected"],
+      "default": "pending"
+    },
+    "verifiedBy": {
+      "type": "string"
+    },
+    "verifiedAt": {
+      "type": "datetime"
+    }
+  }
+}

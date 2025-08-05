@@ -118,6 +118,12 @@
       "relation": "manyToMany",
       "target": "api::service.service",
       "inversedBy": "doctors"
+    },
+    "complianceDocuments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::compliance-document.compliance-document",
+      "mappedBy": "doctor"
     }
   }
 }

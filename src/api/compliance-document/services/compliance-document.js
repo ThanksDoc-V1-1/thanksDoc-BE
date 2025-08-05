@@ -1,0 +1,284 @@
+'use strict';
+
+/**
+ * compliance-document service
+ */
+
+const { createCoreService } = require('@strapi/strapi').factories;
+const { v4: uuidv4 } = require('uuid');
+const path = require('path');
+const S3Service = require('../../../utils/s3-service');
+
+module.exports = createCoreService('api::compliance-document.compliance-document', ({ strapi }) => ({
+
+  // Get S3 service instance
+  getS3Service() {
+    return new S3Service();
+  },
+
+  // Upload file to S3 and create database record
+  async uploadToS3AndCreate({ file, doctorId, documentType, issueDate, expiryDate, notes, replaceExisting }) {
+    const s3Service = this.getS3Service();
+    
+    try {
+      // Generate unique filename
+      const fileExtension = path.extname(file.name);
+      const uniqueFileName = `${documentType}-${doctorId}-${uuidv4()}${fileExtension}`;
+      const s3Key = `compliance-documents/${doctorId}/${uniqueFileName}`;
+
+      // Upload to S3
+      const uploadResult = await s3Service.uploadFile(
+        s3Key,
+        file.data,
+        file.mimetype,
+        {
+          doctorId: doctorId.toString(),
+          documentType: documentType,
+          originalFileName: file.name
+        }
+      );
+
+      // Calculate auto-expiry if applicable
+      let calculatedExpiryDate = expiryDate;
+      const documentConfig = this.getDocumentConfig(documentType);
+      
+      if (documentConfig.autoExpiry && issueDate && !expiryDate) {
+        const issueDateTime = new Date(issueDate);
+        calculatedExpiryDate = new Date(issueDateTime);
+        calculatedExpiryDate.setFullYear(calculatedExpiryDate.getFullYear() + documentConfig.validityYears);
+      }
+
+      // If replacing existing document, delete old one first
+      if (replaceExisting) {
+        const oldDoc = await strapi.entityService.findOne('api::compliance-document.compliance-document', replaceExisting);
+        if (oldDoc) {
+          await s3Service.deleteFile(oldDoc.s3Key);
+          await strapi.entityService.delete('api::compliance-document.compliance-document', replaceExisting);
+        }
+      }
+
+      // Create database record
+      const documentData = {
+        doctor: doctorId,
+        documentType,
+        documentName: documentConfig.name,
+        fileName: uniqueFileName,
+        originalFileName: file.name,
+        fileSize: file.size,
+        fileType: file.mimetype,
+        s3Key,
+        s3Url: uploadResult.location,
+        s3Bucket: uploadResult.bucket,
+        issueDate: issueDate || null,
+        expiryDate: calculatedExpiryDate || null,
+        isRequired: documentConfig.required,
+        autoExpiry: documentConfig.autoExpiry,
+        validityYears: documentConfig.validityYears || null,
+        uploadedAt: new Date(),
+        notes: notes || '',
+        status: 'uploaded'
+      };
+
+      const createdDocument = await strapi.entityService.create('api::compliance-document.compliance-document', {
+        data: documentData
+      });
+
+      // Update status based on expiry
+      const finalDocument = await this.updateDocumentStatus(createdDocument);
+
+      return finalDocument;
+
+    } catch (error) {
+      console.error('S3 upload error:', error);
+      throw new Error('Failed to upload document to S3');
+    }
+  },
+
+  // Delete file from S3
+  async deleteFromS3(s3Key) {
+    const s3Service = this.getS3Service();
+
+    try {
+      await s3Service.deleteFile(s3Key);
+    } catch (error) {
+      console.error('S3 delete error:', error);
+      throw new Error('Failed to delete document from S3');
+    }
+  },
+
+  // Generate signed URL for download
+  async getSignedDownloadUrl(s3Key, expiresIn = 3600) {
+    const s3Service = this.getS3Service();
+
+    try {
+      const signedUrl = await s3Service.getSignedDownloadUrl(s3Key, expiresIn);
+      return signedUrl;
+    } catch (error) {
+      console.error('Signed URL error:', error);
+      throw new Error('Failed to generate download URL');
+    }
+  },
+
+  // Update document status based on expiry date
+  async updateDocumentStatus(document) {
+    let status = document.status;
+
+    if (document.autoExpiry && document.expiryDate) {
+      const expiryDate = new Date(document.expiryDate);
+      const today = new Date();
+      const timeDiff = expiryDate.getTime() - today.getTime();
+      const daysUntilExpiry = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+      if (daysUntilExpiry < 0) {
+        status = 'expired';
+      } else if (daysUntilExpiry <= 30) {
+        status = 'expiring';
+      } else {
+        status = 'uploaded';
+      }
+
+      // Update status in database if changed
+      if (status !== document.status) {
+        const updatedDoc = await strapi.entityService.update('api::compliance-document.compliance-document', document.id, {
+          data: { status }
+        });
+        return updatedDoc;
+      }
+    }
+
+    return document;
+  },
+
+  // Get compliance overview for a doctor
+  async getComplianceOverview(doctorId) {
+    const documents = await strapi.entityService.findMany('api::compliance-document.compliance-document', {
+      filters: {
+        doctor: doctorId
+      }
+    });
+
+    const requiredDocumentTypes = this.getRequiredDocumentTypes();
+    const stats = {
+      uploaded: 0,
+      missing: 0,
+      expiring: 0,
+      expired: 0,
+      total: requiredDocumentTypes.length
+    };
+
+    const documentsByType = {};
+    documents.forEach(doc => {
+      documentsByType[doc.documentType] = doc;
+    });
+
+    // Check each required document type
+    requiredDocumentTypes.forEach(docType => {
+      const doc = documentsByType[docType.id];
+      
+      if (!doc) {
+        stats.missing++;
+      } else {
+        // Update status if needed
+        if (docType.autoExpiry && doc.expiryDate) {
+          const expiryDate = new Date(doc.expiryDate);
+          const today = new Date();
+          const timeDiff = expiryDate.getTime() - today.getTime();
+          const daysUntilExpiry = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+          if (daysUntilExpiry < 0) {
+            stats.expired++;
+          } else if (daysUntilExpiry <= 30) {
+            stats.expiring++;
+          } else {
+            stats.uploaded++;
+          }
+        } else {
+          stats.uploaded++;
+        }
+      }
+    });
+
+    return {
+      stats,
+      documents: documentsByType,
+      requiredDocuments: requiredDocumentTypes,
+      completionPercentage: Math.round((stats.uploaded / stats.total) * 100)
+    };
+  },
+
+  // Update all document expiry statuses (for cron job)
+  async updateAllExpiryStatuses() {
+    const documents = await strapi.entityService.findMany('api::compliance-document.compliance-document', {
+      filters: {
+        autoExpiry: true,
+        expiryDate: {
+          $notNull: true
+        }
+      }
+    });
+
+    let updated = 0;
+    
+    for (const doc of documents) {
+      const updatedDoc = await this.updateDocumentStatus(doc);
+      if (updatedDoc.status !== doc.status) {
+        updated++;
+      }
+    }
+
+    return {
+      totalDocuments: documents.length,
+      updatedDocuments: updated
+    };
+  },
+
+  // Get document configuration
+  getDocumentConfig(documentType) {
+    const configs = {
+      gmc_registration: { name: 'GMC Registration Certificate', required: true, autoExpiry: false },
+      current_performers_list: { name: 'Current Performers List', required: true, autoExpiry: false },
+      cct_certificate: { name: 'Certificate for completion of training (CCT)', required: true, autoExpiry: false },
+      medical_indemnity: { name: 'Medical Indemnity Insurance', required: true, autoExpiry: false },
+      dbs_check: { name: 'Enhanced DBS Check', required: true, autoExpiry: false },
+      right_to_work: { name: 'Right to Work in the UK', required: true, autoExpiry: false },
+      photo_id: { name: 'Photo ID', required: true, autoExpiry: false },
+      gp_cv: { name: 'GP CV', required: true, autoExpiry: false },
+      occupational_health: { name: 'Occupational Health Clearance', required: true, autoExpiry: false },
+      professional_references: { name: 'Professional References', required: true, autoExpiry: false },
+      appraisal_revalidation: { name: 'Appraisal & Revalidation Evidence', required: true, autoExpiry: false },
+      basic_life_support: { name: 'Basic Life Support (BLS) + Anaphylaxis', required: true, autoExpiry: true, validityYears: 1 },
+      level3_adult_safeguarding: { name: 'Level 3 Adult Safeguarding', required: true, autoExpiry: true, validityYears: 3 },
+      level3_child_safeguarding: { name: 'Level 3 Child Safeguarding', required: true, autoExpiry: true, validityYears: 3 },
+      information_governance: { name: 'Information Governance (IG) & GDPR', required: true, autoExpiry: true, validityYears: 1 },
+      autism_learning_disability: { name: 'Autism and Learning Disability', required: true, autoExpiry: true, validityYears: 3 },
+      equality_diversity: { name: 'Equality, Diversity and Human Rights', required: true, autoExpiry: true, validityYears: 3 },
+      health_safety_welfare: { name: 'Health, Safety and Welfare', required: true, autoExpiry: true, validityYears: 1 },
+      conflict_resolution: { name: 'Conflict Resolution and Handling Complaints', required: true, autoExpiry: true, validityYears: 3 },
+      fire_safety: { name: 'Fire Safety', required: true, autoExpiry: true, validityYears: 1 },
+      infection_prevention: { name: 'Infection Prevention and Control', required: true, autoExpiry: true, validityYears: 1 },
+      moving_handling: { name: 'Moving and Handling', required: true, autoExpiry: true, validityYears: 1 },
+      preventing_radicalisation: { name: 'Preventing Radicalisation', required: true, autoExpiry: true, validityYears: 3 }
+    };
+
+    return configs[documentType] || { name: documentType, required: false, autoExpiry: false };
+  },
+
+  // Get all required document types
+  getRequiredDocumentTypes() {
+    const documentTypes = [
+      'gmc_registration', 'current_performers_list', 'cct_certificate', 'medical_indemnity',
+      'dbs_check', 'right_to_work', 'photo_id', 'gp_cv', 'occupational_health',
+      'professional_references', 'appraisal_revalidation', 'basic_life_support',
+      'level3_adult_safeguarding', 'level3_child_safeguarding', 'information_governance',
+      'autism_learning_disability', 'equality_diversity', 'health_safety_welfare',
+      'conflict_resolution', 'fire_safety', 'infection_prevention', 'moving_handling',
+      'preventing_radicalisation'
+    ];
+
+    return documentTypes.map(type => ({
+      id: type,
+      ...this.getDocumentConfig(type)
+    })).filter(config => config.required);
+  }
+
+}));

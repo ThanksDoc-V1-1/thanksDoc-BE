@@ -516,6 +516,66 @@ export interface ApiBusinessBusiness extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiComplianceDocumentComplianceDocument
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'compliance_documents';
+  info: {
+    description: 'Doctor compliance documents with AWS S3 storage';
+    displayName: 'Compliance Document';
+    pluralName: 'compliance-documents';
+    singularName: 'compliance-document';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    autoExpiry: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    doctor: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
+    documentName: Schema.Attribute.String & Schema.Attribute.Required;
+    documentType: Schema.Attribute.String & Schema.Attribute.Required;
+    expiryDate: Schema.Attribute.Date;
+    fileName: Schema.Attribute.String & Schema.Attribute.Required;
+    fileSize: Schema.Attribute.Integer & Schema.Attribute.Required;
+    fileType: Schema.Attribute.String & Schema.Attribute.Required;
+    isRequired: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    issueDate: Schema.Attribute.Date;
+    lastModified: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::compliance-document.compliance-document'
+    > &
+      Schema.Attribute.Private;
+    notes: Schema.Attribute.Text;
+    originalFileName: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    s3Bucket: Schema.Attribute.String & Schema.Attribute.Required;
+    s3Key: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    s3Url: Schema.Attribute.String & Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<
+      ['uploaded', 'missing', 'expiring', 'expired']
+    > &
+      Schema.Attribute.DefaultTo<'uploaded'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    uploadedAt: Schema.Attribute.DateTime &
+      Schema.Attribute.DefaultTo<'CURRENT_TIMESTAMP'>;
+    validityYears: Schema.Attribute.Integer;
+    verificationStatus: Schema.Attribute.Enumeration<
+      ['pending', 'verified', 'rejected']
+    > &
+      Schema.Attribute.DefaultTo<'pending'>;
+    verifiedAt: Schema.Attribute.DateTime;
+    verifiedBy: Schema.Attribute.String;
+  };
+}
+
 export interface ApiDoctorPaymentDoctorPayment
   extends Struct.CollectionTypeSchema {
   collectionName: 'doctor_payments';
@@ -574,6 +634,10 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
     bio: Schema.Attribute.Text;
     certifications: Schema.Attribute.JSON;
     city: Schema.Attribute.String & Schema.Attribute.Required;
+    complianceDocuments: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::compliance-document.compliance-document'
+    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1302,6 +1366,7 @@ declare module '@strapi/strapi' {
       'api::admin.admin': ApiAdminAdmin;
       'api::business-type.business-type': ApiBusinessTypeBusinessType;
       'api::business.business': ApiBusinessBusiness;
+      'api::compliance-document.compliance-document': ApiComplianceDocumentComplianceDocument;
       'api::doctor-payment.doctor-payment': ApiDoctorPaymentDoctorPayment;
       'api::doctor.doctor': ApiDoctorDoctor;
       'api::service-request.service-request': ApiServiceRequestServiceRequest;
