@@ -516,6 +516,55 @@ export interface ApiBusinessBusiness extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiComplianceDocumentTypeComplianceDocumentType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'compliance_document_types';
+  info: {
+    description: 'Configurable document types for doctor compliance requirements';
+    displayName: 'Compliance Document Type';
+    pluralName: 'compliance-document-types';
+    singularName: 'compliance-document-type';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    allowedFileTypes: Schema.Attribute.JSON &
+      Schema.Attribute.DefaultTo<['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png']>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    displayOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    key: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::compliance-document-type.compliance-document-type'
+    > &
+      Schema.Attribute.Private;
+    maxFileSize: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 52428800;
+          min: 1024;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<10485760>;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    required: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    validationRules: Schema.Attribute.JSON;
+  };
+}
+
 export interface ApiComplianceDocumentComplianceDocument
   extends Struct.CollectionTypeSchema {
   collectionName: 'compliance_documents';
@@ -1366,6 +1415,7 @@ declare module '@strapi/strapi' {
       'api::admin.admin': ApiAdminAdmin;
       'api::business-type.business-type': ApiBusinessTypeBusinessType;
       'api::business.business': ApiBusinessBusiness;
+      'api::compliance-document-type.compliance-document-type': ApiComplianceDocumentTypeComplianceDocumentType;
       'api::compliance-document.compliance-document': ApiComplianceDocumentComplianceDocument;
       'api::doctor-payment.doctor-payment': ApiDoctorPaymentDoctorPayment;
       'api::doctor.doctor': ApiDoctorDoctor;
