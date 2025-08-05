@@ -531,11 +531,21 @@ export interface ApiComplianceDocumentTypeComplianceDocumentType
   attributes: {
     allowedFileTypes: Schema.Attribute.JSON &
       Schema.Attribute.DefaultTo<['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png']>;
+    autoExpiry: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Text;
     displayOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    expiryWarningDays: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 365;
+          min: 1;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<30>;
     isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     key: Schema.Attribute.String &
       Schema.Attribute.Required &
@@ -562,6 +572,14 @@ export interface ApiComplianceDocumentTypeComplianceDocumentType
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     validationRules: Schema.Attribute.JSON;
+    validityYears: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 10;
+          min: 1;
+        },
+        number
+      >;
   };
 }
 

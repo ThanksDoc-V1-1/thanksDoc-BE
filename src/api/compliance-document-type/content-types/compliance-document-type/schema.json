@@ -49,6 +49,24 @@
       "default": 10485760,
       "min": 1024,
       "max": 52428800
+    },
+    "autoExpiry": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this document type has automatic expiry based on validity period"
+    },
+    "validityYears": {
+      "type": "integer",
+      "min": 1,
+      "max": 10,
+      "description": "Number of years this document type is valid for (when autoExpiry is enabled)"
+    },
+    "expiryWarningDays": {
+      "type": "integer",
+      "default": 30,
+      "min": 1,
+      "max": 365,
+      "description": "Number of days before expiry to show warning status"
     }
   }
 }

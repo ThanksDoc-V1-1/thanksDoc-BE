@@ -75,7 +75,10 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
           isActive: data.isActive !== undefined ? data.isActive : true,
           displayOrder: data.displayOrder || 0,
           allowedFileTypes: data.allowedFileTypes || ["pdf", "doc", "docx", "jpg", "jpeg", "png"],
-          maxFileSize: data.maxFileSize || 10485760
+          maxFileSize: data.maxFileSize || 10485760,
+          autoExpiry: data.autoExpiry !== undefined ? data.autoExpiry : false,
+          validityYears: data.autoExpiry && data.validityYears ? data.validityYears : null,
+          expiryWarningDays: data.autoExpiry && data.expiryWarningDays ? data.expiryWarningDays : 30
         }
       });
       
@@ -112,7 +115,10 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
           isActive: data.isActive,
           displayOrder: data.displayOrder,
           allowedFileTypes: data.allowedFileTypes,
-          maxFileSize: data.maxFileSize
+          maxFileSize: data.maxFileSize,
+          autoExpiry: data.autoExpiry !== undefined ? data.autoExpiry : false,
+          validityYears: data.autoExpiry && data.validityYears ? data.validityYears : null,
+          expiryWarningDays: data.autoExpiry && data.expiryWarningDays ? data.expiryWarningDays : 30
         }
       });
       
