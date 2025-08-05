@@ -8,36 +8,6 @@ const { createCoreController } = require('@strapi/strapi').factories;
 
 module.exports = createCoreController('api::service.service', ({ strapi }) => ({
   
-  // Get all services
-  async find(ctx) {
-    try {
-      const { query } = ctx;
-      
-      const result = await strapi.entityService.findMany('api::service.service', {
-        ...query,
-        populate: {
-          doctors: {
-            fields: ['id', 'firstName', 'lastName', 'specialization']
-          },
-          parentService: {
-            fields: ['id', 'name', 'serviceType']
-          },
-          subServices: {
-            fields: ['id', 'name', 'price', 'duration', 'serviceType'],
-            sort: { displayOrder: 'asc' }
-          },
-          ...query.populate,
-        },
-        sort: { displayOrder: 'asc', name: 'asc' }
-      });
-      
-      return { data: result };
-    } catch (error) {
-      console.error('Error in service find:', error);
-      ctx.throw(500, `Error finding services: ${error.message}`);
-    }
-  },
-
   // Get services by category
   async findByCategory(ctx) {
     try {
