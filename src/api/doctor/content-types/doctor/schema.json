@@ -124,6 +124,12 @@
       "relation": "oneToMany",
       "target": "api::compliance-document.compliance-document",
       "mappedBy": "doctor"
+    },
+    "professionalReferences": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::professional-reference.professional-reference",
+      "mappedBy": "doctor"
     }
   }
 }

@@ -736,6 +736,10 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
     passwordResetExpires: Schema.Attribute.DateTime & Schema.Attribute.Private;
     passwordResetToken: Schema.Attribute.String & Schema.Attribute.Private;
     phone: Schema.Attribute.String & Schema.Attribute.Required;
+    professionalReferences: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::professional-reference.professional-reference'
+    >;
     profilePicture: Schema.Attribute.Media<'images'>;
     publishedAt: Schema.Attribute.DateTime;
     services: Schema.Attribute.Relation<'manyToMany', 'api::service.service'>;
@@ -746,6 +750,65 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     yearsOfExperience: Schema.Attribute.Integer;
     zipCode: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
+export interface ApiProfessionalReferenceProfessionalReference
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'professional_references';
+  info: {
+    description: 'Professional references for doctors';
+    displayName: 'Professional Reference';
+    pluralName: 'professional-references';
+    singularName: 'professional-reference';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    doctor: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
+    documentType: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'professional-references'>;
+    email: Schema.Attribute.Email & Schema.Attribute.Required;
+    firstName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+        minLength: 1;
+      }>;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    lastName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+        minLength: 1;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::professional-reference.professional-reference'
+    > &
+      Schema.Attribute.Private;
+    organisation: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+        minLength: 1;
+      }>;
+    position: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+        minLength: 1;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -1437,6 +1500,7 @@ declare module '@strapi/strapi' {
       'api::compliance-document.compliance-document': ApiComplianceDocumentComplianceDocument;
       'api::doctor-payment.doctor-payment': ApiDoctorPaymentDoctorPayment;
       'api::doctor.doctor': ApiDoctorDoctor;
+      'api::professional-reference.professional-reference': ApiProfessionalReferenceProfessionalReference;
       'api::service-request.service-request': ApiServiceRequestServiceRequest;
       'api::service.service': ApiServiceService;
       'api::whatsapp.whatsapp': ApiWhatsappWhatsapp;

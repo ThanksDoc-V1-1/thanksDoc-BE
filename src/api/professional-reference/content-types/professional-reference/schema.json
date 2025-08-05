@@ -1,0 +1,59 @@
+{
+  "kind": "collectionType",
+  "collectionName": "professional_references",
+  "info": {
+    "singularName": "professional-reference",
+    "pluralName": "professional-references",
+    "displayName": "Professional Reference",
+    "description": "Professional references for doctors"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "doctor": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::doctor.doctor",
+      "inversedBy": "professionalReferences"
+    },
+    "firstName": {
+      "type": "string",
+      "required": true,
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "lastName": {
+      "type": "string",
+      "required": true,
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "position": {
+      "type": "string",
+      "required": true,
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "organisation": {
+      "type": "string",
+      "required": true,
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "email": {
+      "type": "email",
+      "required": true
+    },
+    "documentType": {
+      "type": "string",
+      "required": true,
+      "default": "professional-references"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}
