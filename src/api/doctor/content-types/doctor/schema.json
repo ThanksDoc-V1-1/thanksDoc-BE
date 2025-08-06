@@ -101,6 +101,12 @@
       "type": "boolean",
       "default": false
     },
+    "verificationStatusUpdatedAt": {
+      "type": "datetime"
+    },
+    "verificationStatusReason": {
+      "type": "text"
+    },
     "bio": {
       "type": "text"
     },

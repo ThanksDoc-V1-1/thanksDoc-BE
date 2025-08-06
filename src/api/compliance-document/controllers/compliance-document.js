@@ -53,11 +53,32 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
         replaceExisting: existingDoc.length > 0 ? existingDoc[0].id : null
       });
 
-      ctx.send({
-        success: true,
-        data: uploadResult,
-        message: 'Document uploaded successfully'
-      });
+      // Automatically check doctor verification status after document upload
+      try {
+        console.log(`🔄 Triggering doctor verification status check for doctor ${doctorId} after document upload`);
+        
+        const doctorVerificationService = strapi.service('api::compliance-document.doctor-verification');
+        const verificationResult = await doctorVerificationService.updateDoctorVerificationStatus(doctorId);
+        
+        console.log('✅ Doctor verification status check completed after upload:', verificationResult);
+        
+        ctx.send({
+          success: true,
+          data: uploadResult,
+          message: 'Document uploaded successfully',
+          doctorVerificationUpdate: verificationResult
+        });
+      } catch (verificationError) {
+        console.error('❌ Error checking doctor verification status after upload:', verificationError);
+        
+        // Still return success for the upload, but log the error
+        ctx.send({
+          success: true,
+          data: uploadResult,
+          message: 'Document uploaded successfully, but failed to update doctor verification status',
+          doctorVerificationError: verificationError.message
+        });
+      }
 
     } catch (error) {
       console.error('Upload error:', error);
@@ -218,6 +239,15 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
       const { verificationStatus, notes } = ctx.request.body;
       const { user } = ctx.state; // Assuming you have authentication middleware
 
+      // Get the document first to find the doctor
+      const document = await strapi.entityService.findOne('api::compliance-document.compliance-document', id, {
+        populate: ['doctor']
+      });
+
+      if (!document) {
+        return ctx.notFound('Document not found');
+      }
+
       const updatedDoc = await strapi.entityService.update('api::compliance-document.compliance-document', id, {
         data: {
           verificationStatus,
@@ -228,11 +258,33 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
         }
       });
 
-      ctx.send({
-        success: true,
-        data: updatedDoc,
-        message: 'Document verification updated successfully'
-      });
+      // Automatically update doctor verification status
+      try {
+        console.log(`🔄 Triggering doctor verification status update for doctor ${document.doctor.id} after document verification change`);
+        
+        const doctorVerificationService = strapi.service('api::compliance-document.doctor-verification');
+        const verificationResult = await doctorVerificationService.updateDoctorVerificationStatus(document.doctor.id);
+        
+        console.log('✅ Doctor verification status update completed:', verificationResult);
+        
+        // Include verification result in response for debugging
+        ctx.send({
+          success: true,
+          data: updatedDoc,
+          message: 'Document verification updated successfully',
+          doctorVerificationUpdate: verificationResult
+        });
+      } catch (verificationError) {
+        console.error('❌ Error updating doctor verification status:', verificationError);
+        
+        // Still return success for the document update, but log the error
+        ctx.send({
+          success: true,
+          data: updatedDoc,
+          message: 'Document verification updated successfully, but failed to update doctor verification status',
+          doctorVerificationError: verificationError.message
+        });
+      }
 
     } catch (error) {
       console.error('Verify document error:', error);
@@ -254,6 +306,50 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
     } catch (error) {
       console.error('Update expiry statuses error:', error);
       ctx.internalServerError('Failed to update expiry statuses');
+    }
+  },
+
+  // Update doctor verification status based on compliance documents
+  async updateDoctorVerificationStatus(ctx) {
+    try {
+      const { doctorId } = ctx.params;
+
+      if (!doctorId) {
+        return ctx.badRequest('Doctor ID is required');
+      }
+
+      const doctorVerificationService = strapi.service('api::compliance-document.doctor-verification');
+      const result = await doctorVerificationService.updateDoctorVerificationStatus(doctorId);
+
+      ctx.send({
+        success: true,
+        data: result,
+        message: 'Doctor verification status updated successfully'
+      });
+
+    } catch (error) {
+      console.error('Update doctor verification status error:', error);
+      ctx.internalServerError('Failed to update doctor verification status');
+    }
+  },
+
+  // Bulk update all doctors' verification statuses
+  async updateAllDoctorsVerificationStatus(ctx) {
+    try {
+      console.log('🔄 Starting bulk doctor verification status update...');
+      
+      const doctorVerificationService = strapi.service('api::compliance-document.doctor-verification');
+      const result = await doctorVerificationService.updateAllDoctorsVerificationStatus();
+
+      ctx.send({
+        success: true,
+        data: result,
+        message: `Bulk verification status update completed. Updated: ${result.updated}, Unchanged: ${result.unchanged}, Errors: ${result.errors}`
+      });
+
+    } catch (error) {
+      console.error('Bulk update doctors verification status error:', error);
+      ctx.internalServerError('Failed to update doctors verification status');
     }
   }
 

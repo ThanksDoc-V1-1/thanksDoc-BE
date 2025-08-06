@@ -109,6 +109,34 @@ module.exports = {
         description: 'Update expiry statuses for all documents (cron job)',
         tags: ['Compliance Documents']
       }
+    },
+
+    // Update doctor verification status
+    {
+      method: 'POST',
+      path: '/compliance-documents/doctors/:doctorId/update-verification',
+      handler: 'compliance-document.updateDoctorVerificationStatus',
+      config: {
+        policies: [],
+        middlewares: [],
+        auth: false, // Allow public access for testing
+        description: 'Update doctor verification status based on compliance documents',
+        tags: ['Compliance Documents', 'Doctor Verification']
+      }
+    },
+
+    // Bulk update all doctors verification statuses
+    {
+      method: 'POST',
+      path: '/compliance-documents/doctors/update-all-verification',
+      handler: 'compliance-document.updateAllDoctorsVerificationStatus',
+      config: {
+        policies: [],
+        middlewares: [],
+        auth: false, // Allow public access for testing
+        description: 'Bulk update verification status for all doctors',
+        tags: ['Compliance Documents', 'Doctor Verification']
+      }
     }
   ]
 };

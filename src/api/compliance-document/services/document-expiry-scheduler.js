@@ -30,6 +30,7 @@ module.exports = ({ strapi }) => ({
 
       let statusUpdated = 0;
       let notificationsToSend = [];
+      let doctorsToUpdateVerification = new Set(); // Track doctors who need verification status updates
 
       for (const doc of documents) {
         try {
@@ -78,10 +79,38 @@ module.exports = ({ strapi }) => ({
                 daysUntilExpiry: daysUntilExpiry
               });
             }
+
+            // If document expired or status changed, queue doctor verification update
+            if (newStatus === 'expired') {
+              doctorsToUpdateVerification.add(doc.doctor.id);
+            }
           }
 
         } catch (error) {
           console.error(`❌ Error updating document ${doc.id}:`, error.message);
+        }
+      }
+
+      // Update doctor verification statuses for affected doctors
+      let doctorVerificationUpdates = 0;
+      if (doctorsToUpdateVerification.size > 0) {
+        console.log(`🔄 Updating verification status for ${doctorsToUpdateVerification.size} doctors affected by document expiry...`);
+        
+        try {
+          const doctorVerificationService = strapi.service('api::compliance-document.doctor-verification');
+          
+          for (const doctorId of doctorsToUpdateVerification) {
+            try {
+              const result = await doctorVerificationService.updateDoctorVerificationStatus(doctorId);
+              if (result.success && result.statusChanged) {
+                doctorVerificationUpdates++;
+              }
+            } catch (error) {
+              console.error(`❌ Error updating verification for doctor ${doctorId}:`, error.message);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error accessing doctor verification service:', error.message);
         }
       }
 
@@ -94,11 +123,13 @@ module.exports = ({ strapi }) => ({
       console.log(`✅ Document expiry status update completed:`);
       console.log(`   - Documents processed: ${documents.length}`);
       console.log(`   - Status updates: ${statusUpdated}`);
+      console.log(`   - Doctor verification updates: ${doctorVerificationUpdates}`);
       console.log(`   - Notifications sent: ${notificationsToSend.length}`);
 
       return {
         documentsProcessed: documents.length,
         statusUpdated: statusUpdated,
+        doctorVerificationUpdates: doctorVerificationUpdates,
         notificationsSent: notificationsToSend.length,
         timestamp: new Date().toISOString()
       };

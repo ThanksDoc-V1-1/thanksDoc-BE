@@ -748,6 +748,8 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    verificationStatusReason: Schema.Attribute.Text;
+    verificationStatusUpdatedAt: Schema.Attribute.DateTime;
     yearsOfExperience: Schema.Attribute.Integer;
     zipCode: Schema.Attribute.String & Schema.Attribute.Required;
   };
