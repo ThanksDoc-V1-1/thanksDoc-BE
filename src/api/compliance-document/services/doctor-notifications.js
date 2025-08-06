@@ -82,9 +82,13 @@ module.exports = () => ({
     // Only show recent status changes (within last 7 days)
     const isRecentUpdate = statusUpdatedAt && (now - statusUpdatedAt) < (7 * 24 * 60 * 60 * 1000);
 
-    if (doctor.isVerified) {
-      // Doctor is verified
-      if (isRecentUpdate) {
+    // Get the actual verification check from the verification service
+    const verificationService = strapi.service('api::compliance-document.doctor-verification');
+    const verificationCheck = await verificationService.checkDoctorVerificationStatus(doctor.id);
+
+    if (doctor.isVerified && verificationCheck.shouldBeVerified) {
+      // Doctor is verified AND should be verified (all documents actually verified)
+      if (isRecentUpdate && doctor.verificationStatusReason === 'All documents verified') {
         notifications.push({
           id: `verification-success-${doctor.id}`,
           type: 'success',
@@ -98,10 +102,25 @@ module.exports = () => ({
         });
       }
     } else {
-      // Doctor is not verified
+      // Doctor is not verified OR should not be verified based on current documents
       const reason = doctor.verificationStatusReason || 'Verification pending';
       
-      if (reason.includes('No compliance documents')) {
+      // Check for inconsistency: doctor marked as verified but shouldn't be
+      if (doctor.isVerified && !verificationCheck.shouldBeVerified) {
+        notifications.push({
+          id: `verification-inconsistency-${doctor.id}`,
+          type: 'warning',
+          title: 'Verification Status Update Required',
+          message: `Document status has changed: ${verificationCheck.reason}. Your verification status needs to be updated.`,
+          timestamp: now,
+          read: false,
+          actionRequired: true,
+          category: 'verification',
+          icon: 'AlertTriangle',
+          actionText: 'Review Documents',
+          actionUrl: '/doctor/compliance'
+        });
+      } else if (reason.includes('No compliance documents')) {
         notifications.push({
           id: `verification-no-docs-${doctor.id}`,
           type: 'warning',
