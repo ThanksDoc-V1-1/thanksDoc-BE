@@ -100,12 +100,39 @@ module.exports = createCoreService('api::compliance-document.compliance-document
         calculatedExpiryDate.setFullYear(calculatedExpiryDate.getFullYear() + documentConfig.validityYears);
       }
 
-      // If replacing existing document, delete old one first
-      if (replaceExisting) {
+      // If replacing existing documents, delete all old ones first
+      if (replaceExisting && Array.isArray(replaceExisting)) {
+        console.log(`🗑️ Removing ${replaceExisting.length} existing documents of the same type`);
+        
+        for (const oldDoc of replaceExisting) {
+          try {
+            // Delete from S3 if s3Key exists
+            if (oldDoc.s3Key) {
+              await s3Service.deleteFile(oldDoc.s3Key);
+              console.log(`✅ Deleted S3 file: ${oldDoc.s3Key}`);
+            }
+            
+            // Delete from database
+            await strapi.entityService.delete('api::compliance-document.compliance-document', oldDoc.id);
+            console.log(`✅ Deleted database record: ${oldDoc.id}`);
+          } catch (deleteError) {
+            console.error(`❌ Error deleting old document ${oldDoc.id}:`, deleteError);
+            // Continue with other deletions even if one fails
+          }
+        }
+      } else if (replaceExisting && !Array.isArray(replaceExisting)) {
+        // Handle legacy single document replacement
         const oldDoc = await strapi.entityService.findOne('api::compliance-document.compliance-document', replaceExisting);
         if (oldDoc) {
-          await s3Service.deleteFile(oldDoc.s3Key);
-          await strapi.entityService.delete('api::compliance-document.compliance-document', replaceExisting);
+          try {
+            if (oldDoc.s3Key) {
+              await s3Service.deleteFile(oldDoc.s3Key);
+            }
+            await strapi.entityService.delete('api::compliance-document.compliance-document', replaceExisting);
+            console.log(`✅ Deleted legacy single document: ${replaceExisting}`);
+          } catch (deleteError) {
+            console.error(`❌ Error deleting legacy document ${replaceExisting}:`, deleteError);
+          }
         }
       }
 

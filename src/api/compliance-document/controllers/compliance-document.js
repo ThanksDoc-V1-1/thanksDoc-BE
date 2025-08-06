@@ -35,13 +35,16 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
       }
 
       // Check if document already exists for this doctor and type
-      const existingDoc = await strapi.entityService.findMany('api::compliance-document.compliance-document', {
+      const existingDocs = await strapi.entityService.findMany('api::compliance-document.compliance-document', {
         filters: {
           doctor: doctorId,
           documentType: documentType
-        }
+        },
+        sort: 'createdAt:desc' // Get newest first, in case we want to preserve some logic
       });
 
+      console.log(`📄 Found ${existingDocs.length} existing documents of type ${documentType} for doctor ${doctorId}`);
+      
       // Upload to S3 and create document record
       const uploadResult = await strapi.service('api::compliance-document.compliance-document').uploadToS3AndCreate({
         file: files.file,
@@ -50,7 +53,7 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
         issueDate,
         expiryDate,
         notes,
-        replaceExisting: existingDoc.length > 0 ? existingDoc[0].id : null
+        replaceExisting: existingDocs.length > 0 ? existingDocs : null
       });
 
       // Automatically check doctor verification status after document upload

@@ -108,7 +108,7 @@ module.exports = () => ({
         if (uploads.length === 1) {
           const upload = uploads[0];
           notifications.push({
-            id: `admin-upload-${upload.id}`,
+                        id: `admin-upload-${upload.id}`,
             type: 'info',
             title: 'New Document Upload',
             message: `${doctorName} uploaded ${upload.documentName || upload.documentType}`,
