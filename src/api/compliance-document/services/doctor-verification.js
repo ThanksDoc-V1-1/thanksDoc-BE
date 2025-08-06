@@ -14,10 +14,6 @@ module.exports = () => ({
     try {
       console.log(`🔍 Checking verification status for doctor ${doctorId}...`);
 
-      // Get all required document types
-      const requiredDocumentTypes = await this.getRequiredDocumentTypes();
-      console.log(`📋 Found ${requiredDocumentTypes.length} required document types`);
-
       // Get all documents for this doctor
       const documents = await strapi.entityService.findMany('api::compliance-document.compliance-document', {
         filters: {
@@ -30,44 +26,52 @@ module.exports = () => ({
 
       console.log(`📄 Found ${documents.length} documents for doctor ${doctorId}`);
 
-      // Group documents by document type (string field)
-      const documentsByType = {};
-      documents.forEach(doc => {
-        if (doc.documentType) {
-          documentsByType[doc.documentType] = doc;
-        }
-      });
+      if (documents.length === 0) {
+        console.log(`❌ No documents found for doctor ${doctorId} - cannot be verified`);
+        return {
+          shouldBeVerified: false,
+          hasExpiredOrRejectedDocuments: false,
+          missingDocuments: [],
+          rejectedDocuments: [],
+          expiredDocuments: [],
+          pendingDocuments: [],
+          totalDocuments: 0,
+          verifiedCount: 0,
+          reason: 'No documents uploaded'
+        };
+      }
 
-      let allRequiredDocumentsVerified = true;
+      let allDocumentsVerified = true;
       let hasExpiredOrRejectedDocuments = false;
-      const missingDocuments = [];
       const rejectedDocuments = [];
       const expiredDocuments = [];
+      const pendingDocuments = [];
+      const verifiedDocuments = [];
 
-      // Check each required document type
-      for (const docType of requiredDocumentTypes) {
-        const doc = documentsByType[docType.name];
+      // Check each document's verification status
+      for (const doc of documents) {
+        const docName = doc.documentType || `Document ${doc.id}`;
         
-        if (!doc) {
-          // Document is missing
-          allRequiredDocumentsVerified = false;
-          missingDocuments.push(docType.name);
-          console.log(`❌ Missing document: ${docType.name}`);
+        // Check verification status
+        if (doc.verificationStatus === 'rejected') {
+          allDocumentsVerified = false;
+          hasExpiredOrRejectedDocuments = true;
+          rejectedDocuments.push(docName);
+          console.log(`❌ Rejected document: ${docName}`);
           continue;
         }
 
-        // Check verification status
-        if (doc.verificationStatus === 'rejected') {
-          allRequiredDocumentsVerified = false;
-          hasExpiredOrRejectedDocuments = true;
-          rejectedDocuments.push(docType.name);
-          console.log(`❌ Rejected document: ${docType.name}`);
+        if (doc.verificationStatus === 'pending' || !doc.verificationStatus) {
+          allDocumentsVerified = false;
+          pendingDocuments.push(docName);
+          console.log(`⏳ Pending document: ${docName} (status: ${doc.verificationStatus || 'not set'})`);
           continue;
         }
 
         if (doc.verificationStatus !== 'verified') {
-          allRequiredDocumentsVerified = false;
-          console.log(`⏳ Pending document: ${docType.name} (status: ${doc.verificationStatus})`);
+          allDocumentsVerified = false;
+          pendingDocuments.push(docName);
+          console.log(`⏳ Non-verified document: ${docName} (status: ${doc.verificationStatus})`);
           continue;
         }
 
@@ -77,26 +81,47 @@ module.exports = () => ({
           const today = new Date();
           
           if (expiryDate < today) {
-            allRequiredDocumentsVerified = false;
+            allDocumentsVerified = false;
             hasExpiredOrRejectedDocuments = true;
-            expiredDocuments.push(docType.name);
-            console.log(`❌ Expired document: ${docType.name}`);
+            expiredDocuments.push(docName);
+            console.log(`❌ Expired document: ${docName} (expired: ${expiryDate.toDateString()})`);
             continue;
           }
         }
 
-        console.log(`✅ Verified document: ${docType.name}`);
+        // Document is verified and not expired
+        verifiedDocuments.push(docName);
+        console.log(`✅ Verified document: ${docName}`);
       }
 
-      return {
-        shouldBeVerified: allRequiredDocumentsVerified,
+      const result = {
+        shouldBeVerified: allDocumentsVerified,
         hasExpiredOrRejectedDocuments,
-        missingDocuments,
+        missingDocuments: [], // Not applicable since we check actual documents
         rejectedDocuments,
         expiredDocuments,
-        totalRequired: requiredDocumentTypes.length,
-        verifiedCount: requiredDocumentTypes.length - missingDocuments.length - rejectedDocuments.length - expiredDocuments.length
+        pendingDocuments,
+        verifiedDocuments,
+        totalDocuments: documents.length,
+        verifiedCount: verifiedDocuments.length,
+        reason: allDocumentsVerified 
+          ? 'All documents verified' 
+          : `Issues found: ${[
+              ...(rejectedDocuments.length > 0 ? [`${rejectedDocuments.length} rejected`] : []),
+              ...(expiredDocuments.length > 0 ? [`${expiredDocuments.length} expired`] : []),
+              ...(pendingDocuments.length > 0 ? [`${pendingDocuments.length} pending`] : [])
+            ].join(', ')}`
       };
+
+      console.log(`📊 Verification summary for doctor ${doctorId}:`);
+      console.log(`   Total documents: ${result.totalDocuments}`);
+      console.log(`   Verified: ${result.verifiedCount}`);
+      console.log(`   Pending: ${pendingDocuments.length}`);
+      console.log(`   Rejected: ${rejectedDocuments.length}`);
+      console.log(`   Expired: ${expiredDocuments.length}`);
+      console.log(`   Should be verified: ${result.shouldBeVerified}`);
+
+      return result;
 
     } catch (error) {
       console.error('Error checking doctor verification status:', error);
@@ -125,7 +150,7 @@ module.exports = () => ({
       console.log(`📊 Verification check result for doctor ${doctorId}:`);
       console.log(`   Should be verified: ${shouldBeVerified}`);
       console.log(`   Currently verified: ${doctor.isVerified}`);
-      console.log(`   Verified documents: ${verificationCheck.verifiedCount}/${verificationCheck.totalRequired}`);
+      console.log(`   Verified documents: ${verificationCheck.verifiedCount}/${verificationCheck.totalDocuments}`);
 
       // Only update if status needs to change
       if (doctor.isVerified !== shouldBeVerified) {
@@ -133,13 +158,7 @@ module.exports = () => ({
           data: {
             isVerified: shouldBeVerified,
             verificationStatusUpdatedAt: new Date(),
-            verificationStatusReason: shouldBeVerified 
-              ? 'All required compliance documents verified'
-              : `Missing/expired/rejected documents: ${[
-                  ...verificationCheck.missingDocuments,
-                  ...verificationCheck.rejectedDocuments,
-                  ...verificationCheck.expiredDocuments
-                ].join(', ')}`
+            verificationStatusReason: verificationCheck.reason
           }
         });
 
@@ -172,28 +191,6 @@ module.exports = () => ({
   },
 
   /**
-   * Get all required document types for verification
-   */
-  async getRequiredDocumentTypes() {
-    try {
-      // Get document types directly from the database
-      const documentTypes = await strapi.entityService.findMany('api::compliance-document-type.compliance-document-type', {
-        filters: {
-          isRequired: true
-        }
-      });
-      
-      console.log(`📋 Found ${documentTypes.length} required document types from database`);
-      return documentTypes;
-    } catch (error) {
-      console.error('Error getting required document types:', error);
-      // Fallback to empty array - this will mean no verification requirements
-      console.log('⚠️ Using fallback: no required documents');
-      return [];
-    }
-  },
-
-  /**
    * Log verification status changes for audit trail
    */
   async logVerificationStatusChange(doctorId, previousStatus, newStatus, verificationCheck) {
@@ -203,14 +200,17 @@ module.exports = () => ({
         previousStatus,
         newStatus,
         changedAt: new Date(),
-        reason: newStatus 
-          ? 'All required compliance documents verified'
-          : `Issues with documents: ${[
-              ...verificationCheck.missingDocuments,
-              ...verificationCheck.rejectedDocuments,
-              ...verificationCheck.expiredDocuments
-            ].join(', ')}`,
-        verificationDetails: verificationCheck
+        reason: verificationCheck.reason,
+        verificationDetails: {
+          totalDocuments: verificationCheck.totalDocuments,
+          verifiedCount: verificationCheck.verifiedCount,
+          pendingCount: verificationCheck.pendingDocuments?.length || 0,
+          rejectedCount: verificationCheck.rejectedDocuments?.length || 0,
+          expiredCount: verificationCheck.expiredDocuments?.length || 0,
+          pendingDocuments: verificationCheck.pendingDocuments,
+          rejectedDocuments: verificationCheck.rejectedDocuments,
+          expiredDocuments: verificationCheck.expiredDocuments
+        }
       };
 
       console.log('📝 Verification status change logged:', logEntry);
