@@ -351,6 +351,26 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
       console.error('Bulk update doctors verification status error:', error);
       ctx.internalServerError('Failed to update doctors verification status');
     }
+  },
+
+  // Update doctors without documents to unverified
+  async updateDoctorsWithoutDocuments(ctx) {
+    try {
+      console.log('🔄 Starting update for doctors without compliance documents...');
+      
+      const doctorVerificationService = strapi.service('api::compliance-document.doctor-verification');
+      const result = await doctorVerificationService.updateDoctorsWithoutDocuments();
+
+      ctx.send({
+        success: true,
+        data: result,
+        message: `Doctors without documents update completed. Updated to unverified: ${result.updated}, Already unverified: ${result.alreadyUnverified}, Total without docs: ${result.doctorsWithoutDocs}`
+      });
+
+    } catch (error) {
+      console.error('Update doctors without documents error:', error);
+      ctx.internalServerError('Failed to update doctors without documents');
+    }
   }
 
 }));

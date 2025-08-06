@@ -137,6 +137,20 @@ module.exports = {
         description: 'Bulk update verification status for all doctors',
         tags: ['Compliance Documents', 'Doctor Verification']
       }
+    },
+
+    // Update doctors without documents to unverified
+    {
+      method: 'POST',
+      path: '/compliance-documents/doctors/update-without-documents',
+      handler: 'compliance-document.updateDoctorsWithoutDocuments',
+      config: {
+        policies: [],
+        middlewares: [],
+        auth: false, // Allow public access for testing
+        description: 'Set all doctors without compliance documents to unverified',
+        tags: ['Compliance Documents', 'Doctor Verification']
+      }
     }
   ]
 };

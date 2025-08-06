@@ -290,6 +290,101 @@ module.exports = () => ({
       console.error('Error in batch verification update:', error);
       throw error;
     }
+  },
+
+  /**
+   * Set all doctors with no compliance documents to unverified
+   * This ensures doctors without any uploaded documents are marked as unverified
+   */
+  async updateDoctorsWithoutDocuments() {
+    try {
+      console.log('🔄 Updating verification status for doctors without compliance documents...');
+
+      // Get all doctors
+      const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
+        limit: -1
+      });
+
+      console.log(`👥 Found ${doctors.length} doctors to check`);
+
+      const results = {
+        total: doctors.length,
+        doctorsWithoutDocs: 0,
+        updated: 0,
+        alreadyUnverified: 0,
+        errors: 0,
+        details: []
+      };
+
+      for (const doctor of doctors) {
+        try {
+          // Check if doctor has any compliance documents
+          const documents = await strapi.entityService.findMany('api::compliance-document.compliance-document', {
+            filters: {
+              doctor: doctor.id
+            }
+          });
+
+          if (documents.length === 0) {
+            results.doctorsWithoutDocs++;
+            
+            // If doctor has no documents and isVerified is true, set to false
+            if (doctor.isVerified === true) {
+              await strapi.entityService.update('api::doctor.doctor', doctor.id, {
+                data: {
+                  isVerified: false,
+                  verificationStatusUpdatedAt: new Date(),
+                  verificationStatusReason: 'No compliance documents uploaded'
+                }
+              });
+
+              console.log(`✅ Updated doctor ${doctor.id} (${doctor.firstName} ${doctor.lastName}) - set to unverified (no documents)`);
+              results.updated++;
+
+              results.details.push({
+                doctorId: doctor.id,
+                doctorName: `${doctor.firstName} ${doctor.lastName}`,
+                action: 'Updated to unverified',
+                reason: 'No documents uploaded'
+              });
+            } else {
+              console.log(`📋 Doctor ${doctor.id} (${doctor.firstName} ${doctor.lastName}) already unverified (no documents)`);
+              results.alreadyUnverified++;
+
+              results.details.push({
+                doctorId: doctor.id,
+                doctorName: `${doctor.firstName} ${doctor.lastName}`,
+                action: 'Already unverified',
+                reason: 'No documents uploaded'
+              });
+            }
+          }
+
+        } catch (error) {
+          console.error(`Error checking doctor ${doctor.id}:`, error);
+          results.errors++;
+          results.details.push({
+            doctorId: doctor.id,
+            doctorName: `${doctor.firstName} ${doctor.lastName}`,
+            action: 'Error',
+            error: error.message
+          });
+        }
+      }
+
+      console.log('📊 Doctors without documents update completed:');
+      console.log(`   Total doctors: ${results.total}`);
+      console.log(`   Doctors without documents: ${results.doctorsWithoutDocs}`);
+      console.log(`   Updated to unverified: ${results.updated}`);
+      console.log(`   Already unverified: ${results.alreadyUnverified}`);
+      console.log(`   Errors: ${results.errors}`);
+
+      return results;
+
+    } catch (error) {
+      console.error('Error in doctors without documents update:', error);
+      throw error;
+    }
   }
 
 });
