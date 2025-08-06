@@ -151,6 +151,62 @@ module.exports = {
         description: 'Set all doctors without compliance documents to unverified',
         tags: ['Compliance Documents', 'Doctor Verification']
       }
+    },
+
+    // Get notifications for a doctor
+    {
+      method: 'GET',
+      path: '/compliance-documents/doctors/:doctorId/notifications',
+      handler: 'compliance-document.getDoctorNotifications',
+      config: {
+        policies: [],
+        middlewares: [],
+        auth: false, // Allow public access for testing
+        description: 'Get all notifications for a specific doctor',
+        tags: ['Compliance Documents', 'Notifications']
+      }
+    },
+
+    // Get notification summary for a doctor
+    {
+      method: 'GET',
+      path: '/compliance-documents/doctors/:doctorId/notifications/summary',
+      handler: 'compliance-document.getDoctorNotificationSummary',
+      config: {
+        policies: [],
+        middlewares: [],
+        auth: false, // Allow public access for testing
+        description: 'Get notification summary/count for a specific doctor',
+        tags: ['Compliance Documents', 'Notifications']
+      }
+    },
+
+    // Mark notification as read
+    {
+      method: 'PUT',
+      path: '/compliance-documents/doctors/:doctorId/notifications/:notificationId/read',
+      handler: 'compliance-document.markNotificationAsRead',
+      config: {
+        policies: [],
+        middlewares: [],
+        auth: false, // Allow public access for testing
+        description: 'Mark a specific notification as read',
+        tags: ['Compliance Documents', 'Notifications']
+      }
+    },
+
+    // Mark all notifications as read
+    {
+      method: 'PUT',
+      path: '/compliance-documents/doctors/:doctorId/notifications/read-all',
+      handler: 'compliance-document.markAllNotificationsAsRead',
+      config: {
+        policies: [],
+        middlewares: [],
+        auth: false, // Allow public access for testing
+        description: 'Mark all notifications as read for a doctor',
+        tags: ['Compliance Documents', 'Notifications']
+      }
     }
   ]
 };

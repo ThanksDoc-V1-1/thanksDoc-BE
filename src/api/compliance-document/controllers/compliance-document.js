@@ -371,6 +371,110 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
       console.error('Update doctors without documents error:', error);
       ctx.internalServerError('Failed to update doctors without documents');
     }
+  },
+
+  // Get notifications for a doctor
+  async getDoctorNotifications(ctx) {
+    try {
+      const { doctorId } = ctx.params;
+
+      if (!doctorId) {
+        return ctx.badRequest('Doctor ID is required');
+      }
+
+      const notificationService = strapi.service('api::compliance-document.doctor-notifications');
+      const result = await notificationService.getDoctorNotifications(doctorId);
+
+      if (!result.success) {
+        return ctx.badRequest(result.error);
+      }
+
+      ctx.send({
+        success: true,
+        data: result.data,
+        message: 'Notifications retrieved successfully'
+      });
+
+    } catch (error) {
+      console.error('Get doctor notifications error:', error);
+      ctx.internalServerError('Failed to get notifications');
+    }
+  },
+
+  // Get notification summary for a doctor
+  async getDoctorNotificationSummary(ctx) {
+    try {
+      const { doctorId } = ctx.params;
+
+      if (!doctorId) {
+        return ctx.badRequest('Doctor ID is required');
+      }
+
+      const notificationService = strapi.service('api::compliance-document.doctor-notifications');
+      const result = await notificationService.getDoctorNotificationSummary(doctorId);
+
+      if (!result.success) {
+        return ctx.badRequest(result.error);
+      }
+
+      ctx.send({
+        success: true,
+        data: result.data,
+        message: 'Notification summary retrieved successfully'
+      });
+
+    } catch (error) {
+      console.error('Get doctor notification summary error:', error);
+      ctx.internalServerError('Failed to get notification summary');
+    }
+  },
+
+  // Mark notification as read
+  async markNotificationAsRead(ctx) {
+    try {
+      const { doctorId, notificationId } = ctx.params;
+
+      if (!doctorId || !notificationId) {
+        return ctx.badRequest('Doctor ID and Notification ID are required');
+      }
+
+      const notificationService = strapi.service('api::compliance-document.doctor-notifications');
+      const result = await notificationService.markNotificationAsRead(doctorId, notificationId);
+
+      ctx.send({
+        success: true,
+        data: result.data,
+        message: 'Notification marked as read'
+      });
+
+    } catch (error) {
+      console.error('Mark notification as read error:', error);
+      ctx.internalServerError('Failed to mark notification as read');
+    }
+  },
+
+  // Mark all notifications as read
+  async markAllNotificationsAsRead(ctx) {
+    try {
+      const { doctorId } = ctx.params;
+
+      if (!doctorId) {
+        return ctx.badRequest('Doctor ID is required');
+      }
+
+      const notificationService = strapi.service('api::compliance-document.doctor-notifications');
+      const result = await notificationService.markAllNotificationsAsRead(doctorId);
+
+      ctx.send({
+        success: true,
+        data: result.data,
+        message: 'All notifications marked as read'
+      });
+
+    } catch (error) {
+      console.error('Mark all notifications as read error:', error);
+      ctx.internalServerError('Failed to mark all notifications as read');
+    }
   }
 
 }));
