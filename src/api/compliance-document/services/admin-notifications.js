@@ -42,6 +42,7 @@ module.exports = () => ({
         if (priorityDiff !== 0) return priorityDiff;
         
         // If same priority, sort by date (newest first)
+        // @ts-ignore
         return new Date(b.timestamp) - new Date(a.timestamp);
       });
 
@@ -117,7 +118,7 @@ module.exports = () => ({
             category: 'upload',
             icon: 'FileText',
             actionText: 'Review Document',
-            actionUrl: `/admin/dashboard?tab=doctors&doctorId=${doctorId}`,
+            actionUrl: `/admin/dashboard?tab=doctors&search=${encodeURIComponent(doctorName)}&focus=${doctorId}`,
             doctorId: doctor.id,
             doctorName,
             documentId: upload.id,
@@ -136,7 +137,7 @@ module.exports = () => ({
             category: 'upload',
             icon: 'FileText',
             actionText: 'Review Documents',
-            actionUrl: `/admin/dashboard?tab=doctors&doctorId=${doctorId}`,
+            actionUrl: `/admin/dashboard?tab=doctors&search=${encodeURIComponent(doctorName)}&focus=${doctorId}`,
             doctorId: doctor.id,
             doctorName,
             uploadCount: uploads.length
@@ -179,6 +180,7 @@ module.exports = () => ({
         if (!doc.doctor) continue;
         
         const uploadedAt = new Date(doc.createdAt);
+        // @ts-ignore
         const daysWaiting = Math.floor((now - uploadedAt) / (1000 * 60 * 60 * 24));
         
         if (daysWaiting >= 3) {
@@ -202,7 +204,7 @@ module.exports = () => ({
           category: 'review',
           icon: 'AlertTriangle',
           actionText: 'Review Now',
-          actionUrl: `/admin/dashboard?tab=doctors&doctorId=${doc.doctor.id}`,
+          actionUrl: `/admin/dashboard?tab=doctors&search=${encodeURIComponent(doctorName)}&focus=${doc.doctor.id}`,
           doctorId: doc.doctor.id,
           doctorName,
           documentId: doc.id,
@@ -281,6 +283,7 @@ module.exports = () => ({
         
         if (expiredDocs.length === 1) {
           const doc = expiredDocs[0];
+          // @ts-ignore
           const daysExpired = Math.floor((today - new Date(doc.expiryDate)) / (1000 * 60 * 60 * 24));
           
           notifications.push({
@@ -294,7 +297,7 @@ module.exports = () => ({
             category: 'expired',
             icon: 'XCircle',
             actionText: 'Contact Doctor',
-            actionUrl: `/admin/dashboard?tab=doctors&doctorId=${doctorId}`,
+            actionUrl: `/admin/dashboard?tab=doctors&search=${encodeURIComponent(doctorName)}&focus=${doctorId}`,
             doctorId: doctor.id,
             doctorName,
             documentId: doc.id,
@@ -314,7 +317,7 @@ module.exports = () => ({
             category: 'expired',
             icon: 'XCircle',
             actionText: 'View Details',
-            actionUrl: `/admin/dashboard?tab=doctors&doctorId=${doctorId}`,
+            actionUrl: `/admin/dashboard?tab=doctors&search=${encodeURIComponent(doctorName)}&focus=${doctorId}`,
             doctorId: doctor.id,
             doctorName,
             expiredCount: expiredDocs.length
@@ -363,6 +366,7 @@ module.exports = () => ({
         if (!doc.doctor) continue;
         
         const expiryDate = new Date(doc.expiryDate);
+        // @ts-ignore
         const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
         
         if (daysUntilExpiry <= 2) {
@@ -386,7 +390,7 @@ module.exports = () => ({
           category: 'expiring',
           icon: 'AlertTriangle',
           actionText: 'Notify Doctor',
-          actionUrl: `/admin/dashboard?tab=doctors&doctorId=${doc.doctor.id}`,
+          actionUrl: `/admin/dashboard?tab=doctors&search=${encodeURIComponent(doctorName)}&focus=${doc.doctor.id}`,
           doctorId: doc.doctor.id,
           doctorName,
           documentId: doc.id,
@@ -472,7 +476,7 @@ module.exports = () => ({
           category: 'rejected',
           icon: 'AlertTriangle',
           actionText: 'Check Status',
-          actionUrl: `/admin/dashboard?tab=doctors&doctorId=${doctorId}`,
+          actionUrl: `/admin/dashboard?tab=doctors&search=${encodeURIComponent(doctorName)}&focus=${doctorId}`,
           doctorId: doctor.id,
           doctorName,
           rejectedCount: rejectedDocs.length
@@ -554,7 +558,7 @@ module.exports = () => ({
           category: 'compliance',
           icon: 'AlertTriangle',
           actionText: 'Review Profile',
-          actionUrl: `/admin/dashboard?tab=doctors&doctorId=${doctor.id}`,
+          actionUrl: `/admin/dashboard?tab=doctors&search=${encodeURIComponent(doctorName)}&focus=${doctor.id}`,
           doctorId: doctor.id,
           doctorName,
           complianceStatus: {
