@@ -475,6 +475,94 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
       console.error('Mark all notifications as read error:', error);
       ctx.internalServerError('Failed to mark all notifications as read');
     }
+  },
+
+  // ===== ADMIN NOTIFICATIONS =====
+
+  // Get admin notifications
+  async getAdminNotifications(ctx) {
+    try {
+      const adminNotificationService = strapi.service('api::compliance-document.admin-notifications');
+      const result = await adminNotificationService.getAdminNotifications();
+
+      if (!result.success) {
+        return ctx.badRequest(result.error);
+      }
+
+      ctx.send({
+        success: true,
+        data: result.data,
+        message: 'Admin notifications retrieved successfully'
+      });
+
+    } catch (error) {
+      console.error('Get admin notifications error:', error);
+      ctx.internalServerError('Failed to get admin notifications');
+    }
+  },
+
+  // Get admin notification summary
+  async getAdminNotificationSummary(ctx) {
+    try {
+      const adminNotificationService = strapi.service('api::compliance-document.admin-notifications');
+      const result = await adminNotificationService.getAdminNotificationSummary();
+
+      if (!result.success) {
+        return ctx.badRequest(result.error);
+      }
+
+      ctx.send({
+        success: true,
+        data: result.data,
+        message: 'Admin notification summary retrieved successfully'
+      });
+
+    } catch (error) {
+      console.error('Get admin notification summary error:', error);
+      ctx.internalServerError('Failed to get admin notification summary');
+    }
+  },
+
+  // Mark admin notification as read
+  async markAdminNotificationAsRead(ctx) {
+    try {
+      const { notificationId } = ctx.params;
+
+      if (!notificationId) {
+        return ctx.badRequest('Notification ID is required');
+      }
+
+      const adminNotificationService = strapi.service('api::compliance-document.admin-notifications');
+      const result = await adminNotificationService.markNotificationAsRead(notificationId);
+
+      ctx.send({
+        success: true,
+        data: result.data,
+        message: 'Admin notification marked as read'
+      });
+
+    } catch (error) {
+      console.error('Mark admin notification as read error:', error);
+      ctx.internalServerError('Failed to mark admin notification as read');
+    }
+  },
+
+  // Mark all admin notifications as read
+  async markAllAdminNotificationsAsRead(ctx) {
+    try {
+      const adminNotificationService = strapi.service('api::compliance-document.admin-notifications');
+      const result = await adminNotificationService.markAllNotificationsAsRead();
+
+      ctx.send({
+        success: true,
+        data: result.data,
+        message: 'All admin notifications marked as read'
+      });
+
+    } catch (error) {
+      console.error('Mark all admin notifications as read error:', error);
+      ctx.internalServerError('Failed to mark all admin notifications as read');
+    }
   }
 
 }));

@@ -207,6 +207,64 @@ module.exports = {
         description: 'Mark all notifications as read for a doctor',
         tags: ['Compliance Documents', 'Notifications']
       }
+    },
+
+    // ===== ADMIN NOTIFICATIONS =====
+
+    // Get admin notifications
+    {
+      method: 'GET',
+      path: '/compliance-documents/admin/notifications',
+      handler: 'compliance-document.getAdminNotifications',
+      config: {
+        policies: [],
+        middlewares: [],
+        auth: false, // Allow public access for testing
+        description: 'Get all notifications for admin dashboard',
+        tags: ['Compliance Documents', 'Admin Notifications']
+      }
+    },
+
+    // Get admin notification summary
+    {
+      method: 'GET',
+      path: '/compliance-documents/admin/notifications/summary',
+      handler: 'compliance-document.getAdminNotificationSummary',
+      config: {
+        policies: [],
+        middlewares: [],
+        auth: false, // Allow public access for testing
+        description: 'Get notification summary/count for admin dashboard',
+        tags: ['Compliance Documents', 'Admin Notifications']
+      }
+    },
+
+    // Mark admin notification as read
+    {
+      method: 'PUT',
+      path: '/compliance-documents/admin/notifications/:notificationId/read',
+      handler: 'compliance-document.markAdminNotificationAsRead',
+      config: {
+        policies: [],
+        middlewares: [],
+        auth: false, // Allow public access for testing
+        description: 'Mark a specific admin notification as read',
+        tags: ['Compliance Documents', 'Admin Notifications']
+      }
+    },
+
+    // Mark all admin notifications as read
+    {
+      method: 'PUT',
+      path: '/compliance-documents/admin/notifications/read-all',
+      handler: 'compliance-document.markAllAdminNotificationsAsRead',
+      config: {
+        policies: [],
+        middlewares: [],
+        auth: false, // Allow public access for testing
+        description: 'Mark all admin notifications as read',
+        tags: ['Compliance Documents', 'Admin Notifications']
+      }
     }
   ]
 };
