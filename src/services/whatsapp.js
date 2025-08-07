@@ -1169,6 +1169,10 @@ The doctor will contact you shortly to coordinate the visit.`;
                 {
                   type: 'text',
                   text: videoCallUrl
+                },
+                {
+                  type: 'text',
+                  text: serviceRequest.business?.businessName || serviceRequest.business?.name || 'ThanksDoc Patient'
                 }
               ]
             }
@@ -1242,6 +1246,10 @@ The doctor will contact you shortly to coordinate the visit.`;
                 {
                   type: 'text',
                   text: videoCallUrl
+                },
+                {
+                  type: 'text',
+                  text: serviceRequest.business?.businessName || serviceRequest.business?.name || 'ThanksDoc Patient'
                 }
               ]
             }
