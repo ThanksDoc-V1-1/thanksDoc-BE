@@ -19,6 +19,8 @@ class WhatsAppService {
     this.doctorConfirmationTemplate = process.env.WHATSAPP_TEMPLATE_DOCTOR_CONFIRMATION || 'doctor_confirmation';
     this.businessNotificationTemplate = process.env.WHATSAPP_TEMPLATE_BUSINESS_NOTIFICATION || 'doctor_assigned';
     this.passwordResetTemplate = process.env.WHATSAPP_TEMPLATE_PASSWORD_RESET || 'password_reset_doc';
+    this.doctorVideoCallTemplate = process.env.WHATSAPP_TEMPLATE_DOCTOR_VIDEO_CALL || 'doctor_video_call_link';
+    this.patientVideoCallTemplate = process.env.WHATSAPP_TEMPLATE_PATIENT_VIDEO_CALL || 'patient_video_call_link';
   }
 
   /**
@@ -1125,31 +1127,52 @@ The doctor will contact you shortly to coordinate the visit.`;
    */
   async sendVideoCallLinkToDoctor(doctor, serviceRequest, videoCallUrl) {
     try {
-      const message = `🎥 *Online Consultation Ready*
-
-Hi Dr. ${doctor.firstName} ${doctor.lastName},
-
-Your online consultation is ready to begin!
-
-📋 *Service Request Details:*
-• Patient: ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName}
-• Service: ${serviceRequest.serviceType}
-• Time: ${new Date(serviceRequest.requestedServiceDateTime).toLocaleString('en-GB')}
-
-🔗 *Video Call Link:*
-${videoCallUrl}
-
-Please join the call at the scheduled time. The patient will receive their link separately.
-
-Thank you!
-ThanksDoc Team`;
+      // Format scheduled time
+      const scheduledTime = new Date(serviceRequest.requestedServiceDateTime).toLocaleString('en-GB', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
 
       const messageData = {
         messaging_product: 'whatsapp',
         to: this.formatPhoneNumber(doctor.phone),
-        type: 'text',
-        text: {
-          body: message
+        type: 'template',
+        template: {
+          name: this.doctorVideoCallTemplate,
+          language: {
+            code: 'en_GB'
+          },
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                {
+                  type: 'text',
+                  text: `${doctor.firstName} ${doctor.lastName}`
+                },
+                {
+                  type: 'text',
+                  text: `${serviceRequest.patientFirstName} ${serviceRequest.patientLastName}`
+                },
+                {
+                  type: 'text',
+                  text: serviceRequest.serviceType || 'Online Consultation'
+                },
+                {
+                  type: 'text',
+                  text: scheduledTime
+                },
+                {
+                  type: 'text',
+                  text: videoCallUrl
+                }
+              ]
+            }
+          ]
         }
       };
 
@@ -1173,30 +1196,56 @@ ThanksDoc Team`;
         return null;
       }
 
-      const message = `🎥 *Your Online Consultation is Ready*
-
-Hello ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName},
-
-Your online consultation with ThanksDoc is ready!
-
-👨‍⚕️ *Doctor:* Dr. ${doctor.firstName} ${doctor.lastName}
-🕐 *Time:* ${new Date(serviceRequest.requestedServiceDateTime).toLocaleString('en-GB')}
-💼 *Service:* ${serviceRequest.serviceType}
-
-🔗 *Join Your Video Call:*
-${videoCallUrl}
-
-Please join the call at the scheduled time. Your doctor will be waiting for you.
-
-Best regards,
-ThanksDoc Team`;
+      // Format scheduled time
+      const scheduledTime = new Date(serviceRequest.requestedServiceDateTime).toLocaleString('en-GB', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
 
       const messageData = {
         messaging_product: 'whatsapp',
         to: this.formatPhoneNumber(serviceRequest.patientPhone),
-        type: 'text',
-        text: {
-          body: message
+        type: 'template',
+        template: {
+          name: this.patientVideoCallTemplate,
+          language: {
+            code: 'en_GB'
+          },
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                {
+                  type: 'text',
+                  text: serviceRequest.patientFirstName || 'Patient'
+                },
+                {
+                  type: 'text',
+                  text: `${doctor.firstName} ${doctor.lastName}`
+                },
+                {
+                  type: 'text',
+                  text: `${doctor.firstName} ${doctor.lastName}`
+                },
+                {
+                  type: 'text',
+                  text: serviceRequest.serviceType || 'Online Consultation'
+                },
+                {
+                  type: 'text',
+                  text: scheduledTime
+                },
+                {
+                  type: 'text',
+                  text: videoCallUrl
+                }
+              ]
+            }
+          ]
         }
       };
 
