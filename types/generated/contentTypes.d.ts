@@ -855,6 +855,10 @@ export interface ApiServiceRequestServiceRequest
     notes: Schema.Attribute.Text;
     originalRequestId: Schema.Attribute.Integer & Schema.Attribute.Private;
     paidAt: Schema.Attribute.DateTime;
+    patientEmail: Schema.Attribute.String;
+    patientFirstName: Schema.Attribute.String;
+    patientLastName: Schema.Attribute.String;
+    patientPhone: Schema.Attribute.String;
     paymentDetails: Schema.Attribute.Text;
     paymentIntentId: Schema.Attribute.String;
     paymentMethod: Schema.Attribute.String;
@@ -898,6 +902,10 @@ export interface ApiServiceRequestServiceRequest
       ['low', 'medium', 'high', 'emergency']
     > &
       Schema.Attribute.Required;
+    videoCallEndedAt: Schema.Attribute.DateTime;
+    videoCallStartedAt: Schema.Attribute.DateTime;
+    wherebyMeetingId: Schema.Attribute.String;
+    wherebyRoomUrl: Schema.Attribute.String;
   };
 }
 

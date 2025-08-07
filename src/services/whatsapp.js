@@ -1119,6 +1119,137 @@ The doctor will contact you shortly to coordinate the visit.`;
       throw error;
     }
   }
+
+  /**
+   * Send video call link to doctor for online consultation
+   */
+  async sendVideoCallLinkToDoctor(doctor, serviceRequest, videoCallUrl) {
+    try {
+      const message = `🎥 *Online Consultation Ready*
+
+Hi Dr. ${doctor.firstName} ${doctor.lastName},
+
+Your online consultation is ready to begin!
+
+📋 *Service Request Details:*
+• Patient: ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName}
+• Service: ${serviceRequest.serviceType}
+• Time: ${new Date(serviceRequest.requestedServiceDateTime).toLocaleString('en-GB')}
+
+🔗 *Video Call Link:*
+${videoCallUrl}
+
+Please join the call at the scheduled time. The patient will receive their link separately.
+
+Thank you!
+ThanksDoc Team`;
+
+      const messageData = {
+        messaging_product: 'whatsapp',
+        to: this.formatPhoneNumber(doctor.phone),
+        type: 'text',
+        text: {
+          body: message
+        }
+      };
+
+      const response = await this.sendWhatsAppMessage(messageData);
+      console.log(`✅ Video call link sent to doctor: ${doctor.firstName} ${doctor.lastName}`);
+      return response;
+
+    } catch (error) {
+      console.error(`❌ Failed to send video call link to doctor ${doctor.id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send video call link to patient for online consultation
+   */
+  async sendVideoCallLinkToPatient(serviceRequest, doctor, videoCallUrl) {
+    try {
+      if (!serviceRequest.patientPhone) {
+        console.warn('⚠️ No patient phone number provided for video call notification');
+        return null;
+      }
+
+      const message = `🎥 *Your Online Consultation is Ready*
+
+Hello ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName},
+
+Your online consultation with ThanksDoc is ready!
+
+👨‍⚕️ *Doctor:* Dr. ${doctor.firstName} ${doctor.lastName}
+🕐 *Time:* ${new Date(serviceRequest.requestedServiceDateTime).toLocaleString('en-GB')}
+💼 *Service:* ${serviceRequest.serviceType}
+
+🔗 *Join Your Video Call:*
+${videoCallUrl}
+
+Please join the call at the scheduled time. Your doctor will be waiting for you.
+
+Best regards,
+ThanksDoc Team`;
+
+      const messageData = {
+        messaging_product: 'whatsapp',
+        to: this.formatPhoneNumber(serviceRequest.patientPhone),
+        type: 'text',
+        text: {
+          body: message
+        }
+      };
+
+      const response = await this.sendWhatsAppMessage(messageData);
+      console.log(`✅ Video call link sent to patient: ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName}`);
+      return response;
+
+    } catch (error) {
+      console.error(`❌ Failed to send video call link to patient:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send video call links to both doctor and patient
+   */
+  async sendVideoCallNotifications(doctor, serviceRequest, videoCallUrl) {
+    try {
+      console.log('🎥 Sending video call notifications for online consultation');
+      
+      const notifications = [];
+      
+      // Send to doctor
+      try {
+        const doctorNotification = await this.sendVideoCallLinkToDoctor(doctor, serviceRequest, videoCallUrl);
+        notifications.push({ type: 'doctor', success: true, data: doctorNotification });
+      } catch (error) {
+        console.error('❌ Failed to send video call link to doctor:', error);
+        notifications.push({ type: 'doctor', success: false, error: error.message });
+      }
+
+      // Send to patient (only if phone number is provided)
+      if (serviceRequest.patientPhone) {
+        try {
+          const patientNotification = await this.sendVideoCallLinkToPatient(serviceRequest, doctor, videoCallUrl);
+          notifications.push({ type: 'patient', success: true, data: patientNotification });
+        } catch (error) {
+          console.error('❌ Failed to send video call link to patient:', error);
+          notifications.push({ type: 'patient', success: false, error: error.message });
+        }
+      } else {
+        console.warn('⚠️ Patient phone number not provided, skipping patient notification');
+        notifications.push({ type: 'patient', success: false, error: 'No phone number provided' });
+      }
+
+      console.log('✅ Video call notifications completed:', notifications);
+      return notifications;
+
+    } catch (error) {
+      console.error('❌ Error sending video call notifications:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = WhatsAppService;

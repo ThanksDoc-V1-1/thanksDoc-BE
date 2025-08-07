@@ -133,6 +133,38 @@
     "originalRequestId": {
       "type": "integer",
       "private": true
+    },
+    "patientFirstName": {
+      "type": "string",
+      "required": false
+    },
+    "patientLastName": {
+      "type": "string",
+      "required": false
+    },
+    "patientPhone": {
+      "type": "string",
+      "required": false
+    },
+    "patientEmail": {
+      "type": "string",
+      "required": false
+    },
+    "wherebyRoomUrl": {
+      "type": "string",
+      "required": false
+    },
+    "wherebyMeetingId": {
+      "type": "string",
+      "required": false
+    },
+    "videoCallStartedAt": {
+      "type": "datetime",
+      "required": false
+    },
+    "videoCallEndedAt": {
+      "type": "datetime",
+      "required": false
     }
   }
 }

@@ -140,12 +140,18 @@ module.exports = createCoreController('api::service-request.service-request', ({
         scheduledAt, 
         serviceDateTime,
         preferredDoctorId,
-        doctorSelectionType
+        doctorSelectionType,
+        // Patient information for online consultations
+        patientFirstName,
+        patientLastName,
+        patientPhone,
+        patientEmail
       } = ctx.request.body;
       
       console.log('Creating service request with data:', {
         businessId, urgencyLevel, serviceType, serviceId, description, estimatedDuration, 
-        serviceDateTime, preferredDoctorId, doctorSelectionType
+        serviceDateTime, preferredDoctorId, doctorSelectionType,
+        patientFirstName, patientLastName, patientPhone, patientEmail
       });
       
       // Get business details
@@ -186,6 +192,20 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Add service ID if provided
       if (serviceId) {
         serviceRequestData.service = serviceId;
+      }
+
+      // Add patient information if provided (for online consultations)
+      if (patientFirstName) {
+        serviceRequestData.patientFirstName = patientFirstName;
+      }
+      if (patientLastName) {
+        serviceRequestData.patientLastName = patientLastName;
+      }
+      if (patientPhone) {
+        serviceRequestData.patientPhone = patientPhone;
+      }
+      if (patientEmail) {
+        serviceRequestData.patientEmail = patientEmail;
       }
 
       // Add doctor if specific doctor is selected
@@ -304,7 +324,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       // Get the service request
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
-        populate: ['business', 'doctor'],
+        populate: ['business', 'doctor', 'service'],
       });
 
       if (!serviceRequest) {
@@ -322,16 +342,65 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return ctx.badRequest('Doctor not found');
       }
 
+      // Check if this is an online consultation
+      const isOnlineConsultation = serviceRequest.serviceType?.toLowerCase().includes('online consultation') || 
+                                    serviceRequest.service?.category === 'online';
+
+      let updateData = {
+        doctor: doctorId,
+        status: 'accepted',
+        acceptedAt: new Date(),
+        totalAmount: doctor.hourlyRate * (serviceRequest.estimatedDuration || 1),
+      };
+
+      // Create video call for online consultations
+      if (isOnlineConsultation && serviceRequest.patientFirstName && serviceRequest.patientPhone) {
+        try {
+          console.log('🎥 Creating video call for online consultation');
+          
+          const WherebyService = require('../../../services/whereby');
+          const wherebyService = new WherebyService();
+          
+          const meeting = await wherebyService.createConsultationMeeting(serviceRequest);
+          
+          updateData.wherebyRoomUrl = meeting.roomUrl;
+          updateData.wherebyMeetingId = meeting.meetingId;
+          
+          console.log('✅ Video call created successfully:', meeting.meetingId);
+
+        } catch (videoError) {
+          console.error('❌ Failed to create video call:', videoError.message);
+          // Continue with acceptance even if video call creation fails
+        }
+      }
+
       // Update the service request
       const updatedServiceRequest = await strapi.entityService.update('api::service-request.service-request', id, {
-        data: {
-          doctor: doctorId,
-          status: 'accepted',
-          acceptedAt: new Date(),
-          totalAmount: doctor.hourlyRate * (serviceRequest.estimatedDuration || 1),
-        },
-        populate: ['business', 'doctor'],
+        data: updateData,
+        populate: ['business', 'doctor', 'service'],
       });
+
+      // Send video call notifications for online consultations
+      if (isOnlineConsultation && updatedServiceRequest.wherebyRoomUrl && serviceRequest.patientPhone) {
+        try {
+          console.log('📱 Sending video call notifications');
+          
+          const WhatsAppService = require('../../../services/whatsapp');
+          const whatsappService = new WhatsAppService();
+          
+          await whatsappService.sendVideoCallNotifications(
+            doctor, 
+            updatedServiceRequest, 
+            updatedServiceRequest.wherebyRoomUrl
+          );
+          
+          console.log('✅ Video call notifications sent successfully');
+          
+        } catch (notificationError) {
+          console.error('❌ Failed to send video call notifications:', notificationError.message);
+          // Continue even if notifications fail
+        }
+      }
 
       // Cancel all related requests when this one is accepted
       await this.cancelRelatedRequests(id, strapi);
