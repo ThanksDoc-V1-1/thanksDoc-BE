@@ -1,5 +1,8 @@
 'use strict';
 
+// Load environment variables
+require('dotenv').config();
+
 const axios = require('axios');
 const crypto = require('crypto');
 
@@ -11,6 +14,7 @@ class WhatsAppService {
     this.webhookVerifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
     this.baseUrl = process.env.BASE_URL;
     this.baseUrll = process.env.FRONTEND_DASHBOARD_URL;
+    this.frontendVideoUrl = process.env.FRONTEND_VIDEO_URL || process.env.FRONTEND_DASHBOARD_URL || 'http://localhost:3000';
     this.apiUrl = `https://graph.facebook.com/v20.0/${this.phoneNumberId}/messages`;
     
     // Template configurations
@@ -1137,6 +1141,9 @@ The doctor will contact you shortly to coordinate the visit.`;
         minute: '2-digit'
       });
 
+      // Create our platform URL instead of direct Whereby URL
+      const platformVideoUrl = `${this.frontendVideoUrl}/consultation/${serviceRequest.id}?type=doctor&roomUrl=${encodeURIComponent(videoCallUrl)}`;
+
       const messageData = {
         messaging_product: 'whatsapp',
         to: this.formatPhoneNumber(doctor.phone),
@@ -1168,7 +1175,7 @@ The doctor will contact you shortly to coordinate the visit.`;
                 },
                 {
                   type: 'text',
-                  text: videoCallUrl
+                  text: platformVideoUrl
                 },
                 {
                   type: 'text',
@@ -1182,6 +1189,7 @@ The doctor will contact you shortly to coordinate the visit.`;
 
       const response = await this.sendWhatsAppMessage(messageData);
       console.log(`✅ Video call link sent to doctor: ${doctor.firstName} ${doctor.lastName}`);
+      console.log(`📱 Platform URL sent: ${platformVideoUrl}`);
       return response;
 
     } catch (error) {
@@ -1209,6 +1217,9 @@ The doctor will contact you shortly to coordinate the visit.`;
         hour: '2-digit',
         minute: '2-digit'
       });
+
+      // Create our platform URL instead of direct Whereby URL
+      const platformVideoUrl = `${this.frontendVideoUrl}/consultation/${serviceRequest.id}?type=patient&roomUrl=${encodeURIComponent(videoCallUrl)}`;
 
       const messageData = {
         messaging_product: 'whatsapp',
@@ -1245,7 +1256,7 @@ The doctor will contact you shortly to coordinate the visit.`;
                 },
                 {
                   type: 'text',
-                  text: videoCallUrl
+                  text: platformVideoUrl
                 },
                 {
                   type: 'text',
@@ -1259,6 +1270,7 @@ The doctor will contact you shortly to coordinate the visit.`;
 
       const response = await this.sendWhatsAppMessage(messageData);
       console.log(`✅ Video call link sent to patient: ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName}`);
+      console.log(`📱 Platform URL sent: ${platformVideoUrl}`);
       return response;
 
     } catch (error) {
