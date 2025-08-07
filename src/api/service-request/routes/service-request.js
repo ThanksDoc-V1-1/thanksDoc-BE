@@ -203,6 +203,14 @@ module.exports = {
     },
     {
       method: 'POST',
+      path: '/service-requests/:id/accept',
+      handler: 'service-request.acceptServiceRequest',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'POST',
       path: '/service-requests/admin/format-phone-numbers',
       handler: 'service-request.formatDoctorPhoneNumbers',
       config: {
