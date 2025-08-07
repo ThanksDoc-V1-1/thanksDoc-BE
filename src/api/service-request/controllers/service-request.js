@@ -982,16 +982,65 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return ctx.badRequest('Doctor not found');
       }
 
+      // Check if this is an online consultation
+      const isOnlineConsultation = serviceRequest.serviceType?.toLowerCase().includes('online consultation') || 
+                                    serviceRequest.service?.category === 'online';
+
+      let updateData = {
+        doctor: doctorId,
+        status: 'accepted',
+        acceptedAt: new Date(),
+        totalAmount: doctor.hourlyRate * (serviceRequest.estimatedDuration || 1),
+      };
+
+      // Create video call for online consultations
+      if (isOnlineConsultation && serviceRequest.patientFirstName && serviceRequest.patientPhone) {
+        try {
+          console.log('🎥 Creating video call for online consultation (WhatsApp acceptance)');
+          
+          const WherebyService = require('../../../services/whereby');
+          const wherebyService = new WherebyService();
+          
+          const meeting = await wherebyService.createConsultationMeeting(serviceRequest);
+          
+          updateData.wherebyRoomUrl = meeting.roomUrl;
+          updateData.wherebyMeetingId = meeting.meetingId;
+          
+          console.log('✅ Video call created successfully (WhatsApp):', meeting.meetingId);
+
+        } catch (videoError) {
+          console.error('❌ Failed to create video call (WhatsApp):', videoError.message);
+          // Continue with acceptance even if video call creation fails
+        }
+      }
+
       // Accept the service request (same logic as dashboard acceptance)
       const updatedServiceRequest = await strapi.entityService.update('api::service-request.service-request', serviceRequestId, {
-        data: {
-          doctor: doctorId,
-          status: 'accepted',
-          acceptedAt: new Date(),
-          totalAmount: doctor.hourlyRate * (serviceRequest.estimatedDuration || 1),
-        },
-        populate: ['business', 'doctor'],
+        data: updateData,
+        populate: ['business', 'doctor', 'service'],
       });
+
+      // Send video call notifications for online consultations
+      if (isOnlineConsultation && updatedServiceRequest.wherebyRoomUrl && serviceRequest.patientPhone) {
+        try {
+          console.log('📱 Sending video call notifications (WhatsApp acceptance)');
+          
+          const WhatsAppService = require('../../../services/whatsapp');
+          const whatsappServiceForVideo = new WhatsAppService();
+          
+          await whatsappServiceForVideo.sendVideoCallNotifications(
+            doctor, 
+            updatedServiceRequest, 
+            updatedServiceRequest.wherebyRoomUrl
+          );
+          
+          console.log('✅ Video call notifications sent successfully (WhatsApp acceptance)');
+          
+        } catch (notificationError) {
+          console.error('❌ Failed to send video call notifications (WhatsApp):', notificationError.message);
+          // Continue even if notifications fail
+        }
+      }
 
       // Cancel all related requests when this one is accepted
       await this.cancelRelatedRequests(serviceRequestId, strapi);
@@ -1003,9 +1052,11 @@ module.exports = createCoreController('api::service-request.service-request', ({
         },
       });
 
-      // Send confirmation messages
-      await whatsappService.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
-      await whatsappService.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
+      // Send confirmation messages (only if not online consultation, as video notifications are sent above)
+      if (!isOnlineConsultation) {
+        await whatsappService.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
+        await whatsappService.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
+      }
 
       // Generate success page
       const html = `
