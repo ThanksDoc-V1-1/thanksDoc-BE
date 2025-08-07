@@ -940,16 +940,8 @@ export interface ApiServiceService extends Struct.CollectionTypeSchema {
     name: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
-    parentService: Schema.Attribute.Relation<
-      'manyToOne',
-      'api::service.service'
-    >;
     price: Schema.Attribute.Decimal & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
-    serviceType: Schema.Attribute.Enumeration<['main', 'subcategory']> &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<'main'>;
-    subServices: Schema.Attribute.Relation<'oneToMany', 'api::service.service'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
