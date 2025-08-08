@@ -144,7 +144,9 @@ module.exports = {
         // Check if email is verified
         if (!user.isEmailVerified) {
           console.log('❌ Email not verified for business:', user.email);
-          return ctx.badRequest('Please verify your email address before logging in. Check your email for verification link.');
+          const errorMessage = 'Please verify your email address before logging in. Check your email for verification link.';
+          console.log('🔍 Returning error message:', errorMessage);
+          return ctx.badRequest(errorMessage);
         }
 
         // Generate JWT token
