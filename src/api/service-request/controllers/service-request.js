@@ -388,13 +388,32 @@ module.exports = createCoreController('api::service-request.service-request', ({
           const WhatsAppService = require('../../../services/whatsapp');
           const whatsappService = new WhatsAppService();
           
+          // Send WhatsApp notifications
           await whatsappService.sendVideoCallNotifications(
             doctor, 
             updatedServiceRequest, 
             updatedServiceRequest.wherebyRoomUrl
           );
           
-          console.log('✅ Video call notifications sent successfully');
+          console.log('✅ WhatsApp video call notifications sent successfully');
+
+          // Send Email notifications
+          try {
+            const EmailService = require('../../../services/email.service');
+            const emailService = new EmailService();
+            
+            await emailService.sendVideoCallEmails(
+              doctor,
+              updatedServiceRequest,
+              updatedServiceRequest.wherebyRoomUrl
+            );
+            
+            console.log('✅ Email video call notifications sent successfully');
+            
+          } catch (emailError) {
+            console.error('❌ Failed to send video call emails (continuing anyway):', emailError.message);
+            // Don't fail the whole process if emails fail - WhatsApp was successful
+          }
           
         } catch (notificationError) {
           console.error('❌ Failed to send video call notifications:', notificationError.message);
@@ -1028,13 +1047,32 @@ module.exports = createCoreController('api::service-request.service-request', ({
           const WhatsAppService = require('../../../services/whatsapp');
           const whatsappServiceForVideo = new WhatsAppService();
           
+          // Send WhatsApp notifications
           await whatsappServiceForVideo.sendVideoCallNotifications(
             doctor, 
             updatedServiceRequest, 
             updatedServiceRequest.wherebyRoomUrl
           );
           
-          console.log('✅ Video call notifications sent successfully (WhatsApp acceptance)');
+          console.log('✅ WhatsApp video call notifications sent successfully (WhatsApp acceptance)');
+
+          // Send Email notifications
+          try {
+            const EmailService = require('../../../services/email.service');
+            const emailService = new EmailService();
+            
+            await emailService.sendVideoCallEmails(
+              doctor,
+              updatedServiceRequest,
+              updatedServiceRequest.wherebyRoomUrl
+            );
+            
+            console.log('✅ Email video call notifications sent successfully (WhatsApp acceptance)');
+            
+          } catch (emailError) {
+            console.error('❌ Failed to send video call emails (WhatsApp acceptance, continuing anyway):', emailError.message);
+            // Don't fail the whole process if emails fail - WhatsApp was successful
+          }
           
         } catch (notificationError) {
           console.error('❌ Failed to send video call notifications (WhatsApp):', notificationError.message);

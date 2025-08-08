@@ -191,6 +191,265 @@ class EmailService {
       return false;
     }
   }
+
+  /**
+   * Send video call link to doctor via email
+   */
+  async sendVideoCallEmailToDoctor(doctor, serviceRequest, videoCallUrl) {
+    const scheduledTime = new Date(serviceRequest.requestedServiceDateTime).toLocaleString('en-GB', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const platformVideoUrl = `${process.env.FRONTEND_VIDEO_URL}/consultation/${serviceRequest.id}?type=doctor&roomUrl=${encodeURIComponent(videoCallUrl)}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: doctor.email,
+      subject: 'ThanksDoc - Video Consultation Ready',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Video Consultation Ready - ThanksDoc</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #3b82f6; color: white; padding: 20px; text-align: center; }
+            .content { padding: 30px 20px; background: #f9fafb; }
+            .button { 
+              display: inline-block; 
+              background: #10b981 !important; 
+              color: #ffffff !important; 
+              padding: 16px 32px; 
+              text-decoration: none !important; 
+              border-radius: 6px; 
+              margin: 20px 0; 
+              font-weight: bold; 
+              font-size: 16px;
+              border: none;
+              box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+            }
+            .button:hover { background: #059669 !important; }
+            .footer { padding: 20px; text-align: center; color: #666; font-size: 14px; }
+            .patient-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6; }
+            .video-icon { font-size: 48px; text-align: center; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🩺 Video Consultation Ready</h1>
+            </div>
+            <div class="content">
+              <h2>Hi Dr. ${doctor.firstName} ${doctor.lastName},</h2>
+              <p>Your video consultation is ready to start!</p>
+              
+              <div class="patient-details">
+                <h3>📋 Patient Details:</h3>
+                <ul>
+                  <li><strong>Name:</strong> ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName}</li>
+                  <li><strong>Phone:</strong> ${serviceRequest.patientPhone}</li>
+                  <li><strong>Service:</strong> ${serviceRequest.serviceType || 'Online Consultation'}</li>
+                  <li><strong>Scheduled Time:</strong> ${scheduledTime}</li>
+                </ul>
+              </div>
+
+              <div class="video-icon">🎥</div>
+              
+              <div style="text-align: center;">
+                <a href="${platformVideoUrl}" class="button">Join Video Call</a>
+              </div>
+              
+              <p><strong>⏰ Please join at your scheduled time.</strong> The patient will receive their link separately.</p>
+              
+              <p>Need help? Reply to this email or contact our support team.</p>
+              
+              <p>Best regards,<br>The ThanksDoc Team</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} ThanksDoc - Connecting Healthcare</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    try {
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Video call email sent to doctor: ${doctor.email}`);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error(`❌ Failed to send video call email to doctor ${doctor.email}:`, error);
+      throw new Error('Failed to send video call email to doctor');
+    }
+  }
+
+  /**
+   * Send video call link to patient via email
+   */
+  async sendVideoCallEmailToPatient(serviceRequest, doctor, videoCallUrl) {
+    if (!serviceRequest.patientEmail) {
+      console.warn('⚠️ No patient email provided for video call notification');
+      return null;
+    }
+
+    const scheduledTime = new Date(serviceRequest.requestedServiceDateTime).toLocaleString('en-GB', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const platformVideoUrl = `${process.env.FRONTEND_VIDEO_URL}/consultation/${serviceRequest.id}?type=patient&roomUrl=${encodeURIComponent(videoCallUrl)}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: serviceRequest.patientEmail,
+      subject: 'ThanksDoc - Your Video Consultation',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Your Video Consultation - ThanksDoc</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #10b981; color: white; padding: 20px; text-align: center; }
+            .content { padding: 30px 20px; background: #f9fafb; }
+            .button { 
+              display: inline-block; 
+              background: #3b82f6 !important; 
+              color: #ffffff !important; 
+              padding: 16px 32px; 
+              text-decoration: none !important; 
+              border-radius: 6px; 
+              margin: 20px 0; 
+              font-weight: bold; 
+              font-size: 16px;
+              border: none;
+              box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+            }
+            .button:hover { background: #2563eb !important; }
+            .footer { padding: 20px; text-align: center; color: #666; font-size: 14px; }
+            .doctor-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
+            .video-icon { font-size: 48px; text-align: center; margin: 20px 0; }
+            .instructions { background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🏥 Your Video Consultation</h1>
+            </div>
+            <div class="content">
+              <h2>Hello ${serviceRequest.patientFirstName || 'Patient'},</h2>
+              <p>Your video consultation with ThanksDoc is ready!</p>
+              
+              <div class="doctor-details">
+                <h3>👨‍⚕️ Your Doctor:</h3>
+                <ul>
+                  <li><strong>Name:</strong> Dr. ${doctor.firstName} ${doctor.lastName}</li>
+                  <li><strong>Specialization:</strong> ${doctor.specialization || 'General Practice'}</li>
+                  <li><strong>Service:</strong> ${serviceRequest.serviceType || 'Online Consultation'}</li>
+                  <li><strong>Scheduled Time:</strong> ${scheduledTime}</li>
+                </ul>
+              </div>
+
+              <div class="video-icon">🎥</div>
+              
+              <div style="text-align: center;">
+                <a href="${platformVideoUrl}" class="button">Join Video Call</a>
+              </div>
+              
+              <div class="instructions">
+                <h3>📱 Instructions:</h3>
+                <ul>
+                  <li>Click the "Join Video Call" button above</li>
+                  <li>Allow camera and microphone access when prompted</li>
+                  <li>Ensure you have a good internet connection</li>
+                  <li>Join a few minutes early for the best experience</li>
+                </ul>
+              </div>
+              
+              <p>Need help? Contact us at support@thanksdoc.com</p>
+              
+              <p>Best regards,<br>The ThanksDoc Team</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} ThanksDoc - Your Healthcare Partner</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    try {
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Video call email sent to patient: ${serviceRequest.patientEmail}`);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error(`❌ Failed to send video call email to patient ${serviceRequest.patientEmail}:`, error);
+      throw new Error('Failed to send video call email to patient');
+    }
+  }
+
+  /**
+   * Send video call emails to both doctor and patient
+   */
+  async sendVideoCallEmails(doctor, serviceRequest, videoCallUrl) {
+    try {
+      console.log('📧 Sending video call email notifications');
+      
+      const notifications = [];
+      
+      // Send to doctor
+      try {
+        const doctorEmail = await this.sendVideoCallEmailToDoctor(doctor, serviceRequest, videoCallUrl);
+        notifications.push({ type: 'doctor_email', success: true, data: doctorEmail });
+      } catch (error) {
+        console.error('❌ Failed to send video call email to doctor:', error);
+        notifications.push({ type: 'doctor_email', success: false, error: error.message });
+      }
+
+      // Send to patient (only if email is provided)
+      if (serviceRequest.patientEmail) {
+        try {
+          const patientEmail = await this.sendVideoCallEmailToPatient(serviceRequest, doctor, videoCallUrl);
+          if (patientEmail) {
+            notifications.push({ type: 'patient_email', success: true, data: patientEmail });
+          } else {
+            notifications.push({ type: 'patient_email', success: false, error: 'No patient email provided' });
+          }
+        } catch (error) {
+          console.error('❌ Failed to send video call email to patient:', error);
+          notifications.push({ type: 'patient_email', success: false, error: error.message });
+        }
+      } else {
+        console.warn('⚠️ Patient email not provided, skipping patient email notification');
+        notifications.push({ type: 'patient_email', success: false, error: 'No email address provided' });
+      }
+
+      console.log('✅ Video call email notifications completed:', notifications);
+      return notifications;
+
+    } catch (error) {
+      console.error('❌ Error sending video call email notifications:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = EmailService;
