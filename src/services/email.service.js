@@ -32,7 +32,20 @@ class EmailService {
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
             .header { background: #3b82f6; color: white; padding: 20px; text-align: center; }
             .content { padding: 30px 20px; background: #f9fafb; }
-            .button { display: inline-block; background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+            .button { 
+              display: inline-block; 
+              background: #3b82f6 !important; 
+              color: #ffffff !important; 
+              padding: 14px 32px; 
+              text-decoration: none !important; 
+              border-radius: 6px; 
+              margin: 20px 0; 
+              font-weight: bold; 
+              font-size: 16px;
+              border: none;
+              box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+            }
+            .button:hover { background: #2563eb !important; }
             .footer { padding: 20px; text-align: center; color: #666; font-size: 14px; }
             .code { background: #e5e7eb; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 18px; text-align: center; margin: 20px 0; }
           </style>
@@ -48,7 +61,11 @@ class EmailService {
               <p>To complete your registration and start using our platform, please verify your email address by clicking the button below:</p>
               
               <div style="text-align: center;">
-                <a href="${verificationUrl}" class="button">Verify Email Address</a>
+                <a href="${verificationUrl}" 
+                   class="button" 
+                   style="display: inline-block; background: #3b82f6 !important; color: #ffffff !important; padding: 14px 32px; text-decoration: none !important; border-radius: 6px; margin: 20px 0; font-weight: bold; font-size: 16px; border: none; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);">
+                  Verify Email Address
+                </a>
               </div>
               
               <p>Or copy and paste this link into your browser:</p>
