@@ -3,6 +3,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const EmailService = require('../../../services/email.service');
+const { generateVerificationToken, generateExpirationTime, isExpired } = require('../../../utils/auth.utils');
 
 /**
  * Custom authentication controller
@@ -87,6 +89,12 @@ module.exports = {
           return ctx.badRequest('Invalid credentials');
         }
 
+        // Check if email is verified
+        if (!user.isEmailVerified) {
+          console.log('❌ Email not verified for doctor:', user.email);
+          return ctx.badRequest('Please verify your email address before logging in. Check your email for verification link.');
+        }
+
         // Generate JWT token
         const token = jwt.sign(
           { 
@@ -131,6 +139,12 @@ module.exports = {
         if (!isValidPassword) {
           console.log('Invalid password for business:', user.email);
           return ctx.badRequest('Invalid credentials');
+        }
+
+        // Check if email is verified
+        if (!user.isEmailVerified) {
+          console.log('❌ Email not verified for business:', user.email);
+          return ctx.badRequest('Please verify your email address before logging in. Check your email for verification link.');
         }
 
         // Generate JWT token
@@ -204,11 +218,31 @@ module.exports = {
       // Hash password
       const hashedPassword = await bcrypt.hash(userData.password, 10);
       
+      // Generate email verification token for non-admin users
+      let emailVerificationToken = null;
+      let emailVerificationExpires = null;
+      
+      if (type !== 'admin') {
+        emailVerificationToken = generateVerificationToken();
+        emailVerificationExpires = generateExpirationTime(24); // 24 hours
+      }
+      
       // Prepare user data
       const userDataWithHashedPassword = {
         ...userData,
         password: hashedPassword,
+        ...(type !== 'admin' ? {
+          emailVerificationToken,
+          emailVerificationExpires,
+          isEmailVerified: false
+        } : {})
       };
+
+      // Map phoneNumber to phone for business schema compatibility
+      if (type === 'business' && userDataWithHashedPassword.phoneNumber) {
+        userDataWithHashedPassword.phone = userDataWithHashedPassword.phoneNumber;
+        delete userDataWithHashedPassword.phoneNumber;
+      }
 
       // Add name field if not present
       if (!userDataWithHashedPassword.name) {
@@ -225,42 +259,235 @@ module.exports = {
           data: userDataWithHashedPassword,
         });
       } else if (type === 'business') {
-        user = await strapi.entityService.create('api::business.business', {
-          data: userDataWithHashedPassword,
-        });
+        console.log('🏢 Creating business with data:', JSON.stringify(userDataWithHashedPassword, null, 2));
+        try {
+          user = await strapi.entityService.create('api::business.business', {
+            data: userDataWithHashedPassword,
+          });
+          console.log('✅ Business created successfully:', user.id);
+        } catch (businessError) {
+          console.error('❌ Business creation error:', businessError);
+          throw businessError;
+        }
       } else if (type === 'admin') {
         user = await strapi.entityService.create('api::admin.admin', {
           data: userDataWithHashedPassword,
         });
       }
 
-      // Generate JWT token
-      const token = jwt.sign(
+      // Send email verification for non-admin users
+      if (type !== 'admin' && emailVerificationToken) {
+        try {
+          const emailService = new EmailService();
+          await emailService.sendVerificationEmail(
+            user.email, 
+            user.name || user.firstName || user.businessName || 'User',
+            emailVerificationToken,
+            type
+          );
+          console.log('✅ Verification email sent to:', user.email);
+        } catch (emailError) {
+          console.error('❌ Failed to send verification email:', emailError);
+          // Continue with registration even if email fails
+        }
+      }
+
+      console.log('Registration successful for:', user.email, 'as', type);
+      
+      if (type === 'admin') {
+        // Generate JWT token for admin (no email verification needed)
+        const token = jwt.sign(
+          { 
+            id: user.id, 
+            email: user.email, 
+            role: type 
+          },
+          process.env.JWT_SECRET || 'your-secret-key',
+          { expiresIn: '7d' }
+        );
+        
+        return ctx.send({
+          jwt: token,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: type,
+            isVerified: user.isVerified,
+          }
+        });
+      } else {
+        // For doctor and business, return success without JWT token (they need to verify email first)
+        return ctx.send({
+          message: 'Registration successful! Please check your email to verify your account before logging in.',
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: type,
+            isEmailVerified: false,
+            requiresEmailVerification: true
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('Registration error:', error);
+      return ctx.internalServerError('An error occurred during registration');
+    }
+  },
+
+  async verifyEmail(ctx) {
+    try {
+      const { token, type } = ctx.request.body;
+
+      if (!token || !type || !['doctor', 'business'].includes(type)) {
+        return ctx.badRequest('Invalid verification token or user type');
+      }
+
+      console.log('Email verification attempt for type:', type, 'with token:', token.substring(0, 10) + '...');
+
+      // Find user with the verification token
+      const collectionName = type === 'doctor' ? 'api::doctor.doctor' : 'api::business.business';
+      
+      const users = await strapi.entityService.findMany(collectionName, {
+        filters: { 
+          emailVerificationToken: token,
+          isEmailVerified: false
+        },
+        limit: 1,
+      });
+
+      if (users.length === 0) {
+        console.log('❌ Invalid or expired verification token');
+        return ctx.badRequest('Invalid or expired verification token');
+      }
+
+      const user = users[0];
+
+      // Check if token has expired
+      if (isExpired(user.emailVerificationExpires)) {
+        console.log('❌ Verification token has expired for:', user.email);
+        return ctx.badRequest('Verification token has expired. Please request a new verification email.');
+      }
+
+      // Update user to mark email as verified
+      const updatedUser = await strapi.entityService.update(collectionName, user.id, {
+        data: {
+          isEmailVerified: true,
+          emailVerificationToken: null,
+          emailVerificationExpires: null
+        }
+      });
+
+      // Send welcome email
+      try {
+        const emailService = new EmailService();
+        await emailService.sendWelcomeEmail(
+          updatedUser.email,
+          updatedUser.name || updatedUser.firstName || updatedUser.businessName || 'User',
+          type
+        );
+        console.log('✅ Welcome email sent to:', updatedUser.email);
+      } catch (emailError) {
+        console.error('❌ Failed to send welcome email:', emailError);
+        // Continue even if welcome email fails
+      }
+
+      // Generate JWT token now that email is verified
+      const jwtToken = jwt.sign(
         { 
-          id: user.id, 
-          email: user.email, 
+          id: updatedUser.id, 
+          email: updatedUser.email, 
           role: type 
         },
         process.env.JWT_SECRET || 'your-secret-key',
         { expiresIn: '7d' }
       );
 
-      console.log('Registration successful for:', user.email, 'as', type);
+      console.log('✅ Email verification successful for:', updatedUser.email);
       return ctx.send({
-        jwt: token,
+        message: 'Email verified successfully! You can now log in.',
+        jwt: jwtToken,
         user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name,
           role: type,
-          isVerified: user.isVerified,
-          ...(type === 'doctor' ? { isAvailable: user.isAvailable } : {})
+          isEmailVerified: true,
+          isVerified: updatedUser.isVerified,
+          ...(type === 'doctor' ? { isAvailable: updatedUser.isAvailable } : {})
         }
       });
 
     } catch (error) {
-      console.error('Registration error:', error);
-      return ctx.internalServerError('An error occurred during registration');
+      console.error('Email verification error:', error);
+      return ctx.internalServerError('An error occurred during email verification');
+    }
+  },
+
+  async resendVerificationEmail(ctx) {
+    try {
+      const { email, type } = ctx.request.body;
+
+      if (!email || !type || !['doctor', 'business'].includes(type)) {
+        return ctx.badRequest('Email and user type are required');
+      }
+
+      console.log('Resend verification email request for:', email, 'as', type);
+
+      // Find user
+      const collectionName = type === 'doctor' ? 'api::doctor.doctor' : 'api::business.business';
+      
+      const users = await strapi.entityService.findMany(collectionName, {
+        filters: { 
+          email,
+          isEmailVerified: false
+        },
+        limit: 1,
+      });
+
+      if (users.length === 0) {
+        console.log('❌ User not found or already verified:', email);
+        return ctx.badRequest('User not found or email already verified');
+      }
+
+      const user = users[0];
+
+      // Generate new verification token
+      const emailVerificationToken = generateVerificationToken();
+      const emailVerificationExpires = generateExpirationTime(24);
+
+      // Update user with new token
+      const updatedUser = await strapi.entityService.update(collectionName, user.id, {
+        data: {
+          emailVerificationToken,
+          emailVerificationExpires
+        }
+      });
+
+      // Send new verification email
+      try {
+        const emailService = new EmailService();
+        await emailService.sendVerificationEmail(
+          updatedUser.email,
+          updatedUser.name || updatedUser.firstName || updatedUser.businessName || 'User',
+          emailVerificationToken,
+          type
+        );
+        console.log('✅ New verification email sent to:', updatedUser.email);
+      } catch (emailError) {
+        console.error('❌ Failed to send verification email:', emailError);
+        return ctx.internalServerError('Failed to send verification email');
+      }
+
+      return ctx.send({
+        message: 'Verification email sent successfully! Please check your email.'
+      });
+
+    } catch (error) {
+      console.error('Resend verification email error:', error);
+      return ctx.internalServerError('An error occurred while resending verification email');
     }
   },
 

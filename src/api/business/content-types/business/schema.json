@@ -17,13 +17,12 @@
       "required": true
     },
     "businessType": {
-      "type": "enumeration",
-      "enum": ["pharmacy", "clinic", "hospital", "other"],
+      "type": "string",
       "required": true
     },
     "contactPersonName": {
       "type": "string",
-      "required": true
+      "required": false
     },
     "name": {
       "type": "string",
@@ -47,37 +46,49 @@
       "type": "datetime",
       "private": true
     },
+    "emailVerificationToken": {
+      "type": "string",
+      "private": true
+    },
+    "emailVerificationExpires": {
+      "type": "datetime",
+      "private": true
+    },
+    "isEmailVerified": {
+      "type": "boolean",
+      "default": false
+    },
     "phone": {
       "type": "string",
-      "required": true
+      "required": false
     },
     "latitude": {
       "type": "decimal",
-      "required": true
+      "required": false
     },
     "longitude": {
       "type": "decimal",
-      "required": true
+      "required": false
     },
     "address": {
       "type": "text",
-      "required": true
+      "required": false
     },
     "city": {
       "type": "string",
-      "required": true
+      "required": false
     },
     "state": {
       "type": "string",
-      "required": true
+      "required": false
     },
     "zipCode": {
       "type": "string",
-      "required": true
+      "required": false
     },
     "businessLicense": {
       "type": "string",
-      "required": true
+      "required": false
     },
     "isVerified": {
       "type": "boolean",

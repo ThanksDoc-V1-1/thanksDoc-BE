@@ -42,6 +42,18 @@
       "type": "datetime",
       "private": true
     },
+    "emailVerificationToken": {
+      "type": "string",
+      "private": true
+    },
+    "emailVerificationExpires": {
+      "type": "datetime",
+      "private": true
+    },
+    "isEmailVerified": {
+      "type": "boolean",
+      "default": false
+    },
     "phone": {
       "type": "string",
       "required": true

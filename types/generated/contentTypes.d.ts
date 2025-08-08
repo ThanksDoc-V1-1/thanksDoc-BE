@@ -471,15 +471,12 @@ export interface ApiBusinessBusiness extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
-    address: Schema.Attribute.Text & Schema.Attribute.Required;
-    businessLicense: Schema.Attribute.String & Schema.Attribute.Required;
+    address: Schema.Attribute.Text;
+    businessLicense: Schema.Attribute.String;
     businessName: Schema.Attribute.String & Schema.Attribute.Required;
-    businessType: Schema.Attribute.Enumeration<
-      ['pharmacy', 'clinic', 'hospital', 'other']
-    > &
-      Schema.Attribute.Required;
-    city: Schema.Attribute.String & Schema.Attribute.Required;
-    contactPersonName: Schema.Attribute.String & Schema.Attribute.Required;
+    businessType: Schema.Attribute.String & Schema.Attribute.Required;
+    city: Schema.Attribute.String;
+    contactPersonName: Schema.Attribute.String;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -487,16 +484,21 @@ export interface ApiBusinessBusiness extends Struct.CollectionTypeSchema {
     email: Schema.Attribute.Email &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
+    emailVerificationExpires: Schema.Attribute.DateTime &
+      Schema.Attribute.Private;
+    emailVerificationToken: Schema.Attribute.String & Schema.Attribute.Private;
     emergencyContact: Schema.Attribute.String;
+    isEmailVerified: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
     isVerified: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
-    latitude: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    latitude: Schema.Attribute.Decimal;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'api::business.business'
     > &
       Schema.Attribute.Private;
-    longitude: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    longitude: Schema.Attribute.Decimal;
     name: Schema.Attribute.String & Schema.Attribute.Required;
     operatingHours: Schema.Attribute.JSON;
     password: Schema.Attribute.String &
@@ -505,14 +507,14 @@ export interface ApiBusinessBusiness extends Struct.CollectionTypeSchema {
     passwordResetExpires: Schema.Attribute.DateTime & Schema.Attribute.Private;
     passwordResetToken: Schema.Attribute.String & Schema.Attribute.Private;
     paymentMethods: Schema.Attribute.JSON;
-    phone: Schema.Attribute.String & Schema.Attribute.Required;
+    phone: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
-    state: Schema.Attribute.String & Schema.Attribute.Required;
+    state: Schema.Attribute.String;
     stripeCustomerId: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    zipCode: Schema.Attribute.String & Schema.Attribute.Required;
+    zipCode: Schema.Attribute.String;
   };
 }
 
@@ -711,10 +713,15 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
     email: Schema.Attribute.Email &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
+    emailVerificationExpires: Schema.Attribute.DateTime &
+      Schema.Attribute.Private;
+    emailVerificationToken: Schema.Attribute.String & Schema.Attribute.Private;
     emergencyContact: Schema.Attribute.String;
     firstName: Schema.Attribute.String & Schema.Attribute.Required;
     hourlyRate: Schema.Attribute.Decimal;
     isAvailable: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    isEmailVerified: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
     isVerified: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     languages: Schema.Attribute.JSON;
     lastName: Schema.Attribute.String & Schema.Attribute.Required;
