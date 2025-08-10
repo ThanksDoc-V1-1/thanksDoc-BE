@@ -134,7 +134,7 @@ class EmailService {
                 <div class="feature">
                   <h3>👨‍⚕️ As a Doctor, you can now:</h3>
                   <ul>
-                    <li>Complete your profile and add your specializations</li>
+                    <li>Complete your profile</li>
                     <li>Upload compliance documents for verification</li>
                     <li>Set your availability and services</li>
                     <li>Receive consultation requests from businesses</li>
@@ -361,7 +361,6 @@ class EmailService {
                 <h3>👨‍⚕️ Your Doctor:</h3>
                 <ul>
                   <li><strong>Name:</strong> Dr. ${doctor.firstName} ${doctor.lastName}</li>
-                  <li><strong>Specialization:</strong> ${doctor.specialization || 'General Practice'}</li>
                   <li><strong>Service:</strong> ${serviceRequest.serviceType || 'Online Consultation'}</li>
                   <li><strong>Scheduled Time:</strong> ${scheduledTime}</li>
                 </ul>
