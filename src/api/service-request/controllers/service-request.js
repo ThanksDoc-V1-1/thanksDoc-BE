@@ -141,6 +141,10 @@ module.exports = createCoreController('api::service-request.service-request', ({
         serviceDateTime,
         preferredDoctorId,
         doctorSelectionType,
+        // Distance filtering parameters
+        businessLatitude,
+        businessLongitude,
+        distanceFilter,
         // Patient information for online consultations
         patientFirstName,
         patientLastName,
@@ -151,6 +155,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       console.log('Creating service request with data:', {
         businessId, urgencyLevel, serviceType, serviceId, description, estimatedDuration, 
         serviceDateTime, preferredDoctorId, doctorSelectionType,
+        businessLatitude, businessLongitude, distanceFilter,
         patientFirstName, patientLastName, patientPhone, patientEmail
       });
       
@@ -187,6 +192,10 @@ module.exports = createCoreController('api::service-request.service-request', ({
         requestedAt: new Date(),
         status: 'pending',
         publishedAt: new Date(),
+        // Store distance filtering parameters for fallback logic
+        businessLatitude: businessLatitude,
+        businessLongitude: businessLongitude, 
+        distanceFilter: distanceFilter,
       };
 
       // Add service ID if provided
@@ -270,15 +279,27 @@ module.exports = createCoreController('api::service-request.service-request', ({
           console.error('Failed to send WhatsApp notification to selected doctor:', whatsappError);
         }
       } else {
-        // No specific doctor selected - find nearby doctors (old behavior)
+        // No specific doctor selected - find nearby doctors based on distance filter
         try {
+          // Use business location from parameters or fallback to stored business location
+          const businessLat = businessLatitude || business.latitude;
+          const businessLng = businessLongitude || business.longitude;
+          const radius = distanceFilter && distanceFilter !== -1 ? distanceFilter : 50; // Default to 50km if not specified or "anywhere"
+          
+          console.log('🔍 Finding nearby doctors with distance filter:', {
+            businessLatitude: businessLat,
+            businessLongitude: businessLng,
+            distanceFilter: distanceFilter,
+            radius: radius
+          });
+          
           const nearbyDoctorsResponse = await this.findNearbyDoctors({
             request: {
               body: {
                 businessId,
-                latitude: business.latitude,
-                longitude: business.longitude,
-                radius: 10
+                latitude: businessLat,
+                longitude: businessLng,
+                radius: radius
               }
             }
           });
@@ -623,6 +644,10 @@ module.exports = createCoreController('api::service-request.service-request', ({
         description, 
         estimatedDuration,
         serviceDateTime, // New field for requested service date/time
+        // Distance filtering parameters
+        businessLatitude,
+        businessLongitude,
+        distanceFilter,
         // Patient portal fields
         firstName,
         lastName,
@@ -634,6 +659,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       
       console.log('Creating direct request with data:', {
         businessId, doctorId, serviceId, urgencyLevel, serviceType, description, estimatedDuration, serviceDateTime,
+        businessLatitude, businessLongitude, distanceFilter,
         firstName, lastName, phoneNumber, urgency, symptoms, notes
       });
       
@@ -698,7 +724,11 @@ module.exports = createCoreController('api::service-request.service-request', ({
         estimatedDuration: parseInt(estimatedDuration) || 1,
         requestedAt: new Date(),
         requestedServiceDateTime: requestedServiceDateTime,
-        status: 'pending'
+        status: 'pending',
+        // Store distance filtering parameters for fallback logic
+        businessLatitude: businessLatitude,
+        businessLongitude: businessLongitude,
+        distanceFilter: distanceFilter,
       } : {
         // Patient request data
         doctor: doctorId,

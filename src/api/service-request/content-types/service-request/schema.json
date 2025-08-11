@@ -165,6 +165,18 @@
     "videoCallEndedAt": {
       "type": "datetime",
       "required": false
+    },
+    "businessLatitude": {
+      "type": "decimal",
+      "required": false
+    },
+    "businessLongitude": {
+      "type": "decimal", 
+      "required": false
+    },
+    "distanceFilter": {
+      "type": "integer",
+      "required": false
     }
   }
 }

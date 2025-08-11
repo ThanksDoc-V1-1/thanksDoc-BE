@@ -837,6 +837,8 @@ export interface ApiServiceRequestServiceRequest
     acceptedAt: Schema.Attribute.DateTime;
     business: Schema.Attribute.Relation<'manyToOne', 'api::business.business'> &
       Schema.Attribute.Required;
+    businessLatitude: Schema.Attribute.Decimal;
+    businessLongitude: Schema.Attribute.Decimal;
     cancelReason: Schema.Attribute.Text;
     chargeId: Schema.Attribute.String;
     completedAt: Schema.Attribute.DateTime;
@@ -845,6 +847,7 @@ export interface ApiServiceRequestServiceRequest
       Schema.Attribute.Private;
     currency: Schema.Attribute.String & Schema.Attribute.DefaultTo<'GBP'>;
     description: Schema.Attribute.Text & Schema.Attribute.Required;
+    distanceFilter: Schema.Attribute.Integer;
     doctor: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
     doctorPaidAt: Schema.Attribute.DateTime;
     estimatedDuration: Schema.Attribute.Integer;

@@ -43,13 +43,28 @@ module.exports = {
           const serviceId = request.service.id;
 
           // Find other doctors who provide the same service (excluding the original doctor)
-          const otherDoctors = await strapi.entityService.findMany('api::doctor.doctor', {
+          let otherDoctors = await strapi.entityService.findMany('api::doctor.doctor', {
             filters: {
               services: { id: serviceId },
               id: { $ne: originalDoctorId },
             },
             populate: ['services'],
           });
+
+          // Apply distance filtering if business location and distance filter are available
+          if (request.businessLatitude && request.businessLongitude && request.distanceFilter && request.distanceFilter !== -1) {
+            const { filterDoctorsByDistance } = require('../src/utils/distance');
+            console.log(`Applying distance filter: ${request.distanceFilter}km from business location (${request.businessLatitude}, ${request.businessLongitude})`);
+            
+            const beforeCount = otherDoctors.length;
+            otherDoctors = filterDoctorsByDistance(
+              otherDoctors,
+              parseFloat(request.businessLatitude),
+              parseFloat(request.businessLongitude),
+              parseInt(request.distanceFilter)
+            );
+            console.log(`Distance filtering: ${beforeCount} doctors -> ${otherDoctors.length} doctors within ${request.distanceFilter}km`);
+          }
 
         console.log(`Found ${otherDoctors.length} other doctors for service ID ${serviceId}.`);
 
