@@ -958,6 +958,46 @@ export interface ApiServiceService extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiSystemSettingSystemSetting
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'system_settings';
+  info: {
+    description: 'System-wide configuration settings';
+    displayName: 'System Setting';
+    pluralName: 'system-settings';
+    singularName: 'system-setting';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    category: Schema.Attribute.String & Schema.Attribute.DefaultTo<'general'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    dataType: Schema.Attribute.Enumeration<
+      ['string', 'number', 'boolean', 'json']
+    > &
+      Schema.Attribute.DefaultTo<'string'>;
+    description: Schema.Attribute.Text;
+    isPublic: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    key: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::system-setting.system-setting'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    value: Schema.Attribute.Text & Schema.Attribute.Required;
+  };
+}
+
 export interface ApiWhatsappWhatsapp extends Struct.CollectionTypeSchema {
   collectionName: 'whatsapps';
   info: {
@@ -1515,6 +1555,7 @@ declare module '@strapi/strapi' {
       'api::professional-reference.professional-reference': ApiProfessionalReferenceProfessionalReference;
       'api::service-request.service-request': ApiServiceRequestServiceRequest;
       'api::service.service': ApiServiceService;
+      'api::system-setting.system-setting': ApiSystemSettingSystemSetting;
       'api::whatsapp.whatsapp': ApiWhatsappWhatsapp;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;

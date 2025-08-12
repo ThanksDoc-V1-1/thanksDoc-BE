@@ -1,0 +1,47 @@
+{
+  "kind": "collectionType",
+  "collectionName": "system_settings",
+  "info": {
+    "singularName": "system-setting",
+    "pluralName": "system-settings",
+    "displayName": "System Setting",
+    "description": "System-wide configuration settings"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "description": "Unique key identifier for the setting"
+    },
+    "value": {
+      "type": "text",
+      "required": true,
+      "description": "The setting value (can be string, number, JSON, etc.)"
+    },
+    "dataType": {
+      "type": "enumeration",
+      "enum": ["string", "number", "boolean", "json"],
+      "default": "string",
+      "description": "The data type of the value"
+    },
+    "description": {
+      "type": "text",
+      "description": "Description of what this setting controls"
+    },
+    "category": {
+      "type": "string",
+      "default": "general",
+      "description": "Category grouping for the setting"
+    },
+    "isPublic": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this setting can be accessed publicly (without authentication)"
+    }
+  }
+}

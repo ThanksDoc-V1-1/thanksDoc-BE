@@ -7,6 +7,26 @@
 
 const { createCoreController } = require('@strapi/strapi').factories;
 
+// Helper function to get dynamic booking fee from system settings
+const getBookingFee = async (strapi) => {
+  try {
+    const booking_fee_setting = await strapi.entityService.findMany('api::system-setting.system-setting', {
+      filters: { key: 'booking_fee' },
+      limit: 1,
+    });
+    
+    if (booking_fee_setting && booking_fee_setting.length > 0) {
+      const fee = parseFloat(booking_fee_setting[0].value);
+      return isNaN(fee) ? 3.00 : fee; // Default to 3.00 if parsing fails
+    }
+    
+    return 3.00; // Default booking fee
+  } catch (error) {
+    console.error('Error fetching booking fee from system settings:', error);
+    return 3.00; // Default booking fee on error
+  }
+};
+
 module.exports = createCoreController('api::service-request.service-request', ({ strapi }) => ({
   
   async find(ctx) {
@@ -1753,7 +1773,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       const totalTransactions = allPaidRequests.length;
       const totalRevenue = allPaidRequests.reduce((sum, req) => sum + (req.totalAmount || 0), 0);
-      const serviceCharge = 3.00; // £3 service charge
+      const serviceCharge = await getBookingFee(strapi); // Dynamic service charge
       const totalServiceCharges = totalTransactions * serviceCharge;
       const totalDoctorEarnings = Math.max(0, totalRevenue - totalServiceCharges);
 
@@ -1837,7 +1857,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       // Group by doctor and calculate earnings
       const doctorEarnings = {};
-      const serviceCharge = 3.00; // £3 service charge
+      const serviceCharge = await getBookingFee(strapi); // Dynamic service charge
 
       paidRequests.forEach(request => {
         const doctor = request.doctor;
@@ -1893,7 +1913,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return ctx.notFound('Service not found');
       }
 
-      const serviceCharge = 3.00; // £3 service charge for all requests
+      const serviceCharge = await getBookingFee(strapi); // Dynamic service charge for all requests
       const servicePrice = parseFloat(service.price) || 0;
       const totalAmount = servicePrice + serviceCharge;
 
