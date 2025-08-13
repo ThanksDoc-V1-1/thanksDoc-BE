@@ -43,8 +43,8 @@
     "whatsapp-business-api": "^0.0.4"
   },
   "engines": {
-    "node": ">=18.0.0 <=22.x.x",
-    "npm": ">=6.0.0"
+    "node": "18.x",
+    "npm": "9.x"
   },
   "strapi": {
     "uuid": "f886e222-4cd0-4ed9-8690-18ff510ef1b4",
