@@ -1,0 +1,16 @@
+# Add these to your Railway environment variables
+
+# Database Connection Settings
+DATABASE_SSL=true
+DATABASE_CONNECT_TIMEOUT=60000
+DATABASE_ACQUIRE_TIMEOUT=60000
+DATABASE_TIMEOUT=60000
+DATABASE_POOL_MIN=1
+DATABASE_POOL_MAX=5
+
+# Server Configuration
+HOST=0.0.0.0
+PORT=8080
+
+# Make sure these are set
+NODE_ENV=production

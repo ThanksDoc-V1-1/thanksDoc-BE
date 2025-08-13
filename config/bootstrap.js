@@ -23,6 +23,42 @@ module.exports = {
    */
   async bootstrap({ strapi }) {
     console.log('🚀 Setting up document expiry cron jobs...');
+    
+    // Add health check endpoint for Railway
+    strapi.server.routes([
+      {
+        method: 'GET',
+        path: '/health',
+        handler: async (ctx) => {
+          ctx.body = { 
+            status: 'ok', 
+            timestamp: new Date().toISOString(),
+            service: 'ThanksDoc Backend',
+            database: 'checking...'
+          };
+          
+          try {
+            // Test database connection
+            await strapi.db.connection.raw('SELECT 1');
+            ctx.body.database = 'connected';
+          } catch (error) {
+            ctx.body.database = 'disconnected';
+            ctx.body.error = error.message;
+          }
+        },
+      },
+      {
+        method: 'GET',
+        path: '/',
+        handler: async (ctx) => {
+          ctx.body = { 
+            message: 'ThanksDoc Backend API is running',
+            status: 'healthy',
+            timestamp: new Date().toISOString()
+          };
+        },
+      }
+    ]);
 
     // Schedule document expiry status updates to run every day at 2 AM
     const cronTime = '0 2 * * *'; // Every day at 2:00 AM
