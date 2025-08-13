@@ -169,14 +169,27 @@ module.exports = createCoreController('api::service-request.service-request', ({
         patientFirstName,
         patientLastName,
         patientPhone,
-        patientEmail
+        patientEmail,
+        // Payment information for pre-paid requests
+        isPaid,
+        paymentMethod,
+        paymentIntentId,
+        paymentStatus,
+        paidAt,
+        totalAmount,
+        servicePrice,
+        serviceCharge,
+        currency,
+        chargeId
       } = ctx.request.body;
       
       console.log('Creating service request with data:', {
         businessId, urgencyLevel, serviceType, serviceId, description, estimatedDuration, 
         serviceDateTime, preferredDoctorId, doctorSelectionType,
         businessLatitude, businessLongitude, distanceFilter,
-        patientFirstName, patientLastName, patientPhone, patientEmail
+        patientFirstName, patientLastName, patientPhone, patientEmail,
+        // Payment information
+        isPaid, paymentMethod, paymentIntentId, paymentStatus, paidAt, totalAmount, servicePrice, serviceCharge, currency, chargeId
       });
       
       // Get business details
@@ -218,6 +231,52 @@ module.exports = createCoreController('api::service-request.service-request', ({
         distanceFilter: distanceFilter,
       };
 
+      // Add payment information if provided (for pre-paid requests)
+      if (isPaid) {
+        // Convert Stripe payment status to our schema values
+        let normalizedPaymentStatus = paymentStatus;
+        if (paymentStatus === 'succeeded') {
+          normalizedPaymentStatus = 'paid';
+        } else if (paymentStatus === 'requires_payment_method') {
+          normalizedPaymentStatus = 'pending';
+        } else if (paymentStatus === 'failed') {
+          normalizedPaymentStatus = 'failed';
+        } else if (!['pending', 'paid', 'failed', 'refunded', 'doctor_paid'].includes(paymentStatus)) {
+          // Default to 'paid' if payment was successful but status is unknown
+          normalizedPaymentStatus = 'paid';
+        }
+        
+        serviceRequestData.isPaid = isPaid;
+        serviceRequestData.paymentMethod = paymentMethod;
+        serviceRequestData.paymentIntentId = paymentIntentId;
+        serviceRequestData.paymentStatus = normalizedPaymentStatus;
+        serviceRequestData.paidAt = paidAt ? new Date(paidAt) : new Date();
+        serviceRequestData.totalAmount = parseFloat(totalAmount) || 0;
+        serviceRequestData.currency = currency || 'GBP';
+        serviceRequestData.chargeId = chargeId;
+        
+        // Create payment details object for better tracking
+        const paymentDetails = {
+          paymentIntentId: paymentIntentId,
+          paymentMethod: paymentMethod || 'card',
+          paymentStatus: paymentStatus || 'succeeded',
+          servicePrice: parseFloat(servicePrice) || 0,
+          serviceCharge: parseFloat(serviceCharge) || 0,
+          totalAmount: parseFloat(totalAmount) || 0,
+          processedAt: paidAt || new Date().toISOString(),
+          currency: currency || 'gbp'
+        };
+        
+        serviceRequestData.paymentDetails = JSON.stringify(paymentDetails);
+        
+        console.log('💰 Adding payment information to service request:', {
+          isPaid: serviceRequestData.isPaid,
+          paymentIntentId: serviceRequestData.paymentIntentId,
+          totalAmount: serviceRequestData.totalAmount,
+          paymentMethod: serviceRequestData.paymentMethod
+        });
+      }
+
       // Add service ID if provided
       if (serviceId) {
         serviceRequestData.service = serviceId;
@@ -255,7 +314,10 @@ module.exports = createCoreController('api::service-request.service-request', ({
       console.log('🔍 About to save serviceRequestData:', {
         requestedServiceDateTime: serviceRequestData.requestedServiceDateTime,
         serviceDateTime: serviceRequestData.serviceDateTime,
-        keys: Object.keys(serviceRequestData)
+        keys: Object.keys(serviceRequestData),
+        totalAmount: serviceRequestData.totalAmount,
+        isPaid: serviceRequestData.isPaid,
+        paymentIntentId: serviceRequestData.paymentIntentId
       });
       
       const serviceRequest = await strapi.entityService.create('api::service-request.service-request', {
@@ -288,10 +350,17 @@ module.exports = createCoreController('api::service-request.service-request', ({
           
           const whatsappService = strapi.service('whatsapp');
           if (whatsappService) {
-            await whatsappService.sendServiceRequestNotification(selectedDoctor, serviceRequest, business);
-            whatsappNotificationsSent = 1;
-            notifiedDoctorsCount = 1;
-            console.log(`WhatsApp notification sent to selected doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`);
+            // Send notification with timeout to avoid blocking the response
+            Promise.race([
+              whatsappService.sendServiceRequestNotification(selectedDoctor, serviceRequest, business),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('WhatsApp timeout')), 10000))
+            ]).then(() => {
+              whatsappNotificationsSent = 1;
+              notifiedDoctorsCount = 1;
+              console.log(`WhatsApp notification sent to selected doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`);
+            }).catch(whatsappError => {
+              console.error('Failed to send WhatsApp notification to selected doctor:', whatsappError.message || whatsappError);
+            });
           } else {
             console.error('WhatsApp service not found!');
           }
@@ -327,20 +396,25 @@ module.exports = createCoreController('api::service-request.service-request', ({
           console.log(`Found ${nearbyDoctorsResponse.count} nearby doctors`);
           notifiedDoctorsCount = nearbyDoctorsResponse.count;
 
-          // Send WhatsApp notifications to nearby doctors
-          const whatsappService = strapi.service('whatsapp');
-          if (whatsappService) {
-            for (const doctor of nearbyDoctorsResponse.doctors) {
-              try {
-                await whatsappService.sendServiceRequestNotification(doctor, serviceRequest, business);
-                whatsappNotificationsSent++;
-              } catch (error) {
-                console.error(`Failed to send WhatsApp notification to Dr. ${doctor.firstName} ${doctor.lastName}:`, error);
-              }
+        // Send WhatsApp notifications to nearby doctors
+        const whatsappService = strapi.service('whatsapp');
+        if (whatsappService) {
+          // Send WhatsApp notifications without waiting for completion to avoid timeouts
+          const notificationPromises = nearbyDoctorsResponse.doctors.map(async (doctor) => {
+            try {
+              await Promise.race([
+                whatsappService.sendServiceRequestNotification(doctor, serviceRequest, business),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('WhatsApp timeout')), 10000)) // 10 second timeout
+              ]);
+              whatsappNotificationsSent++;
+            } catch (error) {
+              console.error(`Failed to send WhatsApp notification to Dr. ${doctor.firstName} ${doctor.lastName}:`, error.message || error);
             }
-          }
+          });
           
-          console.log(`WhatsApp notifications sent to ${whatsappNotificationsSent} out of ${nearbyDoctorsResponse.count} doctors`);
+          // Don't wait for all WhatsApp notifications to complete
+          Promise.allSettled(notificationPromises);
+        }          console.log(`WhatsApp notifications sent to ${whatsappNotificationsSent} out of ${nearbyDoctorsResponse.count} doctors`);
         } catch (error) {
           console.error('Error finding nearby doctors or sending notifications:', error);
         }
@@ -352,7 +426,12 @@ module.exports = createCoreController('api::service-request.service-request', ({
         whatsappNotificationsSent: whatsappNotificationsSent
       };
     } catch (error) {
-      console.error('Error creating service request:', error);
+      console.error('❌ Error creating service request:', {
+        message: error.message,
+        stack: error.stack,
+        details: error.details,
+        requestBody: ctx.request.body
+      });
       ctx.throw(500, `Error creating service request: ${error.message}`);
     }
   },
@@ -674,13 +753,26 @@ module.exports = createCoreController('api::service-request.service-request', ({
         phoneNumber,
         urgency,
         symptoms,
-        notes
+        notes,
+        // Payment information for pre-paid requests
+        isPaid,
+        paymentMethod,
+        paymentIntentId,
+        paymentStatus,
+        paidAt,
+        totalAmount,
+        servicePrice,
+        serviceCharge,
+        currency,
+        chargeId
       } = ctx.request.body;
       
       console.log('Creating direct request with data:', {
         businessId, doctorId, serviceId, urgencyLevel, serviceType, description, estimatedDuration, serviceDateTime,
         businessLatitude, businessLongitude, distanceFilter,
-        firstName, lastName, phoneNumber, urgency, symptoms, notes
+        firstName, lastName, phoneNumber, urgency, symptoms, notes,
+        // Payment information
+        isPaid, paymentMethod, paymentIntentId, paymentStatus, paidAt, totalAmount, servicePrice, serviceCharge, currency, chargeId
       });
       
       // Determine if this is from business portal or patient portal
@@ -763,6 +855,39 @@ module.exports = createCoreController('api::service-request.service-request', ({
         requestedServiceDateTime: requestedServiceDateTime,
         status: 'pending'
       };
+
+      // Add payment information if provided (for pre-paid requests)
+      if (isPaid) {
+        requestData.isPaid = isPaid;
+        requestData.paymentMethod = paymentMethod;
+        requestData.paymentIntentId = paymentIntentId;
+        requestData.paymentStatus = paymentStatus;
+        requestData.paidAt = paidAt ? new Date(paidAt) : new Date();
+        requestData.totalAmount = parseFloat(totalAmount) || 0;
+        requestData.currency = currency || 'GBP';
+        requestData.chargeId = chargeId;
+        
+        // Create payment details object for better tracking
+        const paymentDetails = {
+          paymentIntentId: paymentIntentId,
+          paymentMethod: paymentMethod || 'card',
+          paymentStatus: paymentStatus || 'succeeded',
+          servicePrice: parseFloat(servicePrice) || 0,
+          serviceCharge: parseFloat(serviceCharge) || 0,
+          totalAmount: parseFloat(totalAmount) || 0,
+          processedAt: paidAt || new Date().toISOString(),
+          currency: currency || 'gbp'
+        };
+        
+        requestData.paymentDetails = JSON.stringify(paymentDetails);
+        
+        console.log('💰 Adding payment information to direct service request:', {
+          isPaid: requestData.isPaid,
+          paymentIntentId: requestData.paymentIntentId,
+          totalAmount: requestData.totalAmount,
+          paymentMethod: requestData.paymentMethod
+        });
+      }
 
       // Create the service request
       const serviceRequest = await strapi.entityService.create('api::service-request.service-request', {
