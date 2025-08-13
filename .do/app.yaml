@@ -1,0 +1,54 @@
+name: thanksdoc-backend
+services:
+- name: api
+  source_dir: /
+  github:
+    repo: arafats1/thanks-doc-BE
+    branch: main
+  run_command: npm start
+  build_command: npm run build
+  environment_slug: node-js
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  http_port: 1337
+  health_check:
+    http_path: /health
+  routes:
+  - path: /
+  envs:
+  - key: NODE_ENV
+    value: production
+  - key: DATABASE_CLIENT
+    value: mysql
+  - key: DATABASE_HOST
+    value: thanksdoc-database.cficuyqmk69u.eu-north-1.rds.amazonaws.com
+  - key: DATABASE_PORT
+    value: "3306"
+  - key: DATABASE_NAME
+    value: thanksdocdb
+  - key: DATABASE_USERNAME
+    value: admin
+  - key: DATABASE_PASSWORD
+    value: ThanksDoc2025#
+    type: SECRET
+  - key: DATABASE_SSL
+    value: "true"
+  - key: APP_KEYS
+    value: rGj8NqghW9s4LXH3x+7P7w==,82UuSaMvTNLKsdeuBVMixw==,9mGgq/STy0xw91RmSRGGrQ==,x2ig3CMPZXmX8+A1wtzKug==
+    type: SECRET
+  - key: API_TOKEN_SALT
+    value: HjyQdNBIs4nmkroMB4Zf8A==
+    type: SECRET
+  - key: ADMIN_JWT_SECRET
+    value: SXqQc+try6zXEn7/Zl8cwg==
+    type: SECRET
+  - key: TRANSFER_TOKEN_SALT
+    value: t3l+5Ay19NMqobwc/5vuGA==
+    type: SECRET
+  - key: JWT_SECRET
+    value: eUSYvHW+DSy3YYRmbP50ZQ==
+    type: SECRET
+  - key: BASE_URL
+    value: ${api.PUBLIC_URL}
+  - key: IS_PROXIED
+    value: "true"

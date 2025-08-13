@@ -1,0 +1,62 @@
+# DigitalOcean Environment Variables
+# Add these to your DigitalOcean App Platform app settings
+
+## Required Application Settings
+NODE_ENV=production
+HOST=0.0.0.0
+PORT=1337
+IS_PROXIED=true
+
+## Database Configuration (Your RDS)
+DATABASE_CLIENT=mysql
+DATABASE_HOST=thanksdoc-database.cficuyqmk69u.eu-north-1.rds.amazonaws.com
+DATABASE_PORT=3306
+DATABASE_NAME=thanksdocdb
+DATABASE_USERNAME=admin
+DATABASE_PASSWORD=ThanksDoc2025#
+DATABASE_SSL=true
+
+## Application Keys (Keep these secure!)
+APP_KEYS=rGj8NqghW9s4LXH3x+7P7w==,82UuSaMvTNLKsdeuBVMixw==,9mGgq/STy0xw91RmSRGGrQ==,x2ig3CMPZXmX8+A1wtzKug==
+API_TOKEN_SALT=HjyQdNBIs4nmkroMB4Zf8A==
+ADMIN_JWT_SECRET=SXqQc+try6zXEn7/Zl8cwg==
+TRANSFER_TOKEN_SALT=t3l+5Ay19NMqobwc/5vuGA==
+ENCRYPTION_KEY=3qWxYuW6+cPYyLY6TSTUzA==
+JWT_SECRET=eUSYvHW+DSy3YYRmbP50ZQ==
+
+## Base URL (Will be your DigitalOcean app URL)
+BASE_URL=https://your-app-name.ondigitalocean.app
+FRONTEND_DASHBOARD_URL=https://thanks-doc.vercel.app
+FRONTEND_VIDEO_URL=https://thanks-doc.vercel.app
+
+## WhatsApp Configuration
+WHATSAPP_TEMPLATE_DOCTOR_CONFIRMATION=doctor_confirmation_tdoc
+WHATSAPP_TEMPLATE_BUSINESS_NOTIFICATION=doctor_assigned
+WHATSAPP_TEMPLATE_PASSWORD_RESET=password_reset_doc
+WHATSAPP_USE_TEMPLATE=true
+WHATSAPP_TEMPLATE_NAME=doctor_accept_request
+WHATSAPP_ACCESS_TOKEN=EAAPXu5GIWXUBPN6qgsqJJA4GBnuSLvxZACOOHDfPPocsa5mDZAzkxEBNBcY8VyhmPimcks7R6g84M5cy0U6X8721V9VIOKdh4M6M1GtW8kLCLTzHTR4GZB0oXac6WuiRP6bBHoxCb9MXf1cAcZB7DGIvcD6ufWp7xB4MhiXLNGls7hmK55Ts4D8TUOri9bA7aQZDZD
+WHATSAPP_PHONE_NUMBER_ID=767723986417452
+WHATSAPP_BUSINESS_ACCOUNT_ID=774739875238909
+WHATSAPP_TEMPLATE_DOCTOR_VIDEO_CALL=doctor_video_call_link
+WHATSAPP_TEMPLATE_PATIENT_VIDEO_CALL=patient_video_call_link
+
+## AWS S3 Configuration
+AWS_ACCESS_KEY_ID=AKIA5FTZCWIEZIBUIV6P
+AWS_SECRET_ACCESS_KEY=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
+AWS_REGION=us-east-1
+AWS_S3_BUCKET=alsonya
+
+## Email Configuration
+EMAIL_HOST=mail.thanksdoc.co.uk
+EMAIL_PORT=465
+EMAIL_SECURE=true
+EMAIL_USER=noreply@thanksdoc.co.uk
+EMAIL_PASS=p*rGilN6]Luc
+EMAIL_FROM=noreply@thanksdoc.co.uk
+
+## Video Call API
+WHEREBY_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmFwcGVhci5pbiIsImF1ZCI6Imh0dHBzOi8vYXBpLmFwcGVhci5pbi92MSIsImV4cCI6OTAwNzE5OTI1NDc0MDk5MSwiaWF0IjoxNzU0NTU0NTA3LCJvcmdhbml6YXRpb25JZCI6MTk3NTg0LCJqdGkiOiIyMWRmNzJmMC1lMjFjLTQ4NWYtOTNjOS1jMDkxYWMxM2YxZTMifQ.Hko1K6h4nE34BnxUFmSUknfUkZSMLQfLLAk_BSZL9Hg
+
+## Google Maps API
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyDhvZLWyEG5XtnzGys2KUJEGosRPjLv8z8
