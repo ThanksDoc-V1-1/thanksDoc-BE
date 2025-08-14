@@ -173,5 +173,39 @@ module.exports = createCoreController('api::professional-reference.professional-
       console.error('❌ Error getting reference submissions:', error);
       ctx.throw(500, `Failed to get reference submissions: ${error.message}`);
     }
+  },
+
+  // Delete a single professional reference
+  async deleteReference(ctx) {
+    try {
+      const { id } = ctx.params;
+      
+      console.log('🗑️ Deleting professional reference:', id);
+      
+      if (!id) {
+        return ctx.badRequest('Reference ID is required');
+      }
+
+      // Find the reference first to ensure it exists
+      const reference = await strapi.entityService.findOne('api::professional-reference.professional-reference', id);
+      
+      if (!reference) {
+        return ctx.notFound('Professional reference not found');
+      }
+
+      // Delete the reference
+      await strapi.entityService.delete('api::professional-reference.professional-reference', id);
+      
+      console.log('✅ Professional reference deleted successfully:', id);
+      
+      ctx.body = {
+        success: true,
+        message: 'Professional reference deleted successfully'
+      };
+
+    } catch (error) {
+      console.error('❌ Error deleting professional reference:', error);
+      ctx.throw(500, `Failed to delete professional reference: ${error.message}`);
+    }
   }
 }));
