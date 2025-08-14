@@ -1,0 +1,109 @@
+{
+  "kind": "collectionType",
+  "collectionName": "professional_reference_submissions",
+  "info": {
+    "singularName": "professional-reference-submission",
+    "pluralName": "professional-reference-submissions",
+    "displayName": "Professional Reference Submission",
+    "description": "Professional reference submissions for doctors from their references"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "professionalReference": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::professional-reference.professional-reference",
+      "inversedBy": "submissions"
+    },
+    "doctor": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::doctor.doctor",
+      "inversedBy": "referenceSubmissions"
+    },
+    "referenceToken": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "clinicianName": {
+      "type": "string",
+      "required": false,
+      "maxLength": 200
+    },
+    "clinicianPosition": {
+      "type": "string",
+      "required": false,
+      "maxLength": 200
+    },
+    "clinicianEmail": {
+      "type": "email",
+      "required": false
+    },
+    "refereeName": {
+      "type": "string",
+      "required": false,
+      "maxLength": 200
+    },
+    "refereePosition": {
+      "type": "string",
+      "required": false,
+      "maxLength": 200
+    },
+    "refereeWorkPlace": {
+      "type": "string",
+      "required": false,
+      "maxLength": 300
+    },
+    "workDuration": {
+      "type": "string",
+      "required": false,
+      "maxLength": 100
+    },
+    "refereeEmail": {
+      "type": "email",
+      "required": false
+    },
+    "clinicalKnowledge": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "diagnosis": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "clinicalDecisionMaking": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "treatment": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "isSubmitted": {
+      "type": "boolean",
+      "default": false
+    },
+    "submittedAt": {
+      "type": "datetime"
+    },
+    "isEmailSent": {
+      "type": "boolean",
+      "default": false
+    },
+    "emailSentAt": {
+      "type": "datetime"
+    }
+  }
+}

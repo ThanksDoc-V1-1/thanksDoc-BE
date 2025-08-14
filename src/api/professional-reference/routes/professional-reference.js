@@ -38,6 +38,18 @@ const customRoutes = {
         policies: [],
         middlewares: [],
       },
+    },
+    {
+      method: 'GET',
+      path: '/professional-references/doctor/:doctorId/submissions',
+      handler: 'professional-reference.getReferenceSubmissions',
+      config: {
+        policies: [],
+        middlewares: [],
+        auth: false,
+        description: 'Get all reference submissions for a doctor',
+        tags: ['Professional References']
+      },
     }
   ]
 };

@@ -54,6 +54,12 @@
     "isActive": {
       "type": "boolean",
       "default": true
+    },
+    "submissions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::professional-reference-submission.professional-reference-submission",
+      "mappedBy": "professionalReference"
     }
   }
 }

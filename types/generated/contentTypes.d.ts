@@ -749,6 +749,10 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
     >;
     profilePicture: Schema.Attribute.Media<'images'>;
     publishedAt: Schema.Attribute.DateTime;
+    referenceSubmissions: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::professional-reference-submission.professional-reference-submission'
+    >;
     services: Schema.Attribute.Relation<'manyToMany', 'api::service.service'>;
     specialization: Schema.Attribute.String;
     state: Schema.Attribute.String & Schema.Attribute.Required;
@@ -759,6 +763,117 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
     verificationStatusUpdatedAt: Schema.Attribute.DateTime;
     yearsOfExperience: Schema.Attribute.Integer;
     zipCode: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
+export interface ApiProfessionalReferenceSubmissionProfessionalReferenceSubmission
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'professional_reference_submissions';
+  info: {
+    description: 'Professional reference submissions for doctors from their references';
+    displayName: 'Professional Reference Submission';
+    pluralName: 'professional-reference-submissions';
+    singularName: 'professional-reference-submission';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    clinicalDecisionMaking: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
+    clinicalKnowledge: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
+    clinicianEmail: Schema.Attribute.Email;
+    clinicianName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    clinicianPosition: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    diagnosis: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
+    doctor: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
+    emailSentAt: Schema.Attribute.DateTime;
+    isEmailSent: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isSubmitted: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::professional-reference-submission.professional-reference-submission'
+    > &
+      Schema.Attribute.Private;
+    professionalReference: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::professional-reference.professional-reference'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    refereeEmail: Schema.Attribute.Email;
+    refereeName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    refereePosition: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    refereeWorkPlace: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 300;
+      }>;
+    referenceToken: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    submittedAt: Schema.Attribute.DateTime;
+    treatment: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    workDuration: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
   };
 }
 
@@ -815,6 +930,10 @@ export interface ApiProfessionalReferenceProfessionalReference
         minLength: 1;
       }>;
     publishedAt: Schema.Attribute.DateTime;
+    submissions: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::professional-reference-submission.professional-reference-submission'
+    >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1552,6 +1671,7 @@ declare module '@strapi/strapi' {
       'api::compliance-document.compliance-document': ApiComplianceDocumentComplianceDocument;
       'api::doctor-payment.doctor-payment': ApiDoctorPaymentDoctorPayment;
       'api::doctor.doctor': ApiDoctorDoctor;
+      'api::professional-reference-submission.professional-reference-submission': ApiProfessionalReferenceSubmissionProfessionalReferenceSubmission;
       'api::professional-reference.professional-reference': ApiProfessionalReferenceProfessionalReference;
       'api::service-request.service-request': ApiServiceRequestServiceRequest;
       'api::service.service': ApiServiceService;

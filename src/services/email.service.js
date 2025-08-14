@@ -449,6 +449,110 @@ class EmailService {
       throw error;
     }
   }
+
+  /**
+   * Send professional reference request email
+   */
+  async sendReferenceRequestEmail(referenceEmail, referenceName, doctorName, referenceToken) {
+    const referenceFormUrl = `${process.env.FRONTEND_DASHBOARD_URL}/reference-form/${referenceToken}`;
+    
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: referenceEmail,
+      subject: `Professional Reference Request for Dr. ${doctorName}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Professional Reference Request - ThanksDoc</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #3b82f6; color: white; padding: 20px; text-align: center; }
+            .content { padding: 30px 20px; background: #f9fafb; }
+            .button { 
+              display: inline-block; 
+              background: #10b981 !important; 
+              color: #ffffff !important; 
+              padding: 16px 32px; 
+              text-decoration: none !important; 
+              border-radius: 6px; 
+              margin: 20px 0; 
+              font-weight: bold; 
+              font-size: 16px;
+              border: none;
+              box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+            }
+            .button:hover { background: #059669 !important; }
+            .footer { padding: 20px; text-align: center; color: #666; font-size: 14px; }
+            .reference-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6; }
+            .instructions { background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b; }
+            .icon { font-size: 48px; text-align: center; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📋 Professional Reference Request</h1>
+            </div>
+            <div class="content">
+              <h2>Dear ${referenceName},</h2>
+              <p>Dr. ${doctorName} recently registered with ThanksDoc, and we would appreciate you filling in their reference letter to help them complete their compliance documents.</p>
+              
+              <div class="reference-details">
+                <h3>📝 What we need:</h3>
+                <p>This form provides a tool for writing a reference letter required to work via the CHP platform. Please follow the GMC Good Medical Practice guideline about writing references that can be accessed on:</p>
+                <p><a href="https://www.gmc-uk.org/ethical-guidance/ethical-guidance-for-doctors/writing-references/writing-references" target="_blank" style="color: #3b82f6;">https://www.gmc-uk.org/ethical-guidance/ethical-guidance-for-doctors/writing-references/writing-references</a></p>
+              </div>
+
+              <div class="icon">📄</div>
+              
+              <div style="text-align: center;">
+                <a href="${referenceFormUrl}" class="button">Complete Reference Form</a>
+              </div>
+              
+              <div class="instructions">
+                <h3>📋 Instructions:</h3>
+                <ul>
+                  <li>Click the "Complete Reference Form" button above</li>
+                  <li>Fill out the professional reference form with accurate information</li>
+                  <li>Rate the doctor's clinical skills based on your professional experience</li>
+                  <li>Submit the form once completed</li>
+                </ul>
+              </div>
+              
+              <p>Please use the following link to access and complete the reference letter:</p>
+              <div style="background: #e5e7eb; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 14px; text-align: center; margin: 20px 0;">
+                ${referenceFormUrl}
+              </div>
+              
+              <p><strong>Important:</strong> This reference request is confidential and should only be completed by you.</p>
+              
+              <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+              
+              <p>Kind regards,<br>ThanksDoc Team</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} ThanksDoc - Professional Healthcare Platform</p>
+              <p>This is an automated email, please do not reply to this message.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    try {
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Professional reference request email sent to: ${referenceEmail}`);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error(`❌ Failed to send professional reference request email to ${referenceEmail}:`, error);
+      throw new Error('Failed to send professional reference request email');
+    }
+  }
 }
 
 module.exports = EmailService;

@@ -93,6 +93,16 @@ module.exports = createCoreController('api::professional-reference.professional-
       
       console.log('✅ Successfully saved references:', savedReferences.length);
       
+      // Create reference submission entries and send emails
+      try {
+        const submissionService = strapi.service('api::professional-reference-submission.professional-reference-submission');
+        await submissionService.createReferenceSubmissions(doctorId, savedReferences);
+        console.log('✅ Reference submission emails sent successfully');
+      } catch (emailError) {
+        console.error('❌ Error sending reference emails:', emailError);
+        // Don't fail the entire request if emails fail
+      }
+      
       ctx.body = {
         success: true,
         data: {
@@ -126,6 +136,42 @@ module.exports = createCoreController('api::professional-reference.professional-
     } catch (error) {
       console.error('❌ Error deleting professional reference:', error);
       ctx.throw(500, `Failed to delete professional reference: ${error.message}`);
+    }
+  },
+
+  // Get reference submissions for a doctor
+  async getReferenceSubmissions(ctx) {
+    try {
+      const { doctorId } = ctx.params;
+      
+      console.log('🔍 Getting reference submissions for doctor:', doctorId);
+      
+      const submissions = await strapi.entityService.findMany('api::professional-reference-submission.professional-reference-submission', {
+        filters: {
+          doctor: doctorId
+        },
+        populate: {
+          professionalReference: {
+            fields: ['firstName', 'lastName', 'position', 'organisation', 'email']
+          }
+        },
+        sort: { createdAt: 'desc' }
+      });
+
+      console.log('✅ Found reference submissions:', submissions?.length || 0);
+      
+      ctx.body = {
+        success: true,
+        data: {
+          submissions: submissions || [],
+          count: submissions?.length || 0
+        },
+        message: 'Reference submissions retrieved successfully'
+      };
+
+    } catch (error) {
+      console.error('❌ Error getting reference submissions:', error);
+      ctx.throw(500, `Failed to get reference submissions: ${error.message}`);
     }
   }
 }));

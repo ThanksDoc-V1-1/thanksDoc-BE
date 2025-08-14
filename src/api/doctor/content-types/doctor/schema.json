@@ -148,6 +148,12 @@
       "relation": "oneToMany",
       "target": "api::professional-reference.professional-reference",
       "mappedBy": "doctor"
+    },
+    "referenceSubmissions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::professional-reference-submission.professional-reference-submission",
+      "mappedBy": "doctor"
     }
   }
 }
