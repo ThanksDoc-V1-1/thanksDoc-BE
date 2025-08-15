@@ -229,7 +229,7 @@ module.exports = {
         emailVerificationExpires = generateExpirationTime(24); // 24 hours
       }
       
-      // Prepare user data
+      // Prepare user data (DON'T remove services yet - we need them for validation)
       const userDataWithHashedPassword = {
         ...userData,
         password: hashedPassword,
@@ -255,11 +255,67 @@ module.exports = {
         }
       }
 
+      // Handle services for doctors - validate and filter existing services
+      let validServices = [];
+      if (type === 'doctor' && (userDataWithHashedPassword.services || userDataWithHashedPassword.selectedServices)) {
+        const serviceIds = userDataWithHashedPassword.services || userDataWithHashedPassword.selectedServices || [];
+        
+        if (serviceIds.length > 0) {
+          console.log('🔍 Validating services:', serviceIds);
+          
+          // Get existing services from the database
+          const existingServices = await strapi.entityService.findMany('api::service.service', {
+            filters: { id: { $in: serviceIds } },
+            fields: ['id']
+          });
+          
+          validServices = existingServices.map(service => service.id);
+          console.log('✅ Valid services found:', validServices);
+          
+          if (validServices.length !== serviceIds.length) {
+            console.log('⚠️ Some services were invalid and filtered out');
+          }
+        }
+        
+        // Update the services field with validated services
+        userDataWithHashedPassword.services = validServices;
+        
+        // Remove selectedServices as it's not part of the schema
+        delete userDataWithHashedPassword.selectedServices;
+      }
+
       let user;
       if (type === 'doctor') {
+        // For doctors, handle services separately due to many-to-many relation
+        const doctorData = { ...userDataWithHashedPassword };
+        const servicesToConnect = doctorData.services || [];
+        
+        // Remove services from the creation data as we'll connect them separately
+        delete doctorData.services;
+        
+        console.log('👨‍⚕️ Creating doctor without services first...');
         user = await strapi.entityService.create('api::doctor.doctor', {
-          data: userDataWithHashedPassword,
+          data: doctorData,
         });
+        
+        console.log('✅ Doctor created with ID:', user.id);
+        
+        // Now connect the services if any were provided
+        if (servicesToConnect.length > 0) {
+          console.log('🔗 Connecting services to doctor:', servicesToConnect);
+          
+          try {
+            user = await strapi.entityService.update('api::doctor.doctor', user.id, {
+              data: {
+                services: servicesToConnect
+              }
+            });
+            console.log('✅ Services connected successfully to doctor');
+          } catch (serviceError) {
+            console.error('❌ Error connecting services:', serviceError);
+            // Continue without failing registration - doctor is created, just without services
+          }
+        }
       } else if (type === 'business') {
         console.log('🏢 Creating business with data:', JSON.stringify(userDataWithHashedPassword, null, 2));
         try {
