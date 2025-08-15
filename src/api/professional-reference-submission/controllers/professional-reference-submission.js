@@ -88,8 +88,13 @@ module.exports = createCoreController('api::professional-reference-submission.pr
       const requiredFields = [
         'clinicianName', 'clinicianPosition', 'clinicianEmail',
         'refereeName', 'refereePosition', 'refereeWorkPlace',
-        'workDuration', 'refereeEmail', 'clinicalKnowledge',
-        'diagnosis', 'clinicalDecisionMaking', 'treatment'
+        'workDuration', 'refereeEmail',
+        'prescribing', 'medicalRecordKeeping', 'recognisingLimitations',
+        'keepingKnowledgeUpToDate', 'reviewingPerformance', 'teachingStudents',
+        'supervisingColleagues', 'commitmentToCare', 'communicationWithPatients',
+        'workingEffectivelyWithColleagues', 'effectiveTimeManagement',
+        'respectsPatientConfidentiality', 'honestAndTrustworthy', 'performanceNotImpaired',
+        'fitToPractice', 'lastWorkedWith'
       ];
 
       for (const field of requiredFields) {
