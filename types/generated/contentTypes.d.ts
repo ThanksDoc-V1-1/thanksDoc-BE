@@ -810,6 +810,28 @@ export interface ApiProfessionalReferenceSubmissionProfessionalReferenceSubmissi
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 200;
       }>;
+    commitmentToCare: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
+    communicationWithPatients: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -825,20 +847,85 @@ export interface ApiProfessionalReferenceSubmissionProfessionalReferenceSubmissi
     > &
       Schema.Attribute.DefaultTo<'N/A'>;
     doctor: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
+    effectiveTimeManagement: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
     emailSentAt: Schema.Attribute.DateTime;
+    fitToPractice: Schema.Attribute.Enumeration<['Yes', 'No']>;
+    honestAndTrustworthy: Schema.Attribute.Enumeration<
+      ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree', 'N/A']
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
     isEmailSent: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     isSubmitted: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    keepingKnowledgeUpToDate: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
+    lastWorkedWith: Schema.Attribute.Date;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'api::professional-reference-submission.professional-reference-submission'
     > &
       Schema.Attribute.Private;
+    medicalRecordKeeping: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
+    performanceNotImpaired: Schema.Attribute.Enumeration<
+      ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree', 'N/A']
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
+    prescribing: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
     professionalReference: Schema.Attribute.Relation<
       'manyToOne',
       'api::professional-reference.professional-reference'
     >;
     publishedAt: Schema.Attribute.DateTime;
+    recognisingLimitations: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
     refereeEmail: Schema.Attribute.Email;
     refereeName: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
@@ -855,7 +942,44 @@ export interface ApiProfessionalReferenceSubmissionProfessionalReferenceSubmissi
     referenceToken: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
+    respectsPatientConfidentiality: Schema.Attribute.Enumeration<
+      ['Strongly disagree', 'Disagree', 'Agree', 'Strongly agree', 'N/A']
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
+    reviewingPerformance: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
     submittedAt: Schema.Attribute.DateTime;
+    supervisingColleagues: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
+    teachingStudents: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
     treatment: Schema.Attribute.Enumeration<
       [
         'Poor',
@@ -874,6 +998,17 @@ export interface ApiProfessionalReferenceSubmissionProfessionalReferenceSubmissi
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 100;
       }>;
+    workingEffectivelyWithColleagues: Schema.Attribute.Enumeration<
+      [
+        'Poor',
+        'Less than satisfactory',
+        'Satisfactory',
+        'Good',
+        'Very good',
+        'N/A',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'N/A'>;
   };
 }
 

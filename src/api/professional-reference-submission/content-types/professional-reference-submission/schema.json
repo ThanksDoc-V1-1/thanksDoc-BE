@@ -91,6 +91,99 @@
       "required": false,
       "default": "N/A"
     },
+    "prescribing": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "medicalRecordKeeping": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "recognisingLimitations": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "keepingKnowledgeUpToDate": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "reviewingPerformance": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "teachingStudents": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "supervisingColleagues": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "commitmentToCare": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "communicationWithPatients": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "workingEffectivelyWithColleagues": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "effectiveTimeManagement": {
+      "type": "enumeration",
+      "enum": ["Poor", "Less than satisfactory", "Satisfactory", "Good", "Very good", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "respectsPatientConfidentiality": {
+      "type": "enumeration",
+      "enum": ["Strongly disagree", "Disagree", "Agree", "Strongly agree", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "honestAndTrustworthy": {
+      "type": "enumeration",
+      "enum": ["Strongly disagree", "Disagree", "Agree", "Strongly agree", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "performanceNotImpaired": {
+      "type": "enumeration",
+      "enum": ["Strongly disagree", "Disagree", "Agree", "Strongly agree", "N/A"],
+      "required": false,
+      "default": "N/A"
+    },
+    "fitToPractice": {
+      "type": "enumeration",
+      "enum": ["Yes", "No"],
+      "required": false
+    },
+    "lastWorkedWith": {
+      "type": "date",
+      "required": false
+    },
     "isSubmitted": {
       "type": "boolean",
       "default": false
