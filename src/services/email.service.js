@@ -501,12 +501,6 @@ class EmailService {
               <h2>Dear ${referenceName},</h2>
               <p>Dr. ${doctorName} recently registered with ThanksDoc, and we would appreciate you filling in their reference letter to help them complete their compliance documents.</p>
               
-              <div class="reference-details">
-                <h3>📝 What we need:</h3>
-                <p>This form provides a tool for writing a reference letter required to work via the CHP platform. Please follow the GMC Good Medical Practice guideline about writing references that can be accessed on:</p>
-                <p><a href="https://www.gmc-uk.org/ethical-guidance/ethical-guidance-for-doctors/writing-references/writing-references" target="_blank" style="color: #3b82f6;">https://www.gmc-uk.org/ethical-guidance/ethical-guidance-for-doctors/writing-references/writing-references</a></p>
-              </div>
-
               <div class="icon">📄</div>
               
               <div style="text-align: center;">
