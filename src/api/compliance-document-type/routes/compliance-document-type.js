@@ -36,16 +36,25 @@ module.exports = {
       method: 'POST',
       path: '/compliance-document-types',
       handler: 'compliance-document-type.create',
+      config: {
+        auth: false,
+      },
     },
     {
       method: 'PUT',
       path: '/compliance-document-types/:id',
       handler: 'compliance-document-type.update',
+      config: {
+        auth: false,
+      },
     },
     {
       method: 'DELETE',
       path: '/compliance-document-types/:id',
       handler: 'compliance-document-type.delete',
+      config: {
+        auth: false,
+      },
     },
   ],
 };

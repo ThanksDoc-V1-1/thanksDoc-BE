@@ -17,12 +17,15 @@ module.exports = createCoreRouter('api::system-setting.system-setting', {
       middlewares: [],
     },
     create: {
+      auth: false,
       middlewares: [],
     },
     update: {
+      auth: false,
       middlewares: [],
     },
     delete: {
+      auth: false,
       middlewares: [],
     },
   },

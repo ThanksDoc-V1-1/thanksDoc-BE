@@ -14,5 +14,14 @@ module.exports = createCoreRouter('api::service.service', {
     findOne: {
       auth: false,
     },
+    create: {
+      auth: false,
+    },
+    update: {
+      auth: false,
+    },
+    delete: {
+      auth: false,
+    },
   },
 });
