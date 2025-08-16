@@ -20,11 +20,17 @@ module.exports = {
       method: 'GET',
       path: '/compliance-document-types',
       handler: 'compliance-document-type.find',
+      config: {
+        auth: false,
+      },
     },
     {
       method: 'GET',
       path: '/compliance-document-types/:id',
       handler: 'compliance-document-type.findOne',
+      config: {
+        auth: false,
+      },
     },
     {
       method: 'POST',
