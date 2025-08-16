@@ -97,6 +97,32 @@ module.exports = createCoreController('api::service-request.service-request', ({
     }
   },
 
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data } = ctx.request.body;
+      
+      console.log(`Updating service request ${id} with data:`, data);
+      
+      const updatedServiceRequest = await strapi.entityService.update('api::service-request.service-request', id, {
+        data: data,
+        populate: {
+          business: true,
+          doctor: true,
+        },
+      });
+      
+      if (!updatedServiceRequest) {
+        return ctx.notFound('Service request not found');
+      }
+      
+      return { data: updatedServiceRequest };
+    } catch (error) {
+      console.error('Error in update:', error);
+      ctx.throw(500, `Error updating service request: ${error.message}`);
+    }
+  },
+
   // Find nearby doctors when a service request is created
   async findNearbyDoctors(ctx) {
     try {
@@ -2023,11 +2049,18 @@ module.exports = createCoreController('api::service-request.service-request', ({
   // Calculate cost based on service pricing
   async calculateCost(ctx) {
     try {
-      const { serviceId } = ctx.request.body;
+      console.log('📊 Calculate cost request body:', ctx.request.body);
+      
+      // Support both direct serviceId and data.serviceId formats
+      const requestData = ctx.request.body.data || ctx.request.body;
+      const serviceId = requestData.serviceId || requestData.service;
 
       if (!serviceId) {
+        console.log('❌ No serviceId provided in request');
         return ctx.badRequest('Service ID is required');
       }
+
+      console.log('🔍 Looking for service ID:', serviceId);
 
       // Get the service with pricing information
       const service = await strapi.entityService.findOne('api::service.service', serviceId, {
@@ -2035,14 +2068,17 @@ module.exports = createCoreController('api::service-request.service-request', ({
       });
 
       if (!service) {
+        console.log('❌ Service not found:', serviceId);
         return ctx.notFound('Service not found');
       }
+
+      console.log('✅ Service found:', service);
 
       const serviceCharge = await getBookingFee(strapi); // Dynamic service charge for all requests
       const servicePrice = parseFloat(service.price) || 0;
       const totalAmount = servicePrice + serviceCharge;
 
-      return {
+      const result = {
         service: {
           id: serviceId,
           name: service.name,
@@ -2058,8 +2094,11 @@ module.exports = createCoreController('api::service-request.service-request', ({
         }
       };
 
+      console.log('✅ Cost calculation result:', result);
+      return result;
+
     } catch (error) {
-      console.error('Error calculating service cost:', error);
+      console.error('❌ Error calculating service cost:', error);
       ctx.throw(500, `Error calculating service cost: ${error.message}`);
     }
   },
