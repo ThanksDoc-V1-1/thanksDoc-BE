@@ -499,6 +499,11 @@ module.exports = createCoreController('api::service-request.service-request', ({
         totalAmount: doctor.hourlyRate * (serviceRequest.estimatedDuration || 1),
       };
 
+      // Only preserve existing totalAmount for paid requests
+      if (serviceRequest.totalAmount && serviceRequest.totalAmount > 0) {
+        delete updateData.totalAmount; // Don't overwrite existing amount
+      }
+
       // Create video call for online consultations
       if (isOnlineConsultation && serviceRequest.patientFirstName && serviceRequest.patientPhone) {
         try {
@@ -1212,6 +1217,11 @@ module.exports = createCoreController('api::service-request.service-request', ({
         acceptedAt: new Date(),
         totalAmount: doctor.hourlyRate * (serviceRequest.estimatedDuration || 1),
       };
+
+      // Only preserve existing totalAmount for paid requests
+      if (serviceRequest.totalAmount && serviceRequest.totalAmount > 0) {
+        delete updateData.totalAmount; // Don't overwrite existing amount
+      }
 
       // Create video call for online consultations
       if (isOnlineConsultation && serviceRequest.patientFirstName && serviceRequest.patientPhone) {
