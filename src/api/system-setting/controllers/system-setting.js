@@ -7,6 +7,23 @@
 const { createCoreController } = require('@strapi/strapi').factories;
 
 module.exports = createCoreController('api::system-setting.system-setting', ({ strapi }) => ({
+  // Standard update method for Strapi routes
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data } = ctx.request.body;
+      
+      const result = await strapi.entityService.update('api::system-setting.system-setting', id, {
+        data
+      });
+      
+      ctx.body = { data: result };
+    } catch (error) {
+      console.error('Error updating system setting:', error);
+      ctx.badRequest('Error updating system setting');
+    }
+  },
+
   // Get a specific setting by key
   async findByKey(ctx) {
     try {

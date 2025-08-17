@@ -11,6 +11,7 @@ module.exports = {
       path: '/system-settings/key/:key',
       handler: 'system-setting.findByKey',
       config: {
+        auth: false,
         policies: [],
         middlewares: [],
       },
@@ -20,6 +21,7 @@ module.exports = {
       path: '/system-settings/key/:key',
       handler: 'system-setting.upsertByKey',
       config: {
+        auth: false,
         policies: [],
         middlewares: [],
       },
