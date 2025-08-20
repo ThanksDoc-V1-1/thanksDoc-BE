@@ -1,0 +1,82 @@
+{
+  "kind": "collectionType",
+  "collectionName": "business_compliance_documents",
+  "info": {
+    "singularName": "business-compliance-document",
+    "pluralName": "business-compliance-documents",
+    "displayName": "Business Compliance Document",
+    "description": "Compliance documents for business verification"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "business": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::business.business",
+      "inversedBy": "complianceDocuments"
+    },
+    "documentType": {
+      "type": "string",
+      "required": true
+    },
+    "fileName": {
+      "type": "string",
+      "required": true
+    },
+    "fileUrl": {
+      "type": "string",
+      "required": true
+    },
+    "mimeType": {
+      "type": "string"
+    },
+    "fileSize": {
+      "type": "integer"
+    },
+    "uploadedAt": {
+      "type": "datetime",
+      "default": "2023-01-01T00:00:00.000Z"
+    },
+    "verificationStatus": {
+      "type": "enumeration",
+      "enum": ["pending", "verified", "rejected"],
+      "default": "pending"
+    },
+    "verifiedBy": {
+      "type": "string"
+    },
+    "verifiedAt": {
+      "type": "datetime"
+    },
+    "issueDate": {
+      "type": "date"
+    },
+    "expiryDate": {
+      "type": "date"
+    },
+    "autoExpiry": {
+      "type": "boolean",
+      "default": false
+    },
+    "expiryStatus": {
+      "type": "enumeration",
+      "enum": ["valid", "expiring", "expired"],
+      "default": "valid"
+    },
+    "daysUntilExpiry": {
+      "type": "integer"
+    },
+    "notes": {
+      "type": "text"
+    },
+    "rejectionReason": {
+      "type": "text"
+    },
+    "lastModified": {
+      "type": "datetime"
+    }
+  }
+}

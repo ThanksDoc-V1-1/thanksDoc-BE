@@ -94,6 +94,18 @@
       "type": "boolean",
       "default": false
     },
+    "verificationStatusUpdatedAt": {
+      "type": "datetime"
+    },
+    "verificationStatusReason": {
+      "type": "text"
+    },
+    "complianceDocuments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::business-compliance-document.business-compliance-document",
+      "mappedBy": "business"
+    },
     "operatingHours": {
       "type": "json"
     },

@@ -412,6 +412,60 @@ export interface ApiAdminAdmin extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiBusinessComplianceDocumentBusinessComplianceDocument
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'business_compliance_documents';
+  info: {
+    description: 'Compliance documents for business verification';
+    displayName: 'Business Compliance Document';
+    pluralName: 'business-compliance-documents';
+    singularName: 'business-compliance-document';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    autoExpiry: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    business: Schema.Attribute.Relation<'manyToOne', 'api::business.business'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    daysUntilExpiry: Schema.Attribute.Integer;
+    documentType: Schema.Attribute.String & Schema.Attribute.Required;
+    expiryDate: Schema.Attribute.Date;
+    expiryStatus: Schema.Attribute.Enumeration<
+      ['valid', 'expiring', 'expired']
+    > &
+      Schema.Attribute.DefaultTo<'valid'>;
+    fileName: Schema.Attribute.String & Schema.Attribute.Required;
+    fileSize: Schema.Attribute.Integer;
+    fileUrl: Schema.Attribute.String & Schema.Attribute.Required;
+    issueDate: Schema.Attribute.Date;
+    lastModified: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::business-compliance-document.business-compliance-document'
+    > &
+      Schema.Attribute.Private;
+    mimeType: Schema.Attribute.String;
+    notes: Schema.Attribute.Text;
+    publishedAt: Schema.Attribute.DateTime;
+    rejectionReason: Schema.Attribute.Text;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    uploadedAt: Schema.Attribute.DateTime &
+      Schema.Attribute.DefaultTo<'2023-01-01T00:00:00.000Z'>;
+    verificationStatus: Schema.Attribute.Enumeration<
+      ['pending', 'verified', 'rejected']
+    > &
+      Schema.Attribute.DefaultTo<'pending'>;
+    verifiedAt: Schema.Attribute.DateTime;
+    verifiedBy: Schema.Attribute.String;
+  };
+}
+
 export interface ApiBusinessTypeBusinessType
   extends Struct.CollectionTypeSchema {
   collectionName: 'business_types';
@@ -476,6 +530,10 @@ export interface ApiBusinessBusiness extends Struct.CollectionTypeSchema {
     businessName: Schema.Attribute.String & Schema.Attribute.Required;
     businessType: Schema.Attribute.String & Schema.Attribute.Required;
     city: Schema.Attribute.String;
+    complianceDocuments: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::business-compliance-document.business-compliance-document'
+    >;
     contactPersonName: Schema.Attribute.String;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -514,6 +572,8 @@ export interface ApiBusinessBusiness extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    verificationStatusReason: Schema.Attribute.Text;
+    verificationStatusUpdatedAt: Schema.Attribute.DateTime;
     zipCode: Schema.Attribute.String;
   };
 }
@@ -1800,6 +1860,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::admin.admin': ApiAdminAdmin;
+      'api::business-compliance-document.business-compliance-document': ApiBusinessComplianceDocumentBusinessComplianceDocument;
       'api::business-type.business-type': ApiBusinessTypeBusinessType;
       'api::business.business': ApiBusinessBusiness;
       'api::compliance-document-type.compliance-document-type': ApiComplianceDocumentTypeComplianceDocumentType;
