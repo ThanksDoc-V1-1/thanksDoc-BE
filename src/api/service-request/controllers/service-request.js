@@ -725,7 +725,10 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const serviceRequests = await strapi.entityService.findMany('api::service-request.service-request', {
         filters: {
           doctor: doctorId,
-          status: 'completed', // Only get completed requests
+          // Return all requests assigned to this doctor (accepted, in_progress, completed)
+          status: {
+            $in: ['accepted', 'in_progress', 'completed']
+          }
         },
         populate: ['business', 'doctor'],
         sort: { createdAt: 'desc' },
