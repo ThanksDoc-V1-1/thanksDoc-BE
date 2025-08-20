@@ -172,11 +172,15 @@ module.exports = createCoreService('api::business-compliance-document.business-c
       // Calculate automatic expiry date if needed
       let calculatedExpiryDate = null;
       if (autoExpiry && issueDate) {
-        // Default to 1 year expiry for business documents
-        // This could be made configurable per document type in the future
+        // Get validity years from document type configuration, default to 1 year
+        const validityYears = docConfig?.validityYears || 1;
+        console.log(`📅 Calculating expiry date for ${documentType}: issueDate=${issueDate}, validityYears=${validityYears}`);
+        
         const issueDateObj = new Date(issueDate);
         calculatedExpiryDate = new Date(issueDateObj);
-        calculatedExpiryDate.setFullYear(calculatedExpiryDate.getFullYear() + 1);
+        calculatedExpiryDate.setFullYear(calculatedExpiryDate.getFullYear() + validityYears);
+        
+        console.log(`📅 Calculated expiry date: ${calculatedExpiryDate.toISOString().split('T')[0]}`);
       }
 
       // Prepare document data

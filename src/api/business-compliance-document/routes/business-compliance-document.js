@@ -80,6 +80,16 @@ module.exports = {
         policies: [],
         middlewares: [],
       },
+    },
+    {
+      method: 'POST',
+      path: '/business-compliance-documents/update-expiry-statuses',
+      handler: 'business-compliance-document.updateExpiryStatuses',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
     }
   ]
 };

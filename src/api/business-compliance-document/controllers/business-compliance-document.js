@@ -202,6 +202,24 @@ module.exports = createCoreController('api::business-compliance-document.busines
       console.error('Get business compliance overview error:', error);
       ctx.throw(500, `Failed to get compliance overview: ${error.message}`);
     }
+  },
+
+  // Update all document expiry statuses
+  async updateExpiryStatuses(ctx) {
+    try {
+      console.log('🔄 Manual trigger: Updating all business document expiry statuses...');
+      
+      const result = await strapi.service('api::business-compliance-document.business-compliance-document').updateAllExpiryStatuses();
+      
+      ctx.body = {
+        success: true,
+        message: `Updated ${result.updated} out of ${result.total} documents`,
+        data: result
+      };
+    } catch (error) {
+      console.error('Update expiry statuses error:', error);
+      ctx.throw(500, `Failed to update expiry statuses: ${error.message}`);
+    }
   }
 
 }));
