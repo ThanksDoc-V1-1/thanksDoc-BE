@@ -412,6 +412,89 @@ export interface ApiAdminAdmin extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiBusinessComplianceDocumentTypeBusinessComplianceDocumentType
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'business_compliance_document_types';
+  info: {
+    description: 'Configurable document types for business compliance requirements';
+    displayName: 'Business Compliance Document Type';
+    pluralName: 'business-compliance-document-types';
+    singularName: 'business-compliance-document-type';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    acceptedFormats: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'.pdf,.jpg,.jpeg,.png'>;
+    allowedFileTypes: Schema.Attribute.JSON &
+      Schema.Attribute.DefaultTo<['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png']>;
+    autoExpiry: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    category: Schema.Attribute.Enumeration<
+      [
+        'registration',
+        'insurance',
+        'financial',
+        'compliance',
+        'operational',
+        'legal',
+        'other',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'other'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    displayOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    examples: Schema.Attribute.Text;
+    expiryWarningDays: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 365;
+          min: 1;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<30>;
+    helpText: Schema.Attribute.Text;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    key: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::business-compliance-document-type.business-compliance-document-type'
+    > &
+      Schema.Attribute.Private;
+    maxFileSize: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 52428800;
+          min: 1024;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<10485760>;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    required: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    validityYears: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 10;
+          min: 1;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<1>;
+  };
+}
+
 export interface ApiBusinessComplianceDocumentBusinessComplianceDocument
   extends Struct.CollectionTypeSchema {
   collectionName: 'business_compliance_documents';
@@ -1860,6 +1943,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::admin.admin': ApiAdminAdmin;
+      'api::business-compliance-document-type.business-compliance-document-type': ApiBusinessComplianceDocumentTypeBusinessComplianceDocumentType;
       'api::business-compliance-document.business-compliance-document': ApiBusinessComplianceDocumentBusinessComplianceDocument;
       'api::business-type.business-type': ApiBusinessTypeBusinessType;
       'api::business.business': ApiBusinessBusiness;

@@ -12,56 +12,107 @@ const { v4: uuidv4 } = require('uuid');
 
 module.exports = createCoreService('api::business-compliance-document.business-compliance-document', ({ strapi }) => ({
 
-  // Business-specific document types configuration
-  getRequiredDocumentTypes() {
-    return [
-      {
-        id: 'business-license',
-        name: 'Business License',
-        description: 'Valid business registration/license document',
-        required: true,
-        autoExpiry: true,
-        category: 'registration'
-      },
-      {
-        id: 'insurance-certificate',
-        name: 'Insurance Certificate',
-        description: 'Professional liability insurance certificate',
-        required: true,
-        autoExpiry: true,
-        category: 'insurance'
-      },
-      {
-        id: 'tax-certificate',
-        name: 'Tax Registration Certificate',
-        description: 'Tax registration or VAT certificate',
-        required: true,
-        autoExpiry: true,
-        category: 'financial'
-      },
-      {
-        id: 'health-safety-certificate',
-        name: 'Health & Safety Certificate',
-        description: 'Health and safety compliance certificate',
-        required: true,
-        autoExpiry: true,
-        category: 'compliance'
-      },
-      {
-        id: 'data-protection-certificate',
-        name: 'Data Protection Certificate',
-        description: 'GDPR/Data protection compliance certificate',
-        required: true,
-        autoExpiry: true,
-        category: 'compliance'
-      }
-    ];
+  // Business-specific document types configuration - now fetched from database
+  async getRequiredDocumentTypes() {
+    try {
+      const documentTypes = await strapi.entityService.findMany('api::business-compliance-document-type.business-compliance-document-type', {
+        filters: { 
+          isActive: true,
+          required: true 
+        },
+        sort: { displayOrder: 'asc', name: 'asc' }
+      });
+
+      // Transform to match the expected format
+      return documentTypes.map(docType => ({
+        id: docType.key,
+        name: docType.name,
+        description: docType.description,
+        required: docType.required,
+        autoExpiry: docType.autoExpiry,
+        category: docType.category,
+        validityYears: docType.validityYears,
+        acceptedFormats: docType.acceptedFormats,
+        examples: docType.examples
+      }));
+    } catch (error) {
+      console.error('❌ Error fetching business document types from database:', error);
+      
+      // Fallback to hardcoded types if database fetch fails
+      return [
+        {
+          id: 'business-license',
+          name: 'Business License',
+          description: 'Valid business registration/license document',
+          required: true,
+          autoExpiry: true,
+          category: 'registration'
+        },
+        {
+          id: 'insurance-certificate',
+          name: 'Insurance Certificate',
+          description: 'Professional liability insurance certificate',
+          required: true,
+          autoExpiry: true,
+          category: 'insurance'
+        },
+        {
+          id: 'tax-certificate',
+          name: 'Tax Registration Certificate',
+          description: 'Tax registration or VAT certificate',
+          required: true,
+          autoExpiry: true,
+          category: 'financial'
+        },
+        {
+          id: 'health-safety-certificate',
+          name: 'Health & Safety Certificate',
+          description: 'Health and safety compliance certificate',
+          required: true,
+          autoExpiry: true,
+          category: 'compliance'
+        },
+        {
+          id: 'data-protection-certificate',
+          name: 'Data Protection Certificate',
+          description: 'GDPR/Data protection compliance certificate',
+          required: true,
+          autoExpiry: true,
+          category: 'compliance'
+        }
+      ];
+    }
+  },
+
+  // Get all active document types (not just required ones)
+  async getAllDocumentTypes() {
+    try {
+      const documentTypes = await strapi.entityService.findMany('api::business-compliance-document-type.business-compliance-document-type', {
+        filters: { isActive: true },
+        sort: { displayOrder: 'asc', name: 'asc' }
+      });
+
+      return documentTypes.map(docType => ({
+        id: docType.key,
+        name: docType.name,
+        description: docType.description,
+        required: docType.required,
+        autoExpiry: docType.autoExpiry,
+        category: docType.category,
+        validityYears: docType.validityYears,
+        acceptedFormats: docType.acceptedFormats,
+        examples: docType.examples
+      }));
+    } catch (error) {
+      console.error('❌ Error fetching all business document types from database:', error);
+      return await this.getRequiredDocumentTypes(); // Fallback to required types
+    }
   },
 
   // Get document configuration by type
-  getDocumentConfig(documentType) {
-    const requiredDocs = this.getRequiredDocumentTypes();
-    return requiredDocs.find(doc => doc.id === documentType);
+  async getDocumentConfig(documentType) {
+    const allDocs = await this.getAllDocumentTypes();
+    return allDocs.find(doc => doc.id === documentType);
   },
 
   // Upload document with S3 integration
@@ -115,7 +166,7 @@ module.exports = createCoreService('api::business-compliance-document.business-c
       console.log('📤 S3 upload result:', s3Result);
 
       // Get document configuration
-      const docConfig = this.getDocumentConfig(documentType);
+      const docConfig = await this.getDocumentConfig(documentType);
       const autoExpiry = docConfig?.autoExpiry || false;
 
       // Calculate automatic expiry date if needed
@@ -207,7 +258,7 @@ module.exports = createCoreService('api::business-compliance-document.business-c
       }
     });
 
-    const requiredDocumentTypes = this.getRequiredDocumentTypes();
+    const requiredDocumentTypes = await this.getRequiredDocumentTypes();
     const stats = {
       uploaded: 0,
       missing: 0,

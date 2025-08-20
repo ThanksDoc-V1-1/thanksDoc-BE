@@ -1,0 +1,90 @@
+{
+  "kind": "collectionType",
+  "collectionName": "business_compliance_document_types",
+  "info": {
+    "singularName": "business-compliance-document-type",
+    "pluralName": "business-compliance-document-types",
+    "displayName": "Business Compliance Document Type",
+    "description": "Configurable document types for business compliance requirements"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "regex": "^[a-z_-]+$"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "required": {
+      "type": "boolean",
+      "default": true
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "displayOrder": {
+      "type": "integer",
+      "default": 0
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": [
+        "registration",
+        "insurance", 
+        "financial",
+        "compliance",
+        "operational",
+        "legal",
+        "other"
+      ],
+      "default": "other"
+    },
+    "autoExpiry": {
+      "type": "boolean",
+      "default": false
+    },
+    "validityYears": {
+      "type": "integer",
+      "min": 1,
+      "max": 10,
+      "default": 1
+    },
+    "expiryWarningDays": {
+      "type": "integer",
+      "min": 1,
+      "max": 365,
+      "default": 30
+    },
+    "allowedFileTypes": {
+      "type": "json",
+      "default": ["pdf", "doc", "docx", "jpg", "jpeg", "png"]
+    },
+    "maxFileSize": {
+      "type": "integer",
+      "min": 1024,
+      "max": 52428800,
+      "default": 10485760
+    },
+    "acceptedFormats": {
+      "type": "string",
+      "default": ".pdf,.jpg,.jpeg,.png"
+    },
+    "examples": {
+      "type": "text"
+    },
+    "helpText": {
+      "type": "text"
+    }
+  }
+}

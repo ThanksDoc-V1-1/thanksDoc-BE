@@ -60,8 +60,100 @@ module.exports = {
       }
     ]);
 
-    // Schedule document expiry status updates to run every day at 2 AM
-    const cronTime = '0 2 * * *'; // Every day at 2:00 AM
+    // Seed business compliance document types if they don't exist
+    try {
+      console.log('🌱 Seeding business compliance document types...');
+      
+      const existingTypes = await strapi.entityService.findMany('api::business-compliance-document-type.business-compliance-document-type');
+      
+      if (existingTypes.length === 0) {
+        const businessDocumentTypes = [
+          {
+            key: 'business-license',
+            name: 'Business License',
+            description: 'Valid business registration/license document',
+            required: true,
+            isActive: true,
+            displayOrder: 1,
+            category: 'registration',
+            autoExpiry: true,
+            validityYears: 1,
+            expiryWarningDays: 30,
+            acceptedFormats: '.pdf,.jpg,.jpeg,.png',
+            examples: 'Business registration certificate, trading license'
+          },
+          {
+            key: 'insurance-certificate',
+            name: 'Insurance Certificate',
+            description: 'Professional liability insurance certificate',
+            required: true,
+            isActive: true,
+            displayOrder: 2,
+            category: 'insurance',
+            autoExpiry: true,
+            validityYears: 1,
+            expiryWarningDays: 30,
+            acceptedFormats: '.pdf,.jpg,.jpeg,.png',
+            examples: 'Professional indemnity insurance, public liability insurance'
+          },
+          {
+            key: 'tax-certificate',
+            name: 'Tax Registration Certificate',
+            description: 'Tax registration or VAT certificate',
+            required: true,
+            isActive: true,
+            displayOrder: 3,
+            category: 'financial',
+            autoExpiry: true,
+            validityYears: 1,
+            expiryWarningDays: 30,
+            acceptedFormats: '.pdf,.jpg,.jpeg,.png',
+            examples: 'VAT registration, tax identification certificate'
+          },
+          {
+            key: 'health-safety-certificate',
+            name: 'Health & Safety Certificate',
+            description: 'Health and safety compliance certificate',
+            required: true,
+            isActive: true,
+            displayOrder: 4,
+            category: 'compliance',
+            autoExpiry: true,
+            validityYears: 1,
+            expiryWarningDays: 30,
+            acceptedFormats: '.pdf,.jpg,.jpeg,.png',
+            examples: 'HSE compliance certificate, workplace safety certification'
+          },
+          {
+            key: 'data-protection-certificate',
+            name: 'Data Protection Certificate',
+            description: 'GDPR/Data protection compliance certificate',
+            required: true,
+            isActive: true,
+            displayOrder: 5,
+            category: 'compliance',
+            autoExpiry: true,
+            validityYears: 1,
+            expiryWarningDays: 30,
+            acceptedFormats: '.pdf,.jpg,.jpeg,.png',
+            examples: 'Data protection certification, GDPR compliance certificate'
+          }
+        ];
+
+        for (const docType of businessDocumentTypes) {
+          await strapi.entityService.create('api::business-compliance-document-type.business-compliance-document-type', {
+            data: docType
+          });
+          console.log(`✅ Created business document type: ${docType.name}`);
+        }
+
+        console.log('✅ Business compliance document types seeded successfully');
+      } else {
+        console.log('📄 Business compliance document types already exist, skipping seed');
+      }
+    } catch (error) {
+      console.error('❌ Error seeding business compliance document types:', error);
+    }
     
     try {
       // Schedule the expiry status update job
