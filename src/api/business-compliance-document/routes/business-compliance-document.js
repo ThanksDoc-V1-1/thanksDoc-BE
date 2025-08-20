@@ -90,6 +90,47 @@ module.exports = {
         policies: [],
         middlewares: [],
       },
+    },
+    // Business notification routes
+    {
+      method: 'GET',
+      path: '/business-compliance-documents/business/:businessId/notifications',
+      handler: 'business-compliance-document.getBusinessNotifications',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
+      method: 'GET',
+      path: '/business-compliance-documents/business/:businessId/notifications/summary',
+      handler: 'business-compliance-document.getBusinessNotificationsSummary',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
+      method: 'PUT',
+      path: '/business-compliance-documents/business/:businessId/notifications/:notificationId/read',
+      handler: 'business-compliance-document.markBusinessNotificationAsRead',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
+      method: 'PUT',
+      path: '/business-compliance-documents/business/:businessId/notifications/read-all',
+      handler: 'business-compliance-document.markAllBusinessNotificationsAsRead',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
     }
   ]
 };

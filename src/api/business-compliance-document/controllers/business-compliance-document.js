@@ -220,6 +220,96 @@ module.exports = createCoreController('api::business-compliance-document.busines
       console.error('Update expiry statuses error:', error);
       ctx.throw(500, `Failed to update expiry statuses: ${error.message}`);
     }
+  },
+
+  // Get business notifications
+  async getBusinessNotifications(ctx) {
+    try {
+      const { businessId } = ctx.params;
+      
+      if (!businessId) {
+        return ctx.badRequest('Business ID is required');
+      }
+
+      const adminNotificationService = strapi.service('api::compliance-document.admin-notifications');
+      const notifications = await adminNotificationService.getBusinessNotifications(businessId);
+      
+      ctx.body = {
+        success: true,
+        data: {
+          notifications: notifications || []
+        }
+      };
+    } catch (error) {
+      console.error('Get business notifications error:', error);
+      ctx.throw(500, `Failed to get business notifications: ${error.message}`);
+    }
+  },
+
+  // Get business notifications summary
+  async getBusinessNotificationsSummary(ctx) {
+    try {
+      const { businessId } = ctx.params;
+      
+      if (!businessId) {
+        return ctx.badRequest('Business ID is required');
+      }
+
+      const adminNotificationService = strapi.service('api::compliance-document.admin-notifications');
+      const summary = await adminNotificationService.getBusinessNotificationsSummary(businessId);
+      
+      ctx.body = {
+        success: true,
+        data: summary || { unreadCount: 0, totalCount: 0 }
+      };
+    } catch (error) {
+      console.error('Get business notifications summary error:', error);
+      ctx.throw(500, `Failed to get business notifications summary: ${error.message}`);
+    }
+  },
+
+  // Mark business notification as read
+  async markBusinessNotificationAsRead(ctx) {
+    try {
+      const { businessId, notificationId } = ctx.params;
+      
+      if (!businessId || !notificationId) {
+        return ctx.badRequest('Business ID and notification ID are required');
+      }
+
+      const adminNotificationService = strapi.service('api::compliance-document.admin-notifications');
+      await adminNotificationService.markBusinessNotificationAsRead(businessId, notificationId);
+      
+      ctx.body = {
+        success: true,
+        message: 'Notification marked as read'
+      };
+    } catch (error) {
+      console.error('Mark business notification as read error:', error);
+      ctx.throw(500, `Failed to mark notification as read: ${error.message}`);
+    }
+  },
+
+  // Mark all business notifications as read
+  async markAllBusinessNotificationsAsRead(ctx) {
+    try {
+      const { businessId } = ctx.params;
+      
+      if (!businessId) {
+        return ctx.badRequest('Business ID is required');
+      }
+
+      const adminNotificationService = strapi.service('api::compliance-document.admin-notifications');
+      await adminNotificationService.markAllBusinessNotificationsAsRead(businessId);
+      
+      ctx.body = {
+        success: true,
+        message: 'All notifications marked as read'
+      };
+    } catch (error) {
+      console.error('Mark all business notifications as read error:', error);
+      ctx.throw(500, `Failed to mark all notifications as read: ${error.message}`);
+    }
   }
 
 }));
