@@ -1334,7 +1334,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
             <div class="detail">
               <strong>Business:</strong> ${serviceRequest.business.name}<br>
               <strong>Service:</strong> ${serviceRequest.serviceType}<br>
-              <strong>Duration:</strong> ${serviceRequest.estimatedDuration} hour(s)<br>
+              <strong>Duration:</strong> ${serviceRequest.estimatedDuration} minute(s)<br>
               <strong>Contact:</strong> ${serviceRequest.business.phone}<br>
               <strong>Address:</strong> ${serviceRequest.business.address}
             </div>

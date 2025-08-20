@@ -535,7 +535,7 @@ class WhatsAppService {
 ${serviceEmoji} *Service:* ${serviceRequest.serviceType}
 🏢 *Business:* ${business.name}
 📍 *Location:* ${business.address}
-⏱️ *Duration:* ${serviceRequest.estimatedDuration || 1} hour(s)
+⏱️ *Duration:* ${serviceRequest.estimatedDuration || 20} minute(s)
 ${serviceRequest.urgencyLevel === 'emergency' ? '🚨 *EMERGENCY REQUEST*' : ''}
 
 📝 *Details:* ${serviceRequest.description || 'No additional details'}
@@ -590,7 +590,7 @@ ${serviceRequest.urgencyLevel === 'emergency' ? '🚨 *EMERGENCY REQUEST*' : ''}
 ${serviceEmoji} *Service:* ${serviceRequest.serviceType}
 🏢 *Business:* ${business.name}
 📍 *Location:* ${business.address}
-⏱️ *Duration:* ${serviceRequest.estimatedDuration} hour(s)
+⏱️ *Duration:* ${serviceRequest.estimatedDuration} minute(s)
 ${serviceRequest.urgencyLevel === 'emergency' ? '🚨 *EMERGENCY REQUEST*' : ''}
 
 📝 *Details:* ${serviceRequest.description || 'No additional details'}
@@ -692,7 +692,7 @@ Good luck with your service! 👨‍⚕️`;
 You have declined the service request.
 
 🏢 *Business:* ${business.name}
-⏱️ *Duration:* ${serviceRequest.estimatedDuration} hour(s)
+⏱️ *Duration:* ${serviceRequest.estimatedDuration} minute(s)
 
 The request will be offered to other available doctors.
 
@@ -765,7 +765,7 @@ Great news! A doctor has accepted your service request.
 📞 *Phone:* ${doctor.phone}
 
 ⏱️ *Service:* ${serviceRequest.serviceType}
-🕐 *Duration:* ${serviceRequest.estimatedDuration} hour(s)
+🕐 *Duration:* ${serviceRequest.estimatedDuration} minute(s)
 
 📱 *Track Progress:* ${this.baseUrll}/business/dashboard
 
