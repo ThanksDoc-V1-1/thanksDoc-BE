@@ -7,12 +7,40 @@
 
 const { createCoreRouter } = require('@strapi/strapi').factories;
 
-// Create the default router
-const defaultRouter = createCoreRouter('api::business-compliance-document.business-compliance-document');
-
-// Custom routes for business compliance documents
-const customRoutes = {
+module.exports = {
   routes: [
+    // Include all default CRUD routes
+    {
+      method: 'GET',
+      path: '/business-compliance-documents',
+      handler: 'business-compliance-document.find',
+      config: { auth: false },
+    },
+    {
+      method: 'GET',
+      path: '/business-compliance-documents/:id',
+      handler: 'business-compliance-document.findOne',
+      config: { auth: false },
+    },
+    {
+      method: 'POST',
+      path: '/business-compliance-documents',
+      handler: 'business-compliance-document.create',
+      config: { auth: false },
+    },
+    {
+      method: 'PUT',
+      path: '/business-compliance-documents/:id',
+      handler: 'business-compliance-document.update',
+      config: { auth: false },
+    },
+    {
+      method: 'DELETE',
+      path: '/business-compliance-documents/:id',
+      handler: 'business-compliance-document.delete',
+      config: { auth: false },
+    },
+    // Custom routes
     {
       method: 'POST',
       path: '/business-compliance-documents/upload',
@@ -55,5 +83,3 @@ const customRoutes = {
     }
   ]
 };
-
-module.exports = customRoutes;
