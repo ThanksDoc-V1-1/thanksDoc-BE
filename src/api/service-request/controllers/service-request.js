@@ -1599,8 +1599,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return ctx.badRequest('Doctor not found');
       }
 
-      const WhatsAppService = require('../../../services/whatsapp');
-      const whatsappService = new WhatsAppService();
+      const whatsappService = strapi.service('whatsapp');
 
       // Create a mock service request for testing
       const mockServiceRequest = {
@@ -1618,6 +1617,11 @@ module.exports = createCoreController('api::service-request.service-request', ({
       };
 
       // Send test notification
+      console.log('🔍 About to send test notification...');
+      console.log('Doctor phone:', doctor.phone);
+      console.log('Mock service request:', mockServiceRequest);
+      console.log('Mock business:', mockBusiness);
+      
       const result = await whatsappService.sendServiceRequestNotification(
         doctor, 
         mockServiceRequest, 

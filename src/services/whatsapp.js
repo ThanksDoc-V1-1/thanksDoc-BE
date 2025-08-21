@@ -194,7 +194,7 @@ class WhatsAppService {
       return this.buildHelloWorldTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
     } else if (templateName === 'sample_issue_resolution') {
       return this.buildIssueResolutionTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
-    } else if (templateName === 'doctor_accept_request') {
+    } else if (templateName === 'doctor_accept_request' || templateName === 'new_doctor_accept_request') {
       return this.buildDoctorAcceptRequestTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
     }
     
@@ -370,7 +370,7 @@ class WhatsAppService {
       to: doctorPhone,
       type: "template",
       template: {
-        name: "doctor_accept_request",
+        name: this.templateName,
         language: {
           code: "en_GB" // UK English
         },
@@ -400,11 +400,11 @@ class WhatsAppService {
               },
               {
                 type: "text",
-                text: serviceRequest.description || "No additional details" // {{6}} Description
+                text: serviceDateTime // {{6}} Service date/time
               },
               {
                 type: "text",
-                text: serviceDateTime // {{7}} Service date/time
+                text: serviceRequest.serviceCost?.toString() || "Not specified" // {{7}} Service Cost
               }
             ]
           },
@@ -1132,6 +1132,8 @@ The doctor will contact you shortly to coordinate the visit.`;
     try {
       console.log('📱 Sending WhatsApp message to:', payload.to);
       console.log('📱 Message type:', payload.type);
+      console.log('📱 API URL:', this.apiUrl);
+      console.log('📱 Access Token (first 20 chars):', this.accessToken?.substring(0, 20) + '...');
       console.log('📱 Full payload:', JSON.stringify(payload, null, 2));
       
       const response = await axios.post(this.apiUrl, payload, {
@@ -1139,6 +1141,7 @@ The doctor will contact you shortly to coordinate the visit.`;
           'Authorization': `Bearer ${this.accessToken}`,
           'Content-Type': 'application/json',
         },
+        timeout: 10000, // 10 second timeout
       });
 
       console.log('✅ WhatsApp API Response:', response.status, response.statusText);
