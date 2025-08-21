@@ -12,20 +12,20 @@ module.exports = createCoreController('api::business-compliance-document.busines
   // Upload compliance document for business
   async upload(ctx) {
     try {
-      console.log('Business compliance upload request received:');
-      console.log('Body:', ctx.request.body);
-      console.log('Files:', ctx.request.files);
+      ('Business compliance upload request received:');
+      ('Body:', ctx.request.body);
+      ('Files:', ctx.request.files);
       
       const { businessId, documentType, issueDate } = ctx.request.body;
       const files = ctx.request.files;
 
       if (!files || !files.file) {
-        console.log('No file provided error - files:', files);
+        ('No file provided error - files:', files);
         return ctx.badRequest('No file provided');
       }
 
       if (!businessId || !documentType) {
-        console.log('Missing required fields - businessId:', businessId, 'documentType:', documentType);
+        ('Missing required fields - businessId:', businessId, 'documentType:', documentType);
         return ctx.badRequest('Business ID and document type are required');
       }
 
@@ -57,12 +57,12 @@ module.exports = createCoreController('api::business-compliance-document.busines
 
       // Update business verification status after successful upload
       try {
-        console.log(`🔄 Triggering business verification status check for business ${businessId} after document upload`);
+        (`🔄 Triggering business verification status check for business ${businessId} after document upload`);
         
         const businessVerificationService = strapi.service('api::business-compliance-document.business-verification');
         const verificationResult = await businessVerificationService.updateBusinessVerificationStatus(businessId);
         
-        console.log('✅ Business verification status check completed after upload:', verificationResult);
+        ('✅ Business verification status check completed after upload:', verificationResult);
         
         ctx.send({
           success: true,
@@ -150,12 +150,12 @@ module.exports = createCoreController('api::business-compliance-document.busines
 
       // Automatically update business verification status
       try {
-        console.log(`🔄 Triggering business verification status update for business ${document.business.id} after document verification change`);
+        (`🔄 Triggering business verification status update for business ${document.business.id} after document verification change`);
         
         const businessVerificationService = strapi.service('api::business-compliance-document.business-verification');
         const verificationResult = await businessVerificationService.updateBusinessVerificationStatus(document.business.id);
         
-        console.log('✅ Business verification status update completed:', verificationResult);
+        ('✅ Business verification status update completed:', verificationResult);
         
         ctx.send({
           success: true,
@@ -207,7 +207,7 @@ module.exports = createCoreController('api::business-compliance-document.busines
   // Update all document expiry statuses
   async updateExpiryStatuses(ctx) {
     try {
-      console.log('🔄 Manual trigger: Updating all business document expiry statuses...');
+      ('🔄 Manual trigger: Updating all business document expiry statuses...');
       
       const result = await strapi.service('api::business-compliance-document.business-compliance-document').updateAllExpiryStatuses();
       

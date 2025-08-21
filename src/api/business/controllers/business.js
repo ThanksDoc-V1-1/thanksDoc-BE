@@ -101,22 +101,22 @@ module.exports = createCoreController('api::business.business', ({ strapi }) => 
   async findOne(ctx) {
     try {
       const { id } = ctx.params;
-      console.log('🔍 Business findOne called with ID:', id);
-      console.log('🔍 ID type:', typeof id);
-      console.log('🔍 Params object:', ctx.params);
+      ('🔍 Business findOne called with ID:', id);
+      ('🔍 ID type:', typeof id);
+      ('🔍 Params object:', ctx.params);
       
       const business = await strapi.entityService.findOne('api::business.business', id);
-      console.log('📡 Business found:', business ? 'YES' : 'NO');
-      console.log('👤 Business data keys:', business ? Object.keys(business) : 'N/A');
+      ('📡 Business found:', business ? 'YES' : 'NO');
+      ('👤 Business data keys:', business ? Object.keys(business) : 'N/A');
       
       if (!business) {
-        console.log('❌ Business not found with ID:', id);
+        ('❌ Business not found with ID:', id);
         return ctx.notFound('Business not found');
       }
 
       // Remove password from response
       const { password, ...businessData } = business;
-      console.log('✅ Returning business data for:', businessData.businessName);
+      ('✅ Returning business data for:', businessData.businessName);
       
       return ctx.send({
         data: businessData

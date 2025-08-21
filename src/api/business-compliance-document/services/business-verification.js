@@ -12,7 +12,7 @@ module.exports = () => ({
    */
   async checkBusinessVerificationStatus(businessId) {
     try {
-      console.log(`🔍 Checking verification status for business ${businessId}...`);
+      (`🔍 Checking verification status for business ${businessId}...`);
 
       // Get all documents for this business
       const documents = await strapi.entityService.findMany('api::business-compliance-document.business-compliance-document', {
@@ -24,10 +24,10 @@ module.exports = () => ({
         }
       });
 
-      console.log(`📄 Found ${documents.length} documents for business ${businessId}`);
+      (`📄 Found ${documents.length} documents for business ${businessId}`);
 
       if (documents.length === 0) {
-        console.log(`❌ No documents found for business ${businessId} - cannot be verified`);
+        (`❌ No documents found for business ${businessId} - cannot be verified`);
         return {
           shouldBeVerified: false,
           hasExpiredOrRejectedDocuments: false,
@@ -69,7 +69,7 @@ module.exports = () => ({
           // Document is missing
           allDocumentsVerified = false;
           missingDocuments.push(docName);
-          console.log(`❌ Missing required document: ${docName}`);
+          (`❌ Missing required document: ${docName}`);
           continue;
         }
 
@@ -78,21 +78,21 @@ module.exports = () => ({
           allDocumentsVerified = false;
           hasExpiredOrRejectedDocuments = true;
           rejectedDocuments.push(docName);
-          console.log(`❌ Rejected document: ${docName}`);
+          (`❌ Rejected document: ${docName}`);
           continue;
         }
 
         if (doc.verificationStatus === 'pending' || !doc.verificationStatus) {
           allDocumentsVerified = false;
           pendingDocuments.push(docName);
-          console.log(`⏳ Pending document: ${docName} (status: ${doc.verificationStatus || 'not set'})`);
+          (`⏳ Pending document: ${docName} (status: ${doc.verificationStatus || 'not set'})`);
           continue;
         }
 
         if (doc.verificationStatus !== 'verified') {
           allDocumentsVerified = false;
           pendingDocuments.push(docName);
-          console.log(`⏳ Non-verified document: ${docName} (status: ${doc.verificationStatus})`);
+          (`⏳ Non-verified document: ${docName} (status: ${doc.verificationStatus})`);
           continue;
         }
 
@@ -105,14 +105,14 @@ module.exports = () => ({
             allDocumentsVerified = false;
             hasExpiredOrRejectedDocuments = true;
             expiredDocuments.push(docName);
-            console.log(`❌ Expired document: ${docName} (expired: ${expiryDate.toDateString()})`);
+            (`❌ Expired document: ${docName} (expired: ${expiryDate.toDateString()})`);
             continue;
           }
         }
 
         // Document is verified and not expired
         verifiedDocuments.push(docName);
-        console.log(`✅ Verified document: ${docName}`);
+        (`✅ Verified document: ${docName}`);
       }
 
       const result = {
@@ -136,15 +136,15 @@ module.exports = () => ({
             ].join(', ')}`
       };
 
-      console.log(`📊 Verification summary for business ${businessId}:`);
-      console.log(`   Total required documents: ${result.totalDocuments}`);
-      console.log(`   Uploaded documents: ${result.uploadedDocuments}`);
-      console.log(`   Verified: ${result.verifiedCount}`);
-      console.log(`   Missing: ${missingDocuments.length}`);
-      console.log(`   Pending: ${pendingDocuments.length}`);
-      console.log(`   Rejected: ${rejectedDocuments.length}`);
-      console.log(`   Expired: ${expiredDocuments.length}`);
-      console.log(`   Should be verified: ${result.shouldBeVerified}`);
+      (`📊 Verification summary for business ${businessId}:`);
+      (`   Total required documents: ${result.totalDocuments}`);
+      (`   Uploaded documents: ${result.uploadedDocuments}`);
+      (`   Verified: ${result.verifiedCount}`);
+      (`   Missing: ${missingDocuments.length}`);
+      (`   Pending: ${pendingDocuments.length}`);
+      (`   Rejected: ${rejectedDocuments.length}`);
+      (`   Expired: ${expiredDocuments.length}`);
+      (`   Should be verified: ${result.shouldBeVerified}`);
 
       return result;
 
@@ -159,12 +159,12 @@ module.exports = () => ({
    */
   async updateBusinessVerificationStatus(businessId) {
     try {
-      console.log(`🔄 Updating verification status for business ${businessId}...`);
+      (`🔄 Updating verification status for business ${businessId}...`);
 
       // Get current business
       const business = await strapi.entityService.findOne('api::business.business', businessId);
       if (!business) {
-        console.log(`❌ Business ${businessId} not found`);
+        (`❌ Business ${businessId} not found`);
         return { success: false, error: 'Business not found' };
       }
 
@@ -172,10 +172,10 @@ module.exports = () => ({
       const verificationCheck = await this.checkBusinessVerificationStatus(businessId);
       const shouldBeVerified = verificationCheck.shouldBeVerified;
 
-      console.log(`📊 Verification check result for business ${businessId}:`);
-      console.log(`   Should be verified: ${shouldBeVerified}`);
-      console.log(`   Currently verified: ${business.isVerified}`);
-      console.log(`   Verified documents: ${verificationCheck.verifiedCount}/${verificationCheck.totalDocuments}`);
+      (`📊 Verification check result for business ${businessId}:`);
+      (`   Should be verified: ${shouldBeVerified}`);
+      (`   Currently verified: ${business.isVerified}`);
+      (`   Verified documents: ${verificationCheck.verifiedCount}/${verificationCheck.totalDocuments}`);
 
       // Only update if status needs to change
       if (business.isVerified !== shouldBeVerified) {
@@ -187,7 +187,7 @@ module.exports = () => ({
           }
         });
 
-        console.log(`✅ Updated business ${businessId} verification status to: ${shouldBeVerified}`);
+        (`✅ Updated business ${businessId} verification status to: ${shouldBeVerified}`);
 
         // Log the status change
         await this.logVerificationStatusChange(businessId, business.isVerified, shouldBeVerified, verificationCheck);
@@ -200,7 +200,7 @@ module.exports = () => ({
           verificationCheck
         };
       } else {
-        console.log(`📋 Business ${businessId} verification status unchanged: ${shouldBeVerified}`);
+        (`📋 Business ${businessId} verification status unchanged: ${shouldBeVerified}`);
         return {
           success: true,
           statusChanged: false,
@@ -241,7 +241,7 @@ module.exports = () => ({
         }
       };
 
-      console.log('📝 Business verification status change logged:', logEntry);
+      ('📝 Business verification status change logged:', logEntry);
       
       // Could save to a dedicated audit table if needed
       // For now, just log to console
@@ -258,13 +258,13 @@ module.exports = () => ({
    */
   async updateAllBusinessesVerificationStatus() {
     try {
-      console.log('🔄 Starting batch business verification status update...');
+      ('🔄 Starting batch business verification status update...');
 
       const businesses = await strapi.entityService.findMany('api::business.business', {
         limit: -1
       });
 
-      console.log(`👥 Found ${businesses.length} businesses to update`);
+      (`👥 Found ${businesses.length} businesses to update`);
 
       const results = {
         total: businesses.length,
@@ -303,11 +303,11 @@ module.exports = () => ({
         }
       }
 
-      console.log('📊 Batch business verification update completed:');
-      console.log(`   Total businesses: ${results.total}`);
-      console.log(`   Updated: ${results.updated}`);
-      console.log(`   Unchanged: ${results.unchanged}`);
-      console.log(`   Errors: ${results.errors}`);
+      ('📊 Batch business verification update completed:');
+      (`   Total businesses: ${results.total}`);
+      (`   Updated: ${results.updated}`);
+      (`   Unchanged: ${results.unchanged}`);
+      (`   Errors: ${results.errors}`);
 
       return results;
 
@@ -322,13 +322,13 @@ module.exports = () => ({
    */
   async updateBusinessesWithoutDocuments() {
     try {
-      console.log('🔄 Updating verification status for businesses without compliance documents...');
+      ('🔄 Updating verification status for businesses without compliance documents...');
 
       const businesses = await strapi.entityService.findMany('api::business.business', {
         limit: -1
       });
 
-      console.log(`👥 Found ${businesses.length} businesses to check`);
+      (`👥 Found ${businesses.length} businesses to check`);
 
       const results = {
         total: businesses.length,
@@ -361,7 +361,7 @@ module.exports = () => ({
                 }
               });
 
-              console.log(`✅ Updated business ${business.id} (${business.businessName}) - set to unverified (no documents)`);
+              (`✅ Updated business ${business.id} (${business.businessName}) - set to unverified (no documents)`);
               results.updated++;
 
               results.details.push({
@@ -371,7 +371,7 @@ module.exports = () => ({
                 reason: 'No documents uploaded'
               });
             } else {
-              console.log(`📋 Business ${business.id} (${business.businessName}) already unverified (no documents)`);
+              (`📋 Business ${business.id} (${business.businessName}) already unverified (no documents)`);
               results.alreadyUnverified++;
 
               results.details.push({
@@ -395,12 +395,12 @@ module.exports = () => ({
         }
       }
 
-      console.log('📊 Businesses without documents update completed:');
-      console.log(`   Total businesses: ${results.total}`);
-      console.log(`   Businesses without documents: ${results.businessesWithoutDocs}`);
-      console.log(`   Updated to unverified: ${results.updated}`);
-      console.log(`   Already unverified: ${results.alreadyUnverified}`);
-      console.log(`   Errors: ${results.errors}`);
+      ('📊 Businesses without documents update completed:');
+      (`   Total businesses: ${results.total}`);
+      (`   Businesses without documents: ${results.businessesWithoutDocs}`);
+      (`   Updated to unverified: ${results.updated}`);
+      (`   Already unverified: ${results.alreadyUnverified}`);
+      (`   Errors: ${results.errors}`);
 
       return results;
 

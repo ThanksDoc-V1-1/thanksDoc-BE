@@ -12,7 +12,7 @@ module.exports = () => ({
    */
   async getAdminNotifications() {
     try {
-      console.log('🔔 Getting admin notifications...');
+      ('🔔 Getting admin notifications...');
 
       const notifications = [];
 
@@ -66,7 +66,7 @@ module.exports = () => ({
         return new Date(b.timestamp) - new Date(a.timestamp);
       });
 
-      console.log(`📋 Generated ${notifications.length} admin notifications`);
+      (`📋 Generated ${notifications.length} admin notifications`);
 
       return {
         success: true,
@@ -103,7 +103,7 @@ module.exports = () => ({
         limit: 50
       });
 
-      console.log(`📁 Found ${recentUploads.length} recent document uploads`);
+      (`📁 Found ${recentUploads.length} recent document uploads`);
 
       // Group by doctor and document type for better notifications
       const uploadsByDoctor = {};
@@ -189,7 +189,7 @@ module.exports = () => ({
         limit: -1
       });
 
-      console.log(`📋 Found ${pendingReview.length} documents needing review`);
+      (`📋 Found ${pendingReview.length} documents needing review`);
 
       // Group by urgency (how long they've been waiting)
       const now = new Date();
@@ -279,7 +279,7 @@ module.exports = () => ({
         limit: -1
       });
 
-      console.log(`⚠️ Found ${expiredDocs.length} expired documents`);
+      (`⚠️ Found ${expiredDocs.length} expired documents`);
 
       // Group by doctor
       const expiredByDoctor = {};
@@ -376,7 +376,7 @@ module.exports = () => ({
         limit: -1
       });
 
-      console.log(`⏰ Found ${expiringDocs.length} documents expiring soon`);
+      (`⏰ Found ${expiringDocs.length} documents expiring soon`);
 
       // Group by urgency
       const urgent = []; // Expiring in 1-2 days
@@ -463,7 +463,7 @@ module.exports = () => ({
         limit: -1
       });
 
-      console.log(`❌ Found ${rejectedDocs.length} recently rejected documents`);
+      (`❌ Found ${rejectedDocs.length} recently rejected documents`);
 
       // Group by doctor
       const rejectedByDoctor = {};
@@ -518,7 +518,7 @@ module.exports = () => ({
         limit: -1
       });
 
-      console.log(`👥 Checking compliance for ${doctors.length} doctors`);
+      (`👥 Checking compliance for ${doctors.length} doctors`);
 
       const incompleteCompliance = [];
 
@@ -555,7 +555,7 @@ module.exports = () => ({
         }
       }
 
-      console.log(`📊 Found ${incompleteCompliance.length} doctors with incomplete compliance`);
+      (`📊 Found ${incompleteCompliance.length} doctors with incomplete compliance`);
 
       // Create notifications for doctors with issues
       for (const data of incompleteCompliance.slice(0, 10)) { // Limit to top 10 to avoid spam
@@ -603,7 +603,7 @@ module.exports = () => ({
     try {
       // In a real implementation, you'd store notification read status in the database
       // For now, we'll just return success
-      console.log(`📖 Marked admin notification ${notificationId} as read`);
+      (`📖 Marked admin notification ${notificationId} as read`);
       
       return {
         success: true,
@@ -623,7 +623,7 @@ module.exports = () => ({
    */
   async markAllNotificationsAsRead() {
     try {
-      console.log('📖 Marked all admin notifications as read');
+      ('📖 Marked all admin notifications as read');
       
       return {
         success: true,
@@ -700,7 +700,7 @@ module.exports = () => ({
         limit: 50
       });
 
-      console.log(`📁 Found ${recentUploads.length} recent business document uploads`);
+      (`📁 Found ${recentUploads.length} recent business document uploads`);
 
       // Group by business for better notifications
       const uploadsByBusiness = {};
@@ -785,7 +785,7 @@ module.exports = () => ({
         limit: -1
       });
 
-      console.log(`📋 Found ${pendingReview.length} business documents needing review`);
+      (`📋 Found ${pendingReview.length} business documents needing review`);
 
       // Group by urgency (how long they've been waiting)
       const now = new Date();
@@ -909,7 +909,7 @@ module.exports = () => ({
         limit: -1
       });
 
-      console.log(`⏰ Found ${expiredDocs.length} expired business documents`);
+      (`⏰ Found ${expiredDocs.length} expired business documents`);
 
       // Group by business
       const expiredByBusiness = {};
@@ -1003,7 +1003,7 @@ module.exports = () => ({
         limit: -1
       });
 
-      console.log(`⚠️ Found ${expiringDocs.length} business documents expiring soon`);
+      (`⚠️ Found ${expiringDocs.length} business documents expiring soon`);
 
       // Group by business
       const expiringByBusiness = {};
@@ -1093,7 +1093,7 @@ module.exports = () => ({
         limit: -1
       });
 
-      console.log(`❌ Found ${rejectedDocs.length} rejected business documents`);
+      (`❌ Found ${rejectedDocs.length} rejected business documents`);
 
       // Group by business
       const rejectedByBusiness = {};
@@ -1173,7 +1173,7 @@ module.exports = () => ({
         limit: -1
       });
 
-      console.log(`🏢 Checking compliance for ${businesses.length} businesses`);
+      (`🏢 Checking compliance for ${businesses.length} businesses`);
 
       // Get all business document types
       const businessDocumentTypes = await strapi.entityService.findMany('api::business-compliance-document-type.business-compliance-document-type', {
@@ -1234,7 +1234,7 @@ module.exports = () => ({
   // Business-specific notification methods
   async getBusinessNotifications(businessId) {
     try {
-      console.log(`📱 Getting notifications for business ${businessId}`);
+      (`📱 Getting notifications for business ${businessId}`);
 
       const notifications = [];
       const business = await strapi.entityService.findOne('api::business.business', businessId);
@@ -1256,7 +1256,7 @@ module.exports = () => ({
         limit: -1
       });
 
-      console.log(`📄 Found ${complianceDocuments.length} documents and ${businessDocumentTypes.length} required types`);
+      (`📄 Found ${complianceDocuments.length} documents and ${businessDocumentTypes.length} required types`);
 
       const now = new Date();
 
@@ -1357,7 +1357,7 @@ module.exports = () => ({
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
 
-      console.log(`📱 Generated ${notifications.length} notifications for business ${businessId}`);
+      (`📱 Generated ${notifications.length} notifications for business ${businessId}`);
       return notifications;
 
     } catch (error) {
@@ -1387,7 +1387,7 @@ module.exports = () => ({
     try {
       // Since we're generating notifications dynamically, we can use localStorage
       // or a simple in-memory store for read status in the frontend
-      console.log(`📱 Marking business notification ${notificationId} as read for business ${businessId}`);
+      (`📱 Marking business notification ${notificationId} as read for business ${businessId}`);
       return { success: true };
     } catch (error) {
       console.error('Error marking business notification as read:', error);
@@ -1397,7 +1397,7 @@ module.exports = () => ({
 
   async markAllBusinessNotificationsAsRead(businessId) {
     try {
-      console.log(`📱 Marking all business notifications as read for business ${businessId}`);
+      (`📱 Marking all business notifications as read for business ${businessId}`);
       return { success: true };
     } catch (error) {
       console.error('Error marking all business notifications as read:', error);

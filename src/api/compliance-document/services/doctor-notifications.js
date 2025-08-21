@@ -12,7 +12,7 @@ module.exports = () => ({
    */
   async getDoctorNotifications(doctorId) {
     try {
-      console.log(`🔔 Getting notifications for doctor ${doctorId}...`);
+      (`🔔 Getting notifications for doctor ${doctorId}...`);
 
       const notifications = [];
 
@@ -50,7 +50,7 @@ module.exports = () => ({
         return new Date(b.timestamp) - new Date(a.timestamp);
       });
 
-      console.log(`📋 Generated ${notifications.length} notifications for doctor ${doctorId}`);
+      (`📋 Generated ${notifications.length} notifications for doctor ${doctorId}`);
 
       return {
         success: true,
@@ -273,7 +273,7 @@ module.exports = () => ({
     try {
       // In a real implementation, you'd store notification read status in the database
       // For now, we'll just return success
-      console.log(`📖 Marked notification ${notificationId} as read for doctor ${doctorId}`);
+      (`📖 Marked notification ${notificationId} as read for doctor ${doctorId}`);
       
       return {
         success: true,
@@ -294,7 +294,7 @@ module.exports = () => ({
    */
   async markAllNotificationsAsRead(doctorId) {
     try {
-      console.log(`📖 Marked all notifications as read for doctor ${doctorId}`);
+      (`📖 Marked all notifications as read for doctor ${doctorId}`);
       
       return {
         success: true,

@@ -12,7 +12,7 @@ module.exports = createCoreController('api::business-compliance-document-type.bu
   // GET /api/business-compliance-document-types
   async find(ctx) {
     try {
-      console.log('📝 GET business-compliance-document-types endpoint called');
+      ('📝 GET business-compliance-document-types endpoint called');
       
       const entities = await strapi.entityService.findMany('api::business-compliance-document-type.business-compliance-document-type', {
         sort: { displayOrder: 'asc', name: 'asc' },
@@ -20,7 +20,7 @@ module.exports = createCoreController('api::business-compliance-document-type.bu
         populate: ctx.query.populate,
       });
       
-      console.log('✅ Found business compliance document types:', entities.length);
+      ('✅ Found business compliance document types:', entities.length);
       
       return {
         data: entities,
@@ -39,7 +39,7 @@ module.exports = createCoreController('api::business-compliance-document-type.bu
   // GET /api/business-compliance-document-types/:id
   async findOne(ctx) {
     try {
-      console.log('📝 GET business-compliance-document-type endpoint called:', ctx.params.id);
+      ('📝 GET business-compliance-document-type endpoint called:', ctx.params.id);
       
       const { id } = ctx.params;
       const entity = await strapi.entityService.findOne('api::business-compliance-document-type.business-compliance-document-type', id, {
@@ -50,7 +50,7 @@ module.exports = createCoreController('api::business-compliance-document-type.bu
         return ctx.notFound('Business compliance document type not found');
       }
       
-      console.log('✅ Found business compliance document type:', entity.name);
+      ('✅ Found business compliance document type:', entity.name);
       
       return {
         data: entity
@@ -64,14 +64,14 @@ module.exports = createCoreController('api::business-compliance-document-type.bu
   // POST /api/business-compliance-document-types
   async create(ctx) {
     try {
-      console.log('📝 POST business-compliance-document-type endpoint called');
-      console.log('Request data:', ctx.request.body);
+      ('📝 POST business-compliance-document-type endpoint called');
+      ('Request data:', ctx.request.body);
       
       const entity = await strapi.entityService.create('api::business-compliance-document-type.business-compliance-document-type', {
         data: ctx.request.body.data || ctx.request.body
       });
       
-      console.log('✅ Created business compliance document type:', entity);
+      ('✅ Created business compliance document type:', entity);
       
       return {
         data: entity
@@ -90,15 +90,15 @@ module.exports = createCoreController('api::business-compliance-document-type.bu
   // PUT /api/business-compliance-document-types/:id
   async update(ctx) {
     try {
-      console.log('📝 PUT business-compliance-document-type endpoint called:', ctx.params.id);
-      console.log('Request data:', ctx.request.body);
+      ('📝 PUT business-compliance-document-type endpoint called:', ctx.params.id);
+      ('Request data:', ctx.request.body);
       
       const { id } = ctx.params;
       const entity = await strapi.entityService.update('api::business-compliance-document-type.business-compliance-document-type', id, {
         data: ctx.request.body.data || ctx.request.body
       });
       
-      console.log('✅ Updated business compliance document type:', entity);
+      ('✅ Updated business compliance document type:', entity);
       
       return {
         data: entity
@@ -117,7 +117,7 @@ module.exports = createCoreController('api::business-compliance-document-type.bu
   // DELETE /api/business-compliance-document-types/:id
   async delete(ctx) {
     try {
-      console.log('📝 DELETE business-compliance-document-type endpoint called:', ctx.params.id);
+      ('📝 DELETE business-compliance-document-type endpoint called:', ctx.params.id);
       
       const { id } = ctx.params;
       
@@ -132,7 +132,7 @@ module.exports = createCoreController('api::business-compliance-document-type.bu
       
       const entity = await strapi.entityService.delete('api::business-compliance-document-type.business-compliance-document-type', id);
       
-      console.log('✅ Deleted business compliance document type:', entity);
+      ('✅ Deleted business compliance document type:', entity);
       
       return {
         data: entity
@@ -146,14 +146,14 @@ module.exports = createCoreController('api::business-compliance-document-type.bu
   // GET /api/business-compliance-document-types/active
   async getActive(ctx) {
     try {
-      console.log('📝 GET active business-compliance-document-types endpoint called');
+      ('📝 GET active business-compliance-document-types endpoint called');
       
       const entities = await strapi.entityService.findMany('api::business-compliance-document-type.business-compliance-document-type', {
         filters: { isActive: true },
         sort: { displayOrder: 'asc', name: 'asc' }
       });
       
-      console.log('✅ Found active business compliance document types:', entities.length);
+      ('✅ Found active business compliance document types:', entities.length);
       
       return {
         data: entities,

@@ -11,20 +11,20 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
   // Upload compliance document
   async upload(ctx) {
     try {
-      console.log('Upload request received:');
-      console.log('Body:', ctx.request.body);
-      console.log('Files:', ctx.request.files);
+      ('Upload request received:');
+      ('Body:', ctx.request.body);
+      ('Files:', ctx.request.files);
       
       const { doctorId, documentType, issueDate, expiryDate, notes } = ctx.request.body;
       const files = ctx.request.files;
 
       if (!files || !files.file) {
-        console.log('No file provided error - files:', files);
+        ('No file provided error - files:', files);
         return ctx.badRequest('No file provided');
       }
 
       if (!doctorId || !documentType) {
-        console.log('Missing required fields - doctorId:', doctorId, 'documentType:', documentType);
+        ('Missing required fields - doctorId:', doctorId, 'documentType:', documentType);
         return ctx.badRequest('Doctor ID and document type are required');
       }
 
@@ -43,7 +43,7 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
         sort: 'createdAt:desc' // Get newest first, in case we want to preserve some logic
       });
 
-      console.log(`📄 Found ${existingDocs.length} existing documents of type ${documentType} for doctor ${doctorId}`);
+      (`📄 Found ${existingDocs.length} existing documents of type ${documentType} for doctor ${doctorId}`);
       
       // Upload to S3 and create document record
       const uploadResult = await strapi.service('api::compliance-document.compliance-document').uploadToS3AndCreate({
@@ -58,12 +58,12 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
 
       // Automatically check doctor verification status after document upload
       try {
-        console.log(`🔄 Triggering doctor verification status check for doctor ${doctorId} after document upload`);
+        (`🔄 Triggering doctor verification status check for doctor ${doctorId} after document upload`);
         
         const doctorVerificationService = strapi.service('api::compliance-document.doctor-verification');
         const verificationResult = await doctorVerificationService.updateDoctorVerificationStatus(doctorId);
         
-        console.log('✅ Doctor verification status check completed after upload:', verificationResult);
+        ('✅ Doctor verification status check completed after upload:', verificationResult);
         
         ctx.send({
           success: true,
@@ -263,12 +263,12 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
 
       // Automatically update doctor verification status
       try {
-        console.log(`🔄 Triggering doctor verification status update for doctor ${document.doctor.id} after document verification change`);
+        (`🔄 Triggering doctor verification status update for doctor ${document.doctor.id} after document verification change`);
         
         const doctorVerificationService = strapi.service('api::compliance-document.doctor-verification');
         const verificationResult = await doctorVerificationService.updateDoctorVerificationStatus(document.doctor.id);
         
-        console.log('✅ Doctor verification status update completed:', verificationResult);
+        ('✅ Doctor verification status update completed:', verificationResult);
         
         // Include verification result in response for debugging
         ctx.send({
@@ -339,7 +339,7 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
   // Bulk update all doctors' verification statuses
   async updateAllDoctorsVerificationStatus(ctx) {
     try {
-      console.log('🔄 Starting bulk doctor verification status update...');
+      ('🔄 Starting bulk doctor verification status update...');
       
       const doctorVerificationService = strapi.service('api::compliance-document.doctor-verification');
       const result = await doctorVerificationService.updateAllDoctorsVerificationStatus();
@@ -359,7 +359,7 @@ module.exports = createCoreController('api::compliance-document.compliance-docum
   // Update doctors without documents to unverified
   async updateDoctorsWithoutDocuments(ctx) {
     try {
-      console.log('🔄 Starting update for doctors without compliance documents...');
+      ('🔄 Starting update for doctors without compliance documents...');
       
       const doctorVerificationService = strapi.service('api::compliance-document.doctor-verification');
       const result = await doctorVerificationService.updateDoctorsWithoutDocuments();

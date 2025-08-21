@@ -51,7 +51,7 @@ class WherebyService {
         fields: ['hostRoomUrl', 'viewerRoomUrl', 'roomUrl']
       };
 
-      console.log('🎥 Creating Whereby meeting with payload:', payload);
+      ('🎥 Creating Whereby meeting with payload:', payload);
 
       const response = await axios.post(`${this.baseURL}/meetings`, payload, {
         headers: {
@@ -62,7 +62,7 @@ class WherebyService {
 
       const meeting = response.data;
       
-      console.log('✅ Whereby meeting created successfully:', {
+      ('✅ Whereby meeting created successfully:', {
         meetingId: meeting.meetingId,
         roomUrl: meeting.roomUrl,
         startDate: meeting.startDate,
@@ -83,7 +83,7 @@ class WherebyService {
       
       // Return a fallback object for development
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔧 Development mode: Returning mock meeting data');
+        ('🔧 Development mode: Returning mock meeting data');
         const meetingId = meetingId || `mock-${Date.now()}`;
         return {
           meetingId,
@@ -107,7 +107,7 @@ class WherebyService {
   async deleteMeeting(meetingId) {
     try {
       if (!this.apiKey) {
-        console.log('🔧 Development mode: Mock deleting meeting', meetingId);
+        ('🔧 Development mode: Mock deleting meeting', meetingId);
         return true;
       }
 
@@ -117,7 +117,7 @@ class WherebyService {
         }
       });
 
-      console.log('✅ Whereby meeting deleted successfully:', meetingId);
+      ('✅ Whereby meeting deleted successfully:', meetingId);
       return true;
 
     } catch (error) {
@@ -170,7 +170,7 @@ class WherebyService {
         meetingId
       });
 
-      console.log('🎥 Created consultation meeting for service request:', serviceRequest.id);
+      ('🎥 Created consultation meeting for service request:', serviceRequest.id);
       
       return meeting;
 

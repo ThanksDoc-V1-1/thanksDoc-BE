@@ -8,7 +8,7 @@
 module.exports = ({ strapi }) => ({
   
   async enableAutoExpiryForAllDocuments() {
-    console.log('🚀 Starting auto-expiry enablement for all compliance document types...');
+    ('🚀 Starting auto-expiry enablement for all compliance document types...');
     
     try {
       // Define appropriate validity periods for different document types
@@ -46,7 +46,7 @@ module.exports = ({ strapi }) => ({
         limit: -1 // Get all records
       });
 
-      console.log(`📋 Found ${documentTypes.length} existing document types`);
+      (`📋 Found ${documentTypes.length} existing document types`);
 
       let updatedCount = 0;
       let skippedCount = 0;
@@ -60,7 +60,7 @@ module.exports = ({ strapi }) => ({
           
           // Check if auto-expiry is already enabled
           if (docType.autoExpiry) {
-            console.log(`⏭️  Skipping ${docType.name} - auto-expiry already enabled`);
+            (`⏭️  Skipping ${docType.name} - auto-expiry already enabled`);
             skippedCount++;
             continue;
           }
@@ -74,7 +74,7 @@ module.exports = ({ strapi }) => ({
             }
           });
 
-          console.log(`✅ Updated ${updatedDocType.name} - enabled auto-expiry with ${validityYears} year(s) validity`);
+          (`✅ Updated ${updatedDocType.name} - enabled auto-expiry with ${validityYears} year(s) validity`);
           updatedCount++;
 
         } catch (error) {
@@ -84,28 +84,28 @@ module.exports = ({ strapi }) => ({
       }
 
       // Summary
-      console.log('\n📊 Migration Summary:');
-      console.log(`✅ Updated: ${updatedCount} document types`);
-      console.log(`⏭️  Skipped: ${skippedCount} document types (already enabled)`);
-      console.log(`❌ Errors: ${errorCount} document types`);
-      console.log(`📋 Total: ${documentTypes.length} document types processed`);
+      ('\n📊 Migration Summary:');
+      (`✅ Updated: ${updatedCount} document types`);
+      (`⏭️  Skipped: ${skippedCount} document types (already enabled)`);
+      (`❌ Errors: ${errorCount} document types`);
+      (`📋 Total: ${documentTypes.length} document types processed`);
 
       if (updatedCount > 0) {
-        console.log('\n🎉 Auto-expiry tracking has been enabled for all compliance documents!');
-        console.log('📅 All documents will now automatically track expiry dates based on issue dates');
-        console.log('⚠️  Doctors will receive warnings 30 days before document expiry');
-        console.log('🔄 Document statuses will automatically update to "expired" after expiry date');
+        ('\n🎉 Auto-expiry tracking has been enabled for all compliance documents!');
+        ('📅 All documents will now automatically track expiry dates based on issue dates');
+        ('⚠️  Doctors will receive warnings 30 days before document expiry');
+        ('🔄 Document statuses will automatically update to "expired" after expiry date');
       }
 
       // Update existing documents to have auto-expiry enabled
-      console.log('\n🔄 Updating existing compliance documents...');
+      ('\n🔄 Updating existing compliance documents...');
       
       const existingDocuments = await strapi.entityService.findMany('api::compliance-document.compliance-document', {
         limit: -1,
         populate: ['documentType']
       });
 
-      console.log(`📄 Found ${existingDocuments.length} existing compliance documents`);
+      (`📄 Found ${existingDocuments.length} existing compliance documents`);
 
       let documentsUpdated = 0;
       let documentsSkipped = 0;
@@ -143,10 +143,10 @@ module.exports = ({ strapi }) => ({
         }
       }
 
-      console.log(`✅ Updated ${documentsUpdated} existing documents with auto-expiry`);
-      console.log(`⏭️  Skipped ${documentsSkipped} documents (already enabled or missing issue date)`);
+      (`✅ Updated ${documentsUpdated} existing documents with auto-expiry`);
+      (`⏭️  Skipped ${documentsSkipped} documents (already enabled or missing issue date)`);
 
-      console.log('\n🎯 Auto-expiry tracking is now fully enabled for all compliance documents!');
+      ('\n🎯 Auto-expiry tracking is now fully enabled for all compliance documents!');
 
       return {
         documentTypesUpdated: updatedCount,

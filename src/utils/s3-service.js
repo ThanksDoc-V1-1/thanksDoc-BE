@@ -16,16 +16,16 @@ class S3Service {
     };
     
     // Debug logging for environment variables
-    console.log('S3Service Constructor - AWS Config:');
-    console.log('accessKeyId:', config.accessKeyId);
-    console.log('secretAccessKey:', config.secretAccessKey ? 'Set' : 'Not set');
-    console.log('region:', config.region);
-    console.log('bucketName:', config.bucketName);
-    console.log('Full process.env check:');
-    console.log('AWS_ACCESS_KEY_ID from process.env:', process.env.AWS_ACCESS_KEY_ID);
-    console.log('AWS_SECRET_ACCESS_KEY from process.env:', process.env.AWS_SECRET_ACCESS_KEY ? 'Set' : 'Not set');
-    console.log('AWS_REGION from process.env:', process.env.AWS_REGION);
-    console.log('AWS_S3_BUCKET from process.env:', process.env.AWS_S3_BUCKET);
+    ('S3Service Constructor - AWS Config:');
+    ('accessKeyId:', config.accessKeyId);
+    ('secretAccessKey:', config.secretAccessKey ? 'Set' : 'Not set');
+    ('region:', config.region);
+    ('bucketName:', config.bucketName);
+    ('Full process.env check:');
+    ('AWS_ACCESS_KEY_ID from process.env:', process.env.AWS_ACCESS_KEY_ID);
+    ('AWS_SECRET_ACCESS_KEY from process.env:', process.env.AWS_SECRET_ACCESS_KEY ? 'Set' : 'Not set');
+    ('AWS_REGION from process.env:', process.env.AWS_REGION);
+    ('AWS_S3_BUCKET from process.env:', process.env.AWS_S3_BUCKET);
     
     this.client = new S3Client({
       region: config.region,

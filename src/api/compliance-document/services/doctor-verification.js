@@ -12,7 +12,7 @@ module.exports = () => ({
    */
   async checkDoctorVerificationStatus(doctorId) {
     try {
-      console.log(`🔍 Checking verification status for doctor ${doctorId}...`);
+      (`🔍 Checking verification status for doctor ${doctorId}...`);
 
       // Get all documents for this doctor
       const documents = await strapi.entityService.findMany('api::compliance-document.compliance-document', {
@@ -24,10 +24,10 @@ module.exports = () => ({
         }
       });
 
-      console.log(`📄 Found ${documents.length} documents for doctor ${doctorId}`);
+      (`📄 Found ${documents.length} documents for doctor ${doctorId}`);
 
       if (documents.length === 0) {
-        console.log(`❌ No documents found for doctor ${doctorId} - cannot be verified`);
+        (`❌ No documents found for doctor ${doctorId} - cannot be verified`);
         return {
           shouldBeVerified: false,
           hasExpiredOrRejectedDocuments: false,
@@ -57,21 +57,21 @@ module.exports = () => ({
           allDocumentsVerified = false;
           hasExpiredOrRejectedDocuments = true;
           rejectedDocuments.push(docName);
-          console.log(`❌ Rejected document: ${docName}`);
+          (`❌ Rejected document: ${docName}`);
           continue;
         }
 
         if (doc.verificationStatus === 'pending' || !doc.verificationStatus) {
           allDocumentsVerified = false;
           pendingDocuments.push(docName);
-          console.log(`⏳ Pending document: ${docName} (status: ${doc.verificationStatus || 'not set'})`);
+          (`⏳ Pending document: ${docName} (status: ${doc.verificationStatus || 'not set'})`);
           continue;
         }
 
         if (doc.verificationStatus !== 'verified') {
           allDocumentsVerified = false;
           pendingDocuments.push(docName);
-          console.log(`⏳ Non-verified document: ${docName} (status: ${doc.verificationStatus})`);
+          (`⏳ Non-verified document: ${docName} (status: ${doc.verificationStatus})`);
           continue;
         }
 
@@ -84,14 +84,14 @@ module.exports = () => ({
             allDocumentsVerified = false;
             hasExpiredOrRejectedDocuments = true;
             expiredDocuments.push(docName);
-            console.log(`❌ Expired document: ${docName} (expired: ${expiryDate.toDateString()})`);
+            (`❌ Expired document: ${docName} (expired: ${expiryDate.toDateString()})`);
             continue;
           }
         }
 
         // Document is verified and not expired
         verifiedDocuments.push(docName);
-        console.log(`✅ Verified document: ${docName}`);
+        (`✅ Verified document: ${docName}`);
       }
 
       const result = {
@@ -113,13 +113,13 @@ module.exports = () => ({
             ].join(', ')}`
       };
 
-      console.log(`📊 Verification summary for doctor ${doctorId}:`);
-      console.log(`   Total documents: ${result.totalDocuments}`);
-      console.log(`   Verified: ${result.verifiedCount}`);
-      console.log(`   Pending: ${pendingDocuments.length}`);
-      console.log(`   Rejected: ${rejectedDocuments.length}`);
-      console.log(`   Expired: ${expiredDocuments.length}`);
-      console.log(`   Should be verified: ${result.shouldBeVerified}`);
+      (`📊 Verification summary for doctor ${doctorId}:`);
+      (`   Total documents: ${result.totalDocuments}`);
+      (`   Verified: ${result.verifiedCount}`);
+      (`   Pending: ${pendingDocuments.length}`);
+      (`   Rejected: ${rejectedDocuments.length}`);
+      (`   Expired: ${expiredDocuments.length}`);
+      (`   Should be verified: ${result.shouldBeVerified}`);
 
       return result;
 
@@ -134,12 +134,12 @@ module.exports = () => ({
    */
   async updateDoctorVerificationStatus(doctorId) {
     try {
-      console.log(`🔄 Updating verification status for doctor ${doctorId}...`);
+      (`🔄 Updating verification status for doctor ${doctorId}...`);
 
       // Get current doctor
       const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId);
       if (!doctor) {
-        console.log(`❌ Doctor ${doctorId} not found`);
+        (`❌ Doctor ${doctorId} not found`);
         return { success: false, error: 'Doctor not found' };
       }
 
@@ -147,10 +147,10 @@ module.exports = () => ({
       const verificationCheck = await this.checkDoctorVerificationStatus(doctorId);
       const shouldBeVerified = verificationCheck.shouldBeVerified;
 
-      console.log(`📊 Verification check result for doctor ${doctorId}:`);
-      console.log(`   Should be verified: ${shouldBeVerified}`);
-      console.log(`   Currently verified: ${doctor.isVerified}`);
-      console.log(`   Verified documents: ${verificationCheck.verifiedCount}/${verificationCheck.totalDocuments}`);
+      (`📊 Verification check result for doctor ${doctorId}:`);
+      (`   Should be verified: ${shouldBeVerified}`);
+      (`   Currently verified: ${doctor.isVerified}`);
+      (`   Verified documents: ${verificationCheck.verifiedCount}/${verificationCheck.totalDocuments}`);
 
       // Only update if status needs to change
       if (doctor.isVerified !== shouldBeVerified) {
@@ -162,7 +162,7 @@ module.exports = () => ({
           }
         });
 
-        console.log(`✅ Updated doctor ${doctorId} verification status to: ${shouldBeVerified}`);
+        (`✅ Updated doctor ${doctorId} verification status to: ${shouldBeVerified}`);
 
         // Log the status change
         await this.logVerificationStatusChange(doctorId, doctor.isVerified, shouldBeVerified, verificationCheck);
@@ -175,7 +175,7 @@ module.exports = () => ({
           verificationCheck
         };
       } else {
-        console.log(`📋 Doctor ${doctorId} verification status unchanged: ${shouldBeVerified}`);
+        (`📋 Doctor ${doctorId} verification status unchanged: ${shouldBeVerified}`);
         return {
           success: true,
           statusChanged: false,
@@ -213,7 +213,7 @@ module.exports = () => ({
         }
       };
 
-      console.log('📝 Verification status change logged:', logEntry);
+      ('📝 Verification status change logged:', logEntry);
       
       // Could save to a dedicated audit table if needed
       // For now, just log to console
@@ -230,14 +230,14 @@ module.exports = () => ({
    */
   async updateAllDoctorsVerificationStatus() {
     try {
-      console.log('🔄 Starting batch verification status update for all doctors...');
+      ('🔄 Starting batch verification status update for all doctors...');
 
       // Get all doctors
       const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
         limit: -1
       });
 
-      console.log(`👥 Found ${doctors.length} doctors to check`);
+      (`👥 Found ${doctors.length} doctors to check`);
 
       const results = {
         total: doctors.length,
@@ -278,11 +278,11 @@ module.exports = () => ({
         }
       }
 
-      console.log('📊 Batch verification update completed:');
-      console.log(`   Total doctors: ${results.total}`);
-      console.log(`   Updated: ${results.updated}`);
-      console.log(`   Unchanged: ${results.unchanged}`);
-      console.log(`   Errors: ${results.errors}`);
+      ('📊 Batch verification update completed:');
+      (`   Total doctors: ${results.total}`);
+      (`   Updated: ${results.updated}`);
+      (`   Unchanged: ${results.unchanged}`);
+      (`   Errors: ${results.errors}`);
 
       return results;
 
@@ -298,14 +298,14 @@ module.exports = () => ({
    */
   async updateDoctorsWithoutDocuments() {
     try {
-      console.log('🔄 Updating verification status for doctors without compliance documents...');
+      ('🔄 Updating verification status for doctors without compliance documents...');
 
       // Get all doctors
       const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
         limit: -1
       });
 
-      console.log(`👥 Found ${doctors.length} doctors to check`);
+      (`👥 Found ${doctors.length} doctors to check`);
 
       const results = {
         total: doctors.length,
@@ -338,7 +338,7 @@ module.exports = () => ({
                 }
               });
 
-              console.log(`✅ Updated doctor ${doctor.id} (${doctor.firstName} ${doctor.lastName}) - set to unverified (no documents)`);
+              (`✅ Updated doctor ${doctor.id} (${doctor.firstName} ${doctor.lastName}) - set to unverified (no documents)`);
               results.updated++;
 
               results.details.push({
@@ -348,7 +348,7 @@ module.exports = () => ({
                 reason: 'No documents uploaded'
               });
             } else {
-              console.log(`📋 Doctor ${doctor.id} (${doctor.firstName} ${doctor.lastName}) already unverified (no documents)`);
+              (`📋 Doctor ${doctor.id} (${doctor.firstName} ${doctor.lastName}) already unverified (no documents)`);
               results.alreadyUnverified++;
 
               results.details.push({
@@ -372,12 +372,12 @@ module.exports = () => ({
         }
       }
 
-      console.log('📊 Doctors without documents update completed:');
-      console.log(`   Total doctors: ${results.total}`);
-      console.log(`   Doctors without documents: ${results.doctorsWithoutDocs}`);
-      console.log(`   Updated to unverified: ${results.updated}`);
-      console.log(`   Already unverified: ${results.alreadyUnverified}`);
-      console.log(`   Errors: ${results.errors}`);
+      ('📊 Doctors without documents update completed:');
+      (`   Total doctors: ${results.total}`);
+      (`   Doctors without documents: ${results.doctorsWithoutDocs}`);
+      (`   Updated to unverified: ${results.updated}`);
+      (`   Already unverified: ${results.alreadyUnverified}`);
+      (`   Errors: ${results.errors}`);
 
       return results;
 

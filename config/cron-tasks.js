@@ -1,11 +1,11 @@
 module.exports = {
   '*/1 * * * *': async ({ strapi }) => {
-    console.log('Cron job running - checking for unresponsive doctors...');
+    ('Cron job running - checking for unresponsive doctors...');
     // This cron job runs every minute to check for service requests that have not been responded to.
     // Production setting: 24 hours timeout
     const timeoutDuration = 24 * 60 * 60 * 1000; // 24 hours for production
     const timeoutAgo = new Date(Date.now() - timeoutDuration);
-    console.log(`Checking for pending requests created before: ${timeoutAgo.toISOString()}`);
+    (`Checking for pending requests created before: ${timeoutAgo.toISOString()}`);
 
     try {
       const pendingRequests = await strapi.entityService.findMany('api::service-request.service-request', {
@@ -18,11 +18,11 @@ module.exports = {
         populate: ['doctor', 'service', 'business'],
       });
 
-      console.log(`Found ${pendingRequests.length} pending requests that need broadcasting.`);
+      (`Found ${pendingRequests.length} pending requests that need broadcasting.`);
 
       for (const request of pendingRequests) {
         try {
-          console.log(`Processing request ID: ${request.id} for doctor: ${request.doctor?.id || 'unknown'}`);
+          (`Processing request ID: ${request.id} for doctor: ${request.doctor?.id || 'unknown'}`);
           
           // Check if required relations exist
           if (!request.doctor || !request.service || !request.business) {
@@ -54,7 +54,7 @@ module.exports = {
           // Apply distance filtering if business location and distance filter are available
           if (request.businessLatitude && request.businessLongitude && request.distanceFilter && request.distanceFilter !== -1) {
             const { filterDoctorsByDistance } = require('../src/utils/distance');
-            console.log(`Applying distance filter: ${request.distanceFilter}km from business location (${request.businessLatitude}, ${request.businessLongitude})`);
+            (`Applying distance filter: ${request.distanceFilter}km from business location (${request.businessLatitude}, ${request.businessLongitude})`);
             
             const beforeCount = otherDoctors.length;
             otherDoctors = filterDoctorsByDistance(
@@ -63,10 +63,10 @@ module.exports = {
               parseFloat(request.businessLongitude),
               parseInt(request.distanceFilter)
             );
-            console.log(`Distance filtering: ${beforeCount} doctors -> ${otherDoctors.length} doctors within ${request.distanceFilter}km`);
+            (`Distance filtering: ${beforeCount} doctors -> ${otherDoctors.length} doctors within ${request.distanceFilter}km`);
           }
 
-        console.log(`Found ${otherDoctors.length} other doctors for service ID ${serviceId}.`);
+        (`Found ${otherDoctors.length} other doctors for service ID ${serviceId}.`);
 
         if (otherDoctors.length > 0) {
           // Mark the original request as broadcasted to prevent re-processing
@@ -75,11 +75,11 @@ module.exports = {
               isBroadcasted: true,
             }
           });
-          console.log(`Marked original request ID ${request.id} as broadcasted.`);
+          (`Marked original request ID ${request.id} as broadcasted.`);
 
           // Create new service requests for other doctors
           for (const doctor of otherDoctors) {
-            console.log(`Creating new request for doctor ID: ${doctor.id}`);
+            (`Creating new request for doctor ID: ${doctor.id}`);
             
             const newRequestData = {
               business: request.business.id,
@@ -101,14 +101,14 @@ module.exports = {
             const newServiceRequest = await strapi.entityService.create('api::service-request.service-request', {
               data: newRequestData
             });
-            console.log(`Successfully created new request for doctor ID: ${doctor.id}`);
+            (`Successfully created new request for doctor ID: ${doctor.id}`);
 
             // Send WhatsApp notification to the doctor
             try {
               const whatsappService = strapi.service('whatsapp');
               if (whatsappService) {
                 await whatsappService.sendServiceRequestNotification(doctor, newServiceRequest, request.business);
-                console.log(`WhatsApp notification sent to Dr. ${doctor.firstName} ${doctor.lastName} (${doctor.phoneNumber}) for broadcasted request`);
+                (`WhatsApp notification sent to Dr. ${doctor.firstName} ${doctor.lastName} (${doctor.phoneNumber}) for broadcasted request`);
               } else {
                 console.error('WhatsApp service not found!');
               }
@@ -117,9 +117,9 @@ module.exports = {
             }
           }
 
-          console.log(`Request ID ${request.id} has been successfully broadcasted to ${otherDoctors.length} other doctors.`);
+          (`Request ID ${request.id} has been successfully broadcasted to ${otherDoctors.length} other doctors.`);
         } else {
-          console.log(`No other doctors found for service ID ${serviceId}. Marking request as broadcasted without creating new requests.`);
+          (`No other doctors found for service ID ${serviceId}. Marking request as broadcasted without creating new requests.`);
           
           // Still mark as broadcasted to prevent re-processing
           await strapi.entityService.update('api::service-request.service-request', request.id, {
@@ -142,7 +142,7 @@ module.exports = {
       }
       
       if (pendingRequests.length > 0) {
-        console.log(`Cron job completed. Processed ${pendingRequests.length} requests.`);
+        (`Cron job completed. Processed ${pendingRequests.length} requests.`);
       }
     } catch (error) {
       console.error('Error in service request broadcasting cron job:', error);

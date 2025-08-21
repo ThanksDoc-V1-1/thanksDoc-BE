@@ -19,20 +19,24 @@ module.exports = {
         return ctx.badRequest('Email and password are required');
       }
 
-      console.log('Login attempt for:', email);
+  console.log('Login attempt for:', email);
       
-      // Check if user is an admin
-      const admin = await strapi.entityService.findMany('api::admin.admin', {
-        filters: { email },
-        limit: 1,
+      // Check if user is an admin (fetch raw password via db.query)
+      const adminUser = await strapi.db.query('api::admin.admin').findOne({
+        where: { email },
+        select: ['id', 'email', 'password', 'firstName', 'lastName', 'name'],
       });
       
-      if (admin.length > 0) {
-        const user = admin[0];
+      if (adminUser) {
+        const user = adminUser;
         console.log('Found admin user:', user.email);
-        
+        console.log('🔐 Admin has password field:', user.password ? 'YES' : 'NO');
+        if (user.password) {
+          console.log('🔐 Admin hash length:', user.password.length);
+          console.log('🔐 Admin hash prefix:', user.password.substring(0, 7));
+        }
         // Verify password
-        const isValidPassword = await bcrypt.compare(password, user.password);
+        const isValidPassword = await bcrypt.compare(password, user.password || '');
         if (!isValidPassword) {
           console.log('❌ Invalid password for admin:', user.email);
           return ctx.badRequest('Invalid credentials');
@@ -49,7 +53,7 @@ module.exports = {
           { expiresIn: '7d' }
         );
         
-        console.log('✅ Admin login successful:', user.email);
+  console.log('✅ Admin login successful:', user.email);
         return ctx.send({
           jwt: token,
           user: {
@@ -69,20 +73,20 @@ module.exports = {
 
       if (doctor.length > 0) {
         const user = doctor[0];
-        console.log('Found doctor:', user.email);
-        console.log('Doctor verification status:', user.isVerified);
+  console.log('Found doctor:', user.email);
+  console.log('Doctor verification status:', user.isVerified);
         
         // Verify password
-        console.log('🔍 Attempting password verification...');
-        console.log('📝 Password provided:', password ? 'YES' : 'NO');
-        console.log('🔐 Hashed password exists:', user.password ? 'YES' : 'NO');
-        console.log('🔐 Raw password length:', password.length);
-        console.log('🔐 Hashed password length:', user.password ? user.password.length : 'N/A');
-        console.log('🔐 Hashed password starts with $2:', user.password ? user.password.startsWith('$2') : 'N/A');
-        console.log('🔐 First 10 chars of hash:', user.password ? user.password.substring(0, 10) : 'N/A');
+  console.log('🔍 Attempting password verification...');
+  console.log('📝 Password provided:', password ? 'YES' : 'NO');
+  console.log('🔐 Hashed password exists:', user.password ? 'YES' : 'NO');
+  console.log('🔐 Raw password length:', password.length);
+  console.log('🔐 Hashed password length:', user.password ? user.password.length : 'N/A');
+  console.log('🔐 Hashed password starts with $2:', user.password ? user.password.startsWith('$2') : 'N/A');
+  console.log('🔐 First 10 chars of hash:', user.password ? user.password.substring(0, 10) : 'N/A');
         
         const isValidPassword = await bcrypt.compare(password, user.password);
-        console.log('✅ Password valid:', isValidPassword);
+  console.log('✅ Password valid:', isValidPassword);
         
         if (!isValidPassword) {
           console.log('❌ Invalid password for doctor:', user.email);
@@ -106,9 +110,9 @@ module.exports = {
           { expiresIn: '7d' }
         );
 
-        console.log('Doctor login successful:', user.email);
-        console.log('👤 Doctor ID being returned:', user.id);
-        console.log('📊 Full doctor user object:', JSON.stringify(user, null, 2));
+  console.log('Doctor login successful:', user.email);
+  console.log('👤 Doctor ID being returned:', user.id);
+  console.log('📊 Full doctor user object:', JSON.stringify(user, null, 2));
         
         return ctx.send({
           jwt: token,
@@ -131,8 +135,8 @@ module.exports = {
 
       if (business.length > 0) {
         const user = business[0];
-        console.log('Found business:', user.email);
-        console.log('Business verification status:', user.isVerified);
+  console.log('Found business:', user.email);
+  console.log('Business verification status:', user.isVerified);
         
         // Verify password
         const isValidPassword = await bcrypt.compare(password, user.password);
@@ -160,7 +164,7 @@ module.exports = {
           { expiresIn: '7d' }
         );
 
-        console.log('Business login successful:', user.email);
+  console.log('Business login successful:', user.email);
         return ctx.send({
           jwt: token,
           user: {
@@ -173,12 +177,79 @@ module.exports = {
         });
       }
 
-      console.log('No user found with email:', email);
+  console.log('No user found with email:', email);
       return ctx.badRequest('Invalid credentials');
 
     } catch (error) {
       console.error('Login error:', error);
       return ctx.internalServerError('An error occurred during login');
+    }
+  },
+  
+  async changePassword(ctx) {
+    try {
+  console.log('🔐 /auth/change-password called');
+      const authUser = ctx.state.user;
+      const { currentPassword, newPassword } = ctx.request.body || {};
+
+      if (!authUser || !authUser.id || !authUser.role) {
+        return ctx.unauthorized('Authentication required');
+      }
+
+      if (!currentPassword || !newPassword) {
+        return ctx.badRequest('Current and new password are required');
+      }
+
+      if (String(newPassword).length < 6) {
+        return ctx.badRequest('Password must be at least 6 characters long');
+      }
+
+      // Resolve collection by role
+      let collectionName, uid;
+      if (authUser.role === 'admin') { collectionName = 'api::admin.admin'; uid = 'api::admin.admin'; }
+      else if (authUser.role === 'doctor') { collectionName = 'api::doctor.doctor'; uid = 'api::doctor.doctor'; }
+      else if (authUser.role === 'business') { collectionName = 'api::business.business'; uid = 'api::business.business'; }
+      else return ctx.badRequest('Invalid user role');
+
+      // Load user (raw to include password)
+      const user = await strapi.db.query(uid).findOne({
+        where: { id: authUser.id },
+        select: ['id', 'email', 'password'],
+      });
+      if (!user) {
+        return ctx.unauthorized('User not found');
+      }
+
+  console.log('🔄 Change password for:', user.email);
+  console.log('🔐 Current hash prefix:', user.password ? user.password.substring(0, 7) : 'N/A');
+
+      // Verify current password
+      const isValid = await bcrypt.compare(currentPassword, user.password || '');
+      if (!isValid) {
+        return ctx.badRequest('Current password is incorrect');
+      }
+
+      // Hash and update
+  const hashed = await bcrypt.hash(newPassword, 12);
+  console.log('🔐 New hash prefix to store:', hashed.substring(0, 7));
+      await strapi.db.query(uid).update({
+        where: { id: authUser.id },
+        data: {
+          password: hashed,
+          passwordResetToken: null,
+          passwordResetExpires: null,
+        },
+      });
+
+      // Re-fetch to confirm
+  const after = await strapi.db.query(uid).findOne({ where: { id: authUser.id }, select: ['password'] });
+  console.log('✅ Password updated. Stored hash exists:', after?.password ? 'YES' : 'NO');
+  console.log('🔐 Stored hash prefix:', after?.password ? after.password.substring(0, 7) : 'N/A');
+
+      return ctx.send({ message: 'Password updated successfully' });
+    } catch (error) {
+      console.error('Change password error:', error);
+      return ctx.internalServerError('An error occurred while changing password');
     }
   },
 
@@ -194,7 +265,7 @@ module.exports = {
         return ctx.badRequest('Email and password are required');
       }
 
-      console.log('Registration attempt for:', userData.email, 'as', type);
+  console.log('Registration attempt for:', userData.email, 'as', type);
 
       // Check if user already exists
       const existingDoctor = await strapi.entityService.findMany('api::doctor.doctor', {
@@ -213,7 +284,7 @@ module.exports = {
       });
 
       if (existingDoctor.length > 0 || existingBusiness.length > 0 || existingAdmin.length > 0) {
-        console.log('User already exists:', userData.email);
+  console.log('User already exists:', userData.email);
         return ctx.badRequest('User already exists with this email');
       }
 
@@ -293,12 +364,12 @@ module.exports = {
         // Remove services from the creation data as we'll connect them separately
         delete doctorData.services;
         
-        console.log('👨‍⚕️ Creating doctor without services first...');
+  console.log('👨‍⚕️ Creating doctor without services first...');
         user = await strapi.entityService.create('api::doctor.doctor', {
           data: doctorData,
         });
         
-        console.log('✅ Doctor created with ID:', user.id);
+  console.log('✅ Doctor created with ID:', user.id);
         
         // Now connect the services if any were provided
         if (servicesToConnect.length > 0) {
@@ -317,7 +388,7 @@ module.exports = {
           }
         }
       } else if (type === 'business') {
-        console.log('🏢 Creating business with data:', JSON.stringify(userDataWithHashedPassword, null, 2));
+  console.log('🏢 Creating business with data:', JSON.stringify(userDataWithHashedPassword, null, 2));
         try {
           user = await strapi.entityService.create('api::business.business', {
             data: userDataWithHashedPassword,
@@ -350,7 +421,7 @@ module.exports = {
         }
       }
 
-      console.log('Registration successful for:', user.email, 'as', type);
+  console.log('Registration successful for:', user.email, 'as', type);
       
       if (type === 'admin') {
         // Generate JWT token for admin (no email verification needed)
@@ -403,7 +474,7 @@ module.exports = {
         return ctx.badRequest('Invalid verification token or user type');
       }
 
-      console.log('Email verification attempt for type:', type, 'with token:', token.substring(0, 10) + '...');
+  console.log('Email verification attempt for type:', type, 'with token:', token.substring(0, 10) + '...');
 
       // Find user with the verification token
       const collectionName = type === 'doctor' ? 'api::doctor.doctor' : 'api::business.business';
@@ -417,7 +488,7 @@ module.exports = {
       });
 
       if (users.length === 0) {
-        console.log('❌ Invalid or expired verification token');
+  console.log('❌ Invalid or expired verification token');
         return ctx.badRequest('Invalid or expired verification token');
       }
 
@@ -425,7 +496,7 @@ module.exports = {
 
       // Check if token has expired
       if (isExpired(user.emailVerificationExpires)) {
-        console.log('❌ Verification token has expired for:', user.email);
+  console.log('❌ Verification token has expired for:', user.email);
         return ctx.badRequest('Verification token has expired. Please request a new verification email.');
       }
 
@@ -446,7 +517,7 @@ module.exports = {
           updatedUser.name || updatedUser.firstName || updatedUser.businessName || 'User',
           type
         );
-        console.log('✅ Welcome email sent to:', updatedUser.email);
+  console.log('✅ Welcome email sent to:', updatedUser.email);
       } catch (emailError) {
         console.error('❌ Failed to send welcome email:', emailError);
         // Continue even if welcome email fails
@@ -463,7 +534,7 @@ module.exports = {
         { expiresIn: '7d' }
       );
 
-      console.log('✅ Email verification successful for:', updatedUser.email);
+  console.log('✅ Email verification successful for:', updatedUser.email);
       return ctx.send({
         message: 'Email verified successfully! You can now log in.',
         jwt: jwtToken,
@@ -492,7 +563,7 @@ module.exports = {
         return ctx.badRequest('Email and user type are required');
       }
 
-      console.log('Resend verification email request for:', email, 'as', type);
+  console.log('Resend verification email request for:', email, 'as', type);
 
       // Find user
       const collectionName = type === 'doctor' ? 'api::doctor.doctor' : 'api::business.business';
@@ -506,7 +577,7 @@ module.exports = {
       });
 
       if (users.length === 0) {
-        console.log('❌ User not found or already verified:', email);
+  console.log('❌ User not found or already verified:', email);
         return ctx.badRequest('User not found or email already verified');
       }
 
@@ -533,7 +604,7 @@ module.exports = {
           emailVerificationToken,
           type
         );
-        console.log('✅ New verification email sent to:', updatedUser.email);
+  console.log('✅ New verification email sent to:', updatedUser.email);
       } catch (emailError) {
         console.error('❌ Failed to send verification email:', emailError);
         return ctx.internalServerError('Failed to send verification email');
@@ -600,7 +671,7 @@ module.exports = {
         return ctx.badRequest('Email is required');
       }
 
-      console.log('Forgot password request for:', email);
+  console.log('Forgot password request for:', email);
 
       // Find user in all user types
       let user = null;
@@ -674,7 +745,7 @@ module.exports = {
 
           // Use the dedicated password reset method, pass email as 4th argument
           await whatsappService.sendPasswordResetToken(phoneNumber, resetToken, userName, user.email);
-          console.log(`Password reset token sent to WhatsApp: ${phoneNumber}`);
+          (`Password reset token sent to WhatsApp: ${phoneNumber}`);
         } else {
           console.error('WhatsApp service not found!');
           return ctx.internalServerError('WhatsApp service unavailable');
@@ -706,7 +777,7 @@ module.exports = {
         return ctx.badRequest('Password must be at least 6 characters long');
       }
 
-      console.log('Password reset attempt for:', email);
+  console.log('Password reset attempt for:', email);
 
       // Find user in all user types
       let user = null;
@@ -773,7 +844,7 @@ module.exports = {
         }
       });
 
-      console.log('Password reset successful for:', email);
+  console.log('Password reset successful for:', email);
 
       // Send confirmation WhatsApp message
       try {
@@ -794,7 +865,7 @@ module.exports = {
             };
 
             await whatsappService.sendWhatsAppMessage(messageData);
-            console.log(`Password reset confirmation sent to WhatsApp: ${phoneNumber}`);
+            (`Password reset confirmation sent to WhatsApp: ${phoneNumber}`);
           }
         }
       } catch (whatsappError) {
@@ -812,3 +883,4 @@ module.exports = {
     }
   }
 };
+

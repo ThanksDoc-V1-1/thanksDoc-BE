@@ -12,7 +12,7 @@ module.exports = createCoreController('api::professional-reference.professional-
     try {
       const { doctorId } = ctx.params;
       
-      console.log('🔍 Loading professional references for doctor:', doctorId);
+      ('🔍 Loading professional references for doctor:', doctorId);
       
       const references = await strapi.entityService.findMany('api::professional-reference.professional-reference', {
         filters: {
@@ -27,7 +27,7 @@ module.exports = createCoreController('api::professional-reference.professional-
         sort: { createdAt: 'desc' }
       });
       
-      console.log('✅ Found references:', references?.length || 0);
+      ('✅ Found references:', references?.length || 0);
       
       ctx.body = {
         success: true,
@@ -46,8 +46,8 @@ module.exports = createCoreController('api::professional-reference.professional-
     try {
       const { doctorId, documentType, references } = ctx.request.body;
       
-      console.log('💾 Saving professional references for doctor:', doctorId);
-      console.log('📝 References to save:', references?.length || 0);
+      ('💾 Saving professional references for doctor:', doctorId);
+      ('📝 References to save:', references?.length || 0);
       
       if (!doctorId || !references || !Array.isArray(references)) {
         return ctx.badRequest('Missing required fields: doctorId and references array');
@@ -91,13 +91,13 @@ module.exports = createCoreController('api::professional-reference.professional-
         savedReferences.push(savedRef);
       }
       
-      console.log('✅ Successfully saved references:', savedReferences.length);
+      ('✅ Successfully saved references:', savedReferences.length);
       
       // Create reference submission entries and send emails
       try {
         const submissionService = strapi.service('api::professional-reference-submission.professional-reference-submission');
         await submissionService.createReferenceSubmissions(doctorId, savedReferences);
-        console.log('✅ Reference submission emails sent successfully');
+        ('✅ Reference submission emails sent successfully');
       } catch (emailError) {
         console.error('❌ Error sending reference emails:', emailError);
         // Don't fail the entire request if emails fail
@@ -122,11 +122,11 @@ module.exports = createCoreController('api::professional-reference.professional-
     try {
       const { id } = ctx.params;
       
-      console.log('🗑️ Deleting professional reference:', id);
+      ('🗑️ Deleting professional reference:', id);
       
       const deletedRef = await strapi.entityService.delete('api::professional-reference.professional-reference', id);
       
-      console.log('✅ Reference deleted successfully');
+      ('✅ Reference deleted successfully');
       
       ctx.body = {
         success: true,
@@ -144,7 +144,7 @@ module.exports = createCoreController('api::professional-reference.professional-
     try {
       const { doctorId } = ctx.params;
       
-      console.log('🔍 Getting reference submissions for doctor:', doctorId);
+      ('🔍 Getting reference submissions for doctor:', doctorId);
       
       const submissions = await strapi.entityService.findMany('api::professional-reference-submission.professional-reference-submission', {
         filters: {
@@ -158,7 +158,7 @@ module.exports = createCoreController('api::professional-reference.professional-
         sort: { createdAt: 'desc' }
       });
 
-      console.log('✅ Found reference submissions:', submissions?.length || 0);
+      ('✅ Found reference submissions:', submissions?.length || 0);
       
       ctx.body = {
         success: true,
@@ -180,7 +180,7 @@ module.exports = createCoreController('api::professional-reference.professional-
     try {
       const { id } = ctx.params;
       
-      console.log('🗑️ Deleting professional reference:', id);
+      ('🗑️ Deleting professional reference:', id);
       
       if (!id) {
         return ctx.badRequest('Reference ID is required');
@@ -196,7 +196,7 @@ module.exports = createCoreController('api::professional-reference.professional-
       // Delete the reference
       await strapi.entityService.delete('api::professional-reference.professional-reference', id);
       
-      console.log('✅ Professional reference deleted successfully:', id);
+      ('✅ Professional reference deleted successfully:', id);
       
       ctx.body = {
         success: true,

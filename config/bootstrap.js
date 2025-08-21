@@ -22,7 +22,7 @@ module.exports = {
    * run jobs, or perform some special logic.
    */
   async bootstrap({ strapi }) {
-    console.log('🚀 Setting up document expiry cron jobs...');
+    ('🚀 Setting up document expiry cron jobs...');
     
     // Add health check endpoint for Railway
     strapi.server.routes([
@@ -62,7 +62,7 @@ module.exports = {
 
     // Seed business compliance document types if they don't exist
     try {
-      console.log('🌱 Seeding business compliance document types...');
+      ('🌱 Seeding business compliance document types...');
       
       const existingTypes = await strapi.entityService.findMany('api::business-compliance-document-type.business-compliance-document-type');
       
@@ -144,12 +144,12 @@ module.exports = {
           await strapi.entityService.create('api::business-compliance-document-type.business-compliance-document-type', {
             data: docType
           });
-          console.log(`✅ Created business document type: ${docType.name}`);
+          (`✅ Created business document type: ${docType.name}`);
         }
 
-        console.log('✅ Business compliance document types seeded successfully');
+        ('✅ Business compliance document types seeded successfully');
       } else {
-        console.log('📄 Business compliance document types already exist, skipping seed');
+        ('📄 Business compliance document types already exist, skipping seed');
       }
     } catch (error) {
       console.error('❌ Error seeding business compliance document types:', error);
@@ -159,10 +159,10 @@ module.exports = {
       // Schedule the expiry status update job
       strapi.cron.add({
         '0 2 * * *': async () => {
-          console.log('⏰ Running scheduled document expiry status update...');
+          ('⏰ Running scheduled document expiry status update...');
           try {
             const result = await strapi.service('api::compliance-document.document-expiry-scheduler').updateDocumentExpiryStatuses();
-            console.log('✅ Scheduled expiry update completed:', result);
+            ('✅ Scheduled expiry update completed:', result);
           } catch (error) {
             console.error('❌ Error in scheduled expiry update:', error);
           }
@@ -172,16 +172,16 @@ module.exports = {
       // Schedule an additional check every Monday at 9 AM for weekly reporting
       strapi.cron.add({
         '0 9 * * 1': async () => {
-          console.log('📊 Running weekly document expiry report...');
+          ('📊 Running weekly document expiry report...');
           try {
             // Get documents expiring in the next 30 days
             const expiringDocs = await strapi.service('api::compliance-document.document-expiry-scheduler').getExpiringDocuments(30);
             // Get expired documents
             const expiredDocs = await strapi.service('api::compliance-document.document-expiry-scheduler').getExpiredDocuments();
             
-            console.log(`📊 Weekly Expiry Report:`);
-            console.log(`   - Documents expiring in next 30 days: ${expiringDocs.length}`);
-            console.log(`   - Currently expired documents: ${expiredDocs.length}`);
+            (`📊 Weekly Expiry Report:`);
+            (`   - Documents expiring in next 30 days: ${expiringDocs.length}`);
+            (`   - Currently expired documents: ${expiredDocs.length}`);
             
             // Here you could send a weekly report email to admins
             // await emailService.sendWeeklyExpiryReport({ expiringDocs, expiredDocs });
@@ -192,9 +192,9 @@ module.exports = {
         }
       });
 
-      console.log('✅ Document expiry cron jobs scheduled successfully');
-      console.log('   - Daily status update: Every day at 2:00 AM');
-      console.log('   - Weekly report: Every Monday at 9:00 AM');
+      ('✅ Document expiry cron jobs scheduled successfully');
+      ('   - Daily status update: Every day at 2:00 AM');
+      ('   - Weekly report: Every Monday at 9:00 AM');
 
     } catch (error) {
       console.error('❌ Error setting up document expiry cron jobs:', error);

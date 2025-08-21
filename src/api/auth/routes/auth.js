@@ -76,5 +76,15 @@ module.exports = {
         middlewares: [],
       },
     },
+    {
+      method: 'POST',
+      path: '/auth/change-password',
+      handler: 'auth.changePassword',
+      config: {
+        auth: false,
+        policies: ['global::custom-auth'],
+        middlewares: [],
+      },
+    },
   ],
 };

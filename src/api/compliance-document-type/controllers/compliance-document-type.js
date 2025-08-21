@@ -10,11 +10,11 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
   // GET /api/compliance-document-types
   async find(ctx) {
     try {
-      console.log('📝 GET compliance-document-types endpoint called');
+      ('📝 GET compliance-document-types endpoint called');
       
       const { data, meta } = await super.find(ctx);
       
-      console.log(`📝 Found ${data.length} document types`);
+      (`📝 Found ${data.length} document types`);
       
       return {
         data,
@@ -29,7 +29,7 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
   // GET /api/compliance-document-types/:id
   async findOne(ctx) {
     try {
-      console.log('📝 GET compliance-document-type by ID endpoint called:', ctx.params.id);
+      ('📝 GET compliance-document-type by ID endpoint called:', ctx.params.id);
       
       const { data, meta } = await super.findOne(ctx);
       
@@ -46,8 +46,8 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
   // POST /api/compliance-document-types
   async create(ctx) {
     try {
-      console.log('📝 POST compliance-document-types endpoint called');
-      console.log('📝 Request body:', ctx.request.body);
+      ('📝 POST compliance-document-types endpoint called');
+      ('📝 Request body:', ctx.request.body);
       
       const { data } = ctx.request.body;
       
@@ -82,7 +82,7 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
         }
       });
       
-      console.log('✅ Created compliance document type:', entity);
+      ('✅ Created compliance document type:', entity);
       
       return {
         data: entity
@@ -96,8 +96,8 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
   // PUT /api/compliance-document-types/:id
   async update(ctx) {
     try {
-      console.log('📝 PUT compliance-document-type endpoint called:', ctx.params.id);
-      console.log('📝 Request body:', ctx.request.body);
+      ('📝 PUT compliance-document-type endpoint called:', ctx.params.id);
+      ('📝 Request body:', ctx.request.body);
       
       const { id } = ctx.params;
       const { data } = ctx.request.body;
@@ -122,7 +122,7 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
         }
       });
       
-      console.log('✅ Updated compliance document type:', entity);
+      ('✅ Updated compliance document type:', entity);
       
       return {
         data: entity
@@ -136,7 +136,7 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
   // DELETE /api/compliance-document-types/:id
   async delete(ctx) {
     try {
-      console.log('📝 DELETE compliance-document-type endpoint called:', ctx.params.id);
+      ('📝 DELETE compliance-document-type endpoint called:', ctx.params.id);
       
       const { id } = ctx.params;
       
@@ -151,7 +151,7 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
       
       const entity = await strapi.entityService.delete('api::compliance-document-type.compliance-document-type', id);
       
-      console.log('✅ Deleted compliance document type:', entity);
+      ('✅ Deleted compliance document type:', entity);
       
       return {
         data: entity
@@ -165,7 +165,7 @@ module.exports = createCoreController('api::compliance-document-type.compliance-
   // POST /api/compliance-document-types/enable-auto-expiry
   async enableAutoExpiry(ctx) {
     try {
-      console.log('🚀 Enable auto-expiry migration endpoint called');
+      ('🚀 Enable auto-expiry migration endpoint called');
 
       // Call the migration service
       const result = await strapi.service('api::compliance-document-type.auto-expiry-migration').enableAutoExpiryForAllDocuments();

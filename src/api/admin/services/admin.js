@@ -34,7 +34,7 @@ module.exports = createCoreService('api::admin.admin', ({ strapi }) => ({
         },
       });
       
-      console.log('✅ Default admin created with email:', adminEmail);
+      ('✅ Default admin created with email:', adminEmail);
     }
   },
 }));

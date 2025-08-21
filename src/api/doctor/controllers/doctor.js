@@ -32,21 +32,21 @@ module.exports = createCoreController('api::doctor.doctor', ({ strapi }) => ({
     try {
       const { id } = ctx.params;
       const { populate } = ctx.query;
-      console.log('🔍 Looking for doctor with ID:', id);
-      console.log('🔗 Populate query:', populate);
+      ('🔍 Looking for doctor with ID:', id);
+      ('🔗 Populate query:', populate);
       
       const doctor = await strapi.entityService.findOne('api::doctor.doctor', id, {
         populate: populate ? (typeof populate === 'string' ? populate.split(',') : populate) : ['services'],
       });
-      console.log('👤 Found doctor:', doctor ? 'YES' : 'NO');
-      console.log('🔧 Doctor services:', doctor?.services?.length || 0);
+      ('👤 Found doctor:', doctor ? 'YES' : 'NO');
+      ('🔧 Doctor services:', doctor?.services?.length || 0);
       
       if (!doctor) {
-        console.log('❌ Doctor not found with ID:', id);
+        ('❌ Doctor not found with ID:', id);
         return ctx.notFound('Doctor not found');
       }
       
-      console.log('✅ Returning doctor:', doctor.email);
+      ('✅ Returning doctor:', doctor.email);
       return { data: doctor };
     } catch (error) {
       console.error('💥 Error in findOne:', error);

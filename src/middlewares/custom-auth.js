@@ -47,11 +47,11 @@ module.exports = (config, { strapi }) => {
       
       // Ensure decoded is an object with our expected properties
       if (typeof decoded === 'string' || !decoded.email || !decoded.role) {
-        console.log('� Invalid token structure');
+        ('� Invalid token structure');
         return await next();
       }
       
-      console.log('�🔐 Custom auth middleware: Token validated for user:', decoded.email);
+      ('�🔐 Custom auth middleware: Token validated for user:', decoded.email);
       
       // Create Strapi-compatible user object based on role
       let strapiUser = null;
@@ -77,7 +77,7 @@ module.exports = (config, { strapi }) => {
             isActive: true,
             isBlocked: false,
           };
-          console.log('✅ Admin user context set:', strapiUser.email);
+          ('✅ Admin user context set:', strapiUser.email);
         }
       } else if (decoded.role === 'doctor') {
         // For doctor users
@@ -99,7 +99,7 @@ module.exports = (config, { strapi }) => {
             isActive: true,
             isBlocked: false,
           };
-          console.log('✅ Doctor user context set:', strapiUser.email);
+          ('✅ Doctor user context set:', strapiUser.email);
         }
       } else if (decoded.role === 'business') {
         // For business users
@@ -121,21 +121,21 @@ module.exports = (config, { strapi }) => {
             isActive: true,
             isBlocked: false,
           };
-          console.log('✅ Business user context set:', strapiUser.email);
+          ('✅ Business user context set:', strapiUser.email);
         }
       }
       
       // Set the user in Strapi's context
       if (strapiUser) {
         ctx.state.user = strapiUser;
-        console.log('🎯 Strapi user context established for:', strapiUser.email);
+        ('🎯 Strapi user context established for:', strapiUser.email);
       }
       
       // Proceed to next middleware
       await next();
       
     } catch (error) {
-      console.log('🚫 Custom auth middleware: Token validation failed:', error.message);
+      ('🚫 Custom auth middleware: Token validation failed:', error.message);
       
       // If custom token validation fails, let Strapi handle it
       // This allows fallback to standard Strapi authentication

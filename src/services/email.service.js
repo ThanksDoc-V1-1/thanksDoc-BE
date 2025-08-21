@@ -89,7 +89,7 @@ class EmailService {
 
     try {
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('Verification email sent successfully:', result.messageId);
+      ('Verification email sent successfully:', result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error('Error sending verification email:', error);
@@ -173,7 +173,7 @@ class EmailService {
 
     try {
       const result = await this.transporter.sendMail(mailOptions);
-      console.log('Welcome email sent successfully:', result.messageId);
+      ('Welcome email sent successfully:', result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error('Error sending welcome email:', error);
@@ -184,7 +184,7 @@ class EmailService {
   async testConnection() {
     try {
       await this.transporter.verify();
-      console.log('Email service connection successful');
+      ('Email service connection successful');
       return true;
     } catch (error) {
       console.error('Email service connection failed:', error);
@@ -284,7 +284,7 @@ class EmailService {
 
     try {
       const result = await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Video call email sent to doctor: ${doctor.email}`);
+      (`✅ Video call email sent to doctor: ${doctor.email}`);
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error(`❌ Failed to send video call email to doctor ${doctor.email}:`, error);
@@ -397,7 +397,7 @@ class EmailService {
 
     try {
       const result = await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Video call email sent to patient: ${serviceRequest.patientEmail}`);
+      (`✅ Video call email sent to patient: ${serviceRequest.patientEmail}`);
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error(`❌ Failed to send video call email to patient ${serviceRequest.patientEmail}:`, error);
@@ -410,7 +410,7 @@ class EmailService {
    */
   async sendVideoCallEmails(doctor, serviceRequest, videoCallUrl) {
     try {
-      console.log('📧 Sending video call email notifications');
+      ('📧 Sending video call email notifications');
       
       const notifications = [];
       
@@ -441,7 +441,7 @@ class EmailService {
         notifications.push({ type: 'patient_email', success: false, error: 'No email address provided' });
       }
 
-      console.log('✅ Video call email notifications completed:', notifications);
+      ('✅ Video call email notifications completed:', notifications);
       return notifications;
 
     } catch (error) {
@@ -540,7 +540,7 @@ class EmailService {
 
     try {
       const result = await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Professional reference request email sent to: ${referenceEmail}`);
+      (`✅ Professional reference request email sent to: ${referenceEmail}`);
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error(`❌ Failed to send professional reference request email to ${referenceEmail}:`, error);

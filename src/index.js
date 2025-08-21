@@ -23,7 +23,7 @@ module.exports = {
       return originalService.call(this, serviceName);
     };
     
-    console.log('✅ WhatsApp service registered successfully');
+    ('✅ WhatsApp service registered successfully');
   },
 
   /**
@@ -39,7 +39,7 @@ module.exports = {
       try {
         // Wait a bit to ensure all services are registered
         await strapi.service('api::admin.admin').ensureDefaultAdmin();
-        console.log('✅ Bootstrap process completed successfully');
+        ('✅ Bootstrap process completed successfully');
       } catch (error) {
         console.error('❌ Error in bootstrap process:', error);
       }

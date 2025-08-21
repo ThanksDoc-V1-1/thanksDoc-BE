@@ -115,7 +115,7 @@ class WhatsAppService {
     let doctorPhone = null;
     let messageData = null;
     
-    console.log('🔍 WhatsApp sendServiceRequestNotification called with serviceRequest:', {
+    ('🔍 WhatsApp sendServiceRequestNotification called with serviceRequest:', {
       id: serviceRequest.id,
       serviceDateTime: serviceRequest.serviceDateTime,
       requestedServiceDateTime: serviceRequest.requestedServiceDateTime,
@@ -150,7 +150,7 @@ class WhatsAppService {
       // Use the new diagnostic send method
       const response = await this.sendWhatsAppMessage(messageData);
 
-      console.log(`WhatsApp notification sent to Dr. ${this.getDoctorDisplayName(doctor)}: ${response.messages[0].id}`);
+      (`WhatsApp notification sent to Dr. ${this.getDoctorDisplayName(doctor)}: ${response.messages[0].id}`);
       return response;
     } catch (error) {
       console.error(`Failed to send WhatsApp notification to Dr. ${this.getDoctorDisplayName(doctor)}:`);
@@ -327,21 +327,21 @@ class WhatsAppService {
     
     // Format service date and time for display
     const formatServiceDateTime = (dateTimeString) => {
-      console.log('🔍 formatServiceDateTime called with:', dateTimeString, 'Type:', typeof dateTimeString);
+      ('🔍 formatServiceDateTime called with:', dateTimeString, 'Type:', typeof dateTimeString);
       
       if (!dateTimeString) {
-        console.log('🔍 formatServiceDateTime: No dateTimeString provided');
+        ('🔍 formatServiceDateTime: No dateTimeString provided');
         return 'Not specified';
       }
       
       try {
-        console.log('🔍 formatServiceDateTime: Creating date from:', dateTimeString);
+        ('🔍 formatServiceDateTime: Creating date from:', dateTimeString);
         const date = new Date(dateTimeString);
-        console.log('🔍 Date object created:', date);
-        console.log('🔍 Date.getTime():', date.getTime());
+        ('🔍 Date object created:', date);
+        ('🔍 Date.getTime():', date.getTime());
         
         if (isNaN(date.getTime())) {
-          console.log('🔍 formatServiceDateTime: Invalid date');
+          ('🔍 formatServiceDateTime: Invalid date');
           return 'Not specified';
         }
         
@@ -355,7 +355,7 @@ class WhatsAppService {
           timeZone: 'Africa/Nairobi' // East Africa Time
         });
         
-        console.log('🔍 formatServiceDateTime formatted output:', formatted);
+        ('🔍 formatServiceDateTime formatted output:', formatted);
         return formatted; // Don't add "Scheduled for" here as it's already in the Facebook template
       } catch (error) {
         console.error('❌ formatServiceDateTime error:', error);
@@ -759,8 +759,8 @@ ${serviceRequest.urgencyLevel === 'emergency' ? '🚨 *EMERGENCY REQUEST*' : ''}
           business
         );
         
-        console.log('📱 Sending doctor confirmation template message');
-        console.log('📱 Full payload:', JSON.stringify(templateMessage, null, 2));
+        ('📱 Sending doctor confirmation template message');
+        ('📱 Full payload:', JSON.stringify(templateMessage, null, 2));
         
         const response = await axios.post(this.apiUrl, templateMessage, {
           headers: {
@@ -769,7 +769,7 @@ ${serviceRequest.urgencyLevel === 'emergency' ? '🚨 *EMERGENCY REQUEST*' : ''}
           }
         });
         
-        console.log('✅ Doctor confirmation template sent successfully');
+        ('✅ Doctor confirmation template sent successfully');
         return;
       }
       
@@ -823,7 +823,7 @@ Thank you for your response! 👨‍⚕️`;
         }
       });
 
-      console.log(`Confirmation message sent to doctor for ${action} action`);
+      (`Confirmation message sent to doctor for ${action} action`);
     } catch (error) {
       console.error(`Failed to send confirmation message:`, error.response?.data || error.message);
     }
@@ -846,8 +846,8 @@ Thank you for your response! 👨‍⚕️`;
           serviceRequest
         );
         
-        console.log('📱 Sending business notification template message');
-        console.log('📱 Full payload:', JSON.stringify(templateMessage, null, 2));
+        ('📱 Sending business notification template message');
+        ('📱 Full payload:', JSON.stringify(templateMessage, null, 2));
         
         const response = await axios.post(this.apiUrl, templateMessage, {
           headers: {
@@ -856,7 +856,7 @@ Thank you for your response! 👨‍⚕️`;
           }
         });
         
-        console.log('✅ Business notification template sent successfully');
+        ('✅ Business notification template sent successfully');
         return;
       }
       
@@ -893,7 +893,7 @@ The doctor will contact you shortly to coordinate the visit.`;
         }
       });
 
-      console.log(`Business notification sent for accepted service request`);
+      (`Business notification sent for accepted service request`);
     } catch (error) {
       console.error(`Failed to send business notification:`, error.response?.data || error.message);
     }
@@ -904,7 +904,7 @@ The doctor will contact you shortly to coordinate the visit.`;
    */
   async handleIncomingMessage(webhookData) {
     try {
-      console.log('📨 Received WhatsApp webhook data:', JSON.stringify(webhookData, null, 2));
+      ('📨 Received WhatsApp webhook data:', JSON.stringify(webhookData, null, 2));
       
       const { entry } = webhookData;
       
@@ -916,8 +916,8 @@ The doctor will contact you shortly to coordinate the visit.`;
             const { messages } = change.value;
             
             for (const message of messages || []) {
-              console.log('🔍 Processing message type:', message.type);
-              console.log('📱 Message details:', JSON.stringify(message, null, 2));
+              ('🔍 Processing message type:', message.type);
+              ('📱 Message details:', JSON.stringify(message, null, 2));
               
               if (message.type === 'text') {
                 await this.processTextMessage(message);
@@ -938,7 +938,7 @@ The doctor will contact you shortly to coordinate the visit.`;
    */
   async processInteractiveMessage(message) {
     try {
-      console.log('🔄 Processing interactive message:', JSON.stringify(message, null, 2));
+      ('🔄 Processing interactive message:', JSON.stringify(message, null, 2));
       
       const { from, interactive } = message;
       
@@ -947,7 +947,7 @@ The doctor will contact you shortly to coordinate the visit.`;
         const buttonId = interactive.button_reply.id;
         const buttonTitle = interactive.button_reply.title;
         
-        console.log(`🎯 Button clicked - ID: ${buttonId}, Title: ${buttonTitle}, From: ${from}`);
+        (`🎯 Button clicked - ID: ${buttonId}, Title: ${buttonTitle}, From: ${from}`);
         
         // Parse button ID to extract action, service request ID, and doctor ID
         // Format: accept_123_456 or decline_123_456
@@ -957,7 +957,7 @@ The doctor will contact you shortly to coordinate the visit.`;
           const serviceRequestId = parseInt(buttonParts[1]);
           const doctorId = parseInt(buttonParts[2]);
           
-          console.log(`📋 Parsed button data - Action: ${action}, Service Request: ${serviceRequestId}, Doctor: ${doctorId}`);
+          (`📋 Parsed button data - Action: ${action}, Service Request: ${serviceRequestId}, Doctor: ${doctorId}`);
           
           // Find doctor by phone number to verify
           const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
@@ -969,7 +969,7 @@ The doctor will contact you shortly to coordinate the visit.`;
           });
 
           if (doctors.length === 0) {
-            console.log(`❌ No doctor found with phone: ${from}`);
+            (`❌ No doctor found with phone: ${from}`);
             await this.sendSimpleMessage(from, "❌ Sorry, we couldn't verify your identity. Please contact support.");
             return;
           }
@@ -978,7 +978,7 @@ The doctor will contact you shortly to coordinate the visit.`;
           
           // Verify doctor ID matches
           if (doctor.id !== doctorId) {
-            console.log(`❌ Doctor ID mismatch - Found: ${doctor.id}, Expected: ${doctorId}`);
+            (`❌ Doctor ID mismatch - Found: ${doctor.id}, Expected: ${doctorId}`);
             await this.sendSimpleMessage(from, "❌ Security verification failed. Please contact support.");
             return;
           }
@@ -989,21 +989,21 @@ The doctor will contact you shortly to coordinate the visit.`;
           });
 
           if (!serviceRequest) {
-            console.log(`❌ Service request not found: ${serviceRequestId}`);
+            (`❌ Service request not found: ${serviceRequestId}`);
             await this.sendSimpleMessage(from, "❌ Service request not found or has expired.");
             return;
           }
 
           // Check if request is still pending
           if (serviceRequest.status !== 'pending') {
-            console.log(`❌ Service request status is not pending: ${serviceRequest.status}`);
+            (`❌ Service request status is not pending: ${serviceRequest.status}`);
             await this.sendSimpleMessage(from, `❌ This request is no longer available (Status: ${serviceRequest.status.toUpperCase()}).`);
             return;
           }
 
           // Process the action
           if (action === 'accept') {
-            console.log(`✅ Processing ACCEPT for request ${serviceRequestId} by doctor ${doctorId}`);
+            (`✅ Processing ACCEPT for request ${serviceRequestId} by doctor ${doctorId}`);
             await this.acceptServiceRequest(serviceRequestId, doctorId);
             await this.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
             
@@ -1012,7 +1012,7 @@ The doctor will contact you shortly to coordinate the visit.`;
               await this.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
             }
           } else if (action === 'decline') {
-            console.log(`❌ Processing DECLINE for request ${serviceRequestId} by doctor ${doctorId}`);
+            (`❌ Processing DECLINE for request ${serviceRequestId} by doctor ${doctorId}`);
             await this.sendConfirmationMessage(doctor.phone, 'reject', serviceRequest, serviceRequest.business);
           }
           
@@ -1063,7 +1063,7 @@ The doctor will contact you shortly to coordinate the visit.`;
         });
 
         if (doctors.length === 0) {
-          console.log(`No doctor found with phone: ${from}`);
+          (`No doctor found with phone: ${from}`);
           return;
         }
 
@@ -1084,7 +1084,7 @@ The doctor will contact you shortly to coordinate the visit.`;
         });
 
         if (pendingRequests.length === 0) {
-          console.log(`No pending requests found for doctor: ${doctor.id}`);
+          (`No pending requests found for doctor: ${doctor.id}`);
           return;
         }
 
@@ -1130,11 +1130,11 @@ The doctor will contact you shortly to coordinate the visit.`;
    */
   async sendWhatsAppMessage(payload) {
     try {
-      console.log('📱 Sending WhatsApp message to:', payload.to);
-      console.log('📱 Message type:', payload.type);
-      console.log('📱 API URL:', this.apiUrl);
-      console.log('📱 Access Token (first 20 chars):', this.accessToken?.substring(0, 20) + '...');
-      console.log('📱 Full payload:', JSON.stringify(payload, null, 2));
+      ('📱 Sending WhatsApp message to:', payload.to);
+      ('📱 Message type:', payload.type);
+      ('📱 API URL:', this.apiUrl);
+      ('📱 Access Token (first 20 chars):', this.accessToken?.substring(0, 20) + '...');
+      ('📱 Full payload:', JSON.stringify(payload, null, 2));
       
       const response = await axios.post(this.apiUrl, payload, {
         headers: {
@@ -1144,8 +1144,8 @@ The doctor will contact you shortly to coordinate the visit.`;
         timeout: 10000, // 10 second timeout
       });
 
-      console.log('✅ WhatsApp API Response:', response.status, response.statusText);
-      console.log('✅ Response data:', JSON.stringify(response.data, null, 2));
+      ('✅ WhatsApp API Response:', response.status, response.statusText);
+      ('✅ Response data:', JSON.stringify(response.data, null, 2));
       
       return response.data;
     } catch (error) {
@@ -1208,7 +1208,7 @@ The doctor will contact you shortly to coordinate the visit.`;
   async checkPhoneVerificationStatus(phoneNumber) {
     try {
       const formattedPhone = this.formatPhoneNumber(phoneNumber);
-      console.log(`🔍 Checking verification status for: ${formattedPhone}`);
+      (`🔍 Checking verification status for: ${formattedPhone}`);
       
       // Try sending a test message to see if the number is verified
       const testPayload = {
@@ -1222,14 +1222,14 @@ The doctor will contact you shortly to coordinate the visit.`;
       
       try {
         await this.sendWhatsAppMessage(testPayload);
-        console.log(`✅ Phone number ${formattedPhone} is verified and can receive messages`);
+        (`✅ Phone number ${formattedPhone} is verified and can receive messages`);
         return { verified: true, phone: formattedPhone };
       } catch (error) {
         if (error.response?.data?.error?.code === 131026) {
-          console.log(`❌ Phone number ${formattedPhone} is NOT verified for your WhatsApp Business account`);
+          (`❌ Phone number ${formattedPhone} is NOT verified for your WhatsApp Business account`);
           return { verified: false, phone: formattedPhone, reason: 'Not verified' };
         } else {
-          console.log(`⚠️ Unable to determine verification status for ${formattedPhone}: ${error.message}`);
+          (`⚠️ Unable to determine verification status for ${formattedPhone}: ${error.message}`);
           return { verified: false, phone: formattedPhone, reason: error.message };
         }
       }
@@ -1251,7 +1251,7 @@ The doctor will contact you shortly to coordinate the visit.`;
         },
       });
       
-      console.log('📋 Verified phone numbers:', response.data);
+      ('📋 Verified phone numbers:', response.data);
       return response.data.data || [];
     } catch (error) {
       console.error('Error fetching verified phone numbers:', error.response?.data || error.message);
@@ -1264,7 +1264,7 @@ The doctor will contact you shortly to coordinate the visit.`;
    */
   async sendPasswordResetToken(phoneNumber, resetToken, userName = 'User') {
     try {
-      console.log(`📱 Sending password reset token to: ${phoneNumber}`);
+      (`📱 Sending password reset token to: ${phoneNumber}`);
       
       const formattedPhone = this.formatPhoneNumber(phoneNumber);
       
@@ -1326,7 +1326,7 @@ The doctor will contact you shortly to coordinate the visit.`;
       }
       
       const response = await this.sendWhatsAppMessage(messageData);
-      console.log(`✅ Password reset token sent successfully to: ${phoneNumber}`);
+      (`✅ Password reset token sent successfully to: ${phoneNumber}`);
       return response;
       
     } catch (error) {
@@ -1397,8 +1397,8 @@ The doctor will contact you shortly to coordinate the visit.`;
       };
 
       const response = await this.sendWhatsAppMessage(messageData);
-      console.log(`✅ Video call link sent to doctor: ${doctor.firstName} ${doctor.lastName}`);
-      console.log(`📱 Platform URL sent: ${platformVideoUrl}`);
+      (`✅ Video call link sent to doctor: ${doctor.firstName} ${doctor.lastName}`);
+      (`📱 Platform URL sent: ${platformVideoUrl}`);
       return response;
 
     } catch (error) {
@@ -1478,8 +1478,8 @@ The doctor will contact you shortly to coordinate the visit.`;
       };
 
       const response = await this.sendWhatsAppMessage(messageData);
-      console.log(`✅ Video call link sent to patient: ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName}`);
-      console.log(`📱 Platform URL sent: ${platformVideoUrl}`);
+      (`✅ Video call link sent to patient: ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName}`);
+      (`📱 Platform URL sent: ${platformVideoUrl}`);
       return response;
 
     } catch (error) {
@@ -1493,7 +1493,7 @@ The doctor will contact you shortly to coordinate the visit.`;
    */
   async sendVideoCallNotifications(doctor, serviceRequest, videoCallUrl) {
     try {
-      console.log('🎥 Sending video call notifications for online consultation');
+      ('🎥 Sending video call notifications for online consultation');
       
       const notifications = [];
       
@@ -1520,7 +1520,7 @@ The doctor will contact you shortly to coordinate the visit.`;
         notifications.push({ type: 'patient', success: false, error: 'No phone number provided' });
       }
 
-      console.log('✅ Video call notifications completed:', notifications);
+      ('✅ Video call notifications completed:', notifications);
       return notifications;
 
     } catch (error) {

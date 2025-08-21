@@ -118,7 +118,7 @@ module.exports = createCoreService('api::business-compliance-document.business-c
   // Upload document with S3 integration
   async uploadDocument({ businessId, documentType, file, issueDate, isUpdate = false }) {
     try {
-      console.log('📄 Uploading business compliance document:', {
+      ('📄 Uploading business compliance document:', {
         businessId,
         documentType,
         fileName: file.name || file.originalFilename,
@@ -163,7 +163,7 @@ module.exports = createCoreService('api::business-compliance-document.business-c
         }
       );
       
-      console.log('📤 S3 upload result:', s3Result);
+      ('📤 S3 upload result:', s3Result);
 
       // Get document configuration
       const docConfig = await this.getDocumentConfig(documentType);
@@ -174,13 +174,13 @@ module.exports = createCoreService('api::business-compliance-document.business-c
       if (autoExpiry && issueDate) {
         // Get validity years from document type configuration, default to 1 year
         const validityYears = docConfig?.validityYears || 1;
-        console.log(`📅 Calculating expiry date for ${documentType}: issueDate=${issueDate}, validityYears=${validityYears}`);
+        (`📅 Calculating expiry date for ${documentType}: issueDate=${issueDate}, validityYears=${validityYears}`);
         
         const issueDateObj = new Date(issueDate);
         calculatedExpiryDate = new Date(issueDateObj);
         calculatedExpiryDate.setFullYear(calculatedExpiryDate.getFullYear() + validityYears);
         
-        console.log(`📅 Calculated expiry date: ${calculatedExpiryDate.toISOString().split('T')[0]}`);
+        (`📅 Calculated expiry date: ${calculatedExpiryDate.toISOString().split('T')[0]}`);
       }
 
       // Prepare document data
@@ -232,18 +232,18 @@ module.exports = createCoreService('api::business-compliance-document.business-c
           result = await strapi.entityService.update('api::business-compliance-document.business-compliance-document', existingDocs[0].id, {
             data: documentData
           });
-          console.log('✅ Updated existing business document:', result.id);
+          ('✅ Updated existing business document:', result.id);
         } else {
           result = await strapi.entityService.create('api::business-compliance-document.business-compliance-document', {
             data: documentData
           });
-          console.log('✅ Created new business document:', result.id);
+          ('✅ Created new business document:', result.id);
         }
       } else {
         result = await strapi.entityService.create('api::business-compliance-document.business-compliance-document', {
           data: documentData
         });
-        console.log('✅ Created new business document:', result.id);
+        ('✅ Created new business document:', result.id);
       }
 
       return result;
@@ -314,7 +314,7 @@ module.exports = createCoreService('api::business-compliance-document.business-c
   // Update all document expiry statuses (for cron job)
   async updateAllExpiryStatuses() {
     try {
-      console.log('🔄 Updating all business document expiry statuses...');
+      ('🔄 Updating all business document expiry statuses...');
       
       const documents = await strapi.entityService.findMany('api::business-compliance-document.business-compliance-document', {
         filters: {
@@ -350,7 +350,7 @@ module.exports = createCoreService('api::business-compliance-document.business-c
         }
       }
 
-      console.log(`✅ Updated ${updated} business document expiry statuses`);
+      (`✅ Updated ${updated} business document expiry statuses`);
       return { updated, total: documents.length };
 
     } catch (error) {

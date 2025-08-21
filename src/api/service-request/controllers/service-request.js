@@ -33,7 +33,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
     try {
       const { query } = ctx;
       
-      console.log('Find query received:', JSON.stringify(query, null, 2));
+      ('Find query received:', JSON.stringify(query, null, 2));
       
       // Build the query parameters properly
       const queryParams = {
@@ -59,12 +59,12 @@ module.exports = createCoreController('api::service-request.service-request', ({
         });
       }
 
-      console.log('Processed query params:', JSON.stringify(queryParams, null, 2));
+      ('Processed query params:', JSON.stringify(queryParams, null, 2));
       
       // Use the default strapi find method with properly formatted query
       const result = await strapi.entityService.findMany('api::service-request.service-request', queryParams);
       
-      console.log(`Found ${result.length} service requests`);
+      (`Found ${result.length} service requests`);
       
       // Return the results in the standard format
       return { data: result };
@@ -102,7 +102,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const { id } = ctx.params;
       const { data } = ctx.request.body;
       
-      console.log(`Updating service request ${id} with data:`, data);
+      (`Updating service request ${id} with data:`, data);
       
       const updatedServiceRequest = await strapi.entityService.update('api::service-request.service-request', id, {
         data: data,
@@ -209,7 +209,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         chargeId
       } = ctx.request.body;
       
-      console.log('Creating service request with data:', {
+      ('Creating service request with data:', {
         businessId, urgencyLevel, serviceType, serviceId, description, estimatedDuration, 
         serviceDateTime, preferredDoctorId, doctorSelectionType,
         businessLatitude, businessLongitude, distanceFilter,
@@ -295,7 +295,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         
         serviceRequestData.paymentDetails = JSON.stringify(paymentDetails);
         
-        console.log('💰 Adding payment information to service request:', {
+        ('💰 Adding payment information to service request:', {
           isPaid: serviceRequestData.isPaid,
           paymentIntentId: serviceRequestData.paymentIntentId,
           totalAmount: serviceRequestData.totalAmount,
@@ -337,7 +337,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       }
 
       // Create the service request
-      console.log('🔍 About to save serviceRequestData:', {
+      ('🔍 About to save serviceRequestData:', {
         requestedServiceDateTime: serviceRequestData.requestedServiceDateTime,
         serviceDateTime: serviceRequestData.serviceDateTime,
         keys: Object.keys(serviceRequestData),
@@ -351,8 +351,8 @@ module.exports = createCoreController('api::service-request.service-request', ({
         populate: ['business', 'doctor', 'service'],
       });
 
-      console.log('Service request created:', serviceRequest.id);
-      console.log('🔍 Created serviceRequest object:', {
+      ('Service request created:', serviceRequest.id);
+      ('🔍 Created serviceRequest object:', {
         id: serviceRequest.id,
         requestedServiceDateTime: serviceRequest.requestedServiceDateTime,
         serviceDateTime: serviceRequest.serviceDateTime,
@@ -368,7 +368,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         try {
           const selectedDoctor = await strapi.entityService.findOne('api::doctor.doctor', preferredDoctorId);
           
-          console.log('Sending WhatsApp notification to selected doctor:', {
+          ('Sending WhatsApp notification to selected doctor:', {
             id: selectedDoctor.id,
             name: `${selectedDoctor.firstName} ${selectedDoctor.lastName}`,
             phone: selectedDoctor.phone
@@ -383,7 +383,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
             ]).then(() => {
               whatsappNotificationsSent = 1;
               notifiedDoctorsCount = 1;
-              console.log(`WhatsApp notification sent to selected doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`);
+              (`WhatsApp notification sent to selected doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`);
             }).catch(whatsappError => {
               console.error('Failed to send WhatsApp notification to selected doctor:', whatsappError.message || whatsappError);
             });
@@ -401,7 +401,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
           const businessLng = businessLongitude || business.longitude;
           const radius = distanceFilter && distanceFilter !== -1 ? distanceFilter : 50; // Default to 50km if not specified or "anywhere"
           
-          console.log('🔍 Finding nearby doctors with distance filter:', {
+          ('🔍 Finding nearby doctors with distance filter:', {
             businessLatitude: businessLat,
             businessLongitude: businessLng,
             distanceFilter: distanceFilter,
@@ -419,7 +419,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
             }
           });
 
-          console.log(`Found ${nearbyDoctorsResponse.count} nearby doctors`);
+          (`Found ${nearbyDoctorsResponse.count} nearby doctors`);
           notifiedDoctorsCount = nearbyDoctorsResponse.count;
 
         // Send WhatsApp notifications to nearby doctors
@@ -440,7 +440,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
           
           // Don't wait for all WhatsApp notifications to complete
           Promise.allSettled(notificationPromises);
-        }          console.log(`WhatsApp notifications sent to ${whatsappNotificationsSent} out of ${nearbyDoctorsResponse.count} doctors`);
+        }          (`WhatsApp notifications sent to ${whatsappNotificationsSent} out of ${nearbyDoctorsResponse.count} doctors`);
         } catch (error) {
           console.error('Error finding nearby doctors or sending notifications:', error);
         }
@@ -507,7 +507,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Create video call for online consultations
       if (isOnlineConsultation && serviceRequest.patientFirstName && serviceRequest.patientPhone) {
         try {
-          console.log('🎥 Creating video call for online consultation');
+          ('🎥 Creating video call for online consultation');
           
           const WherebyService = require('../../../services/whereby');
           const wherebyService = new WherebyService();
@@ -517,7 +517,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
           updateData.wherebyRoomUrl = meeting.roomUrl;
           updateData.wherebyMeetingId = meeting.meetingId;
           
-          console.log('✅ Video call created successfully:', meeting.meetingId);
+          ('✅ Video call created successfully:', meeting.meetingId);
 
         } catch (videoError) {
           console.error('❌ Failed to create video call:', videoError.message);
@@ -534,7 +534,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Send video call notifications for online consultations
       if (isOnlineConsultation && updatedServiceRequest.wherebyRoomUrl && serviceRequest.patientPhone) {
         try {
-          console.log('📱 Sending video call notifications');
+          ('📱 Sending video call notifications');
           
           const WhatsAppService = require('../../../services/whatsapp');
           const whatsappService = new WhatsAppService();
@@ -546,7 +546,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
             updatedServiceRequest.wherebyRoomUrl
           );
           
-          console.log('✅ WhatsApp video call notifications sent successfully');
+          ('✅ WhatsApp video call notifications sent successfully');
 
           // Send Email notifications
           try {
@@ -559,7 +559,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
               updatedServiceRequest.wherebyRoomUrl
             );
             
-            console.log('✅ Email video call notifications sent successfully');
+            ('✅ Email video call notifications sent successfully');
             
           } catch (emailError) {
             console.error('❌ Failed to send video call emails (continuing anyway):', emailError.message);
@@ -594,10 +594,10 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const { id } = ctx.params;
       const { doctorId, reason } = ctx.request.body;
 
-      console.log(`⚠️  WARNING: rejectServiceRequest called - this will mark ENTIRE request ${id} as REJECTED`);
-      console.log(`⚠️  Called by doctor ID: ${doctorId}`);
-      console.log(`⚠️  Reason: ${reason}`);
-      console.log(`⚠️  If this was called from WhatsApp decline, it's a bug!`);
+      (`⚠️  WARNING: rejectServiceRequest called - this will mark ENTIRE request ${id} as REJECTED`);
+      (`⚠️  Called by doctor ID: ${doctorId}`);
+      (`⚠️  Reason: ${reason}`);
+      (`⚠️  If this was called from WhatsApp decline, it's a bug!`);
 
       // Get the service request
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
@@ -619,7 +619,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return ctx.badRequest('Doctor not found');
       }
 
-      console.log(`🔴 MARKING SERVICE REQUEST ${id} AS REJECTED - this will remove it from ALL doctors`);
+      (`🔴 MARKING SERVICE REQUEST ${id} AS REJECTED - this will remove it from ALL doctors`);
 
       // Update the service request
       const updatedServiceRequest = await strapi.entityService.update('api::service-request.service-request', id, {
@@ -644,8 +644,8 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const { id } = ctx.params;
       const { doctorId, reason } = ctx.request.body;
 
-      console.log(`✅ Individual doctor decline called - request ${id} will remain PENDING for other doctors`);
-      console.log(`🔍 Doctor ID: ${doctorId}, Reason: ${reason}`);
+      (`✅ Individual doctor decline called - request ${id} will remain PENDING for other doctors`);
+      (`🔍 Doctor ID: ${doctorId}, Reason: ${reason}`);
 
       // Get the service request
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
@@ -668,8 +668,8 @@ module.exports = createCoreController('api::service-request.service-request', ({
       }
 
       // Log the individual rejection without changing the request status
-      console.log(`📝 Doctor ${doctor.firstName} ${doctor.lastName} (ID: ${doctorId}) declined service request ${id}`);
-      console.log(`✅ Service request ${id} remains PENDING for other doctors`);
+      (`📝 Doctor ${doctor.firstName} ${doctor.lastName} (ID: ${doctorId}) declined service request ${id}`);
+      (`✅ Service request ${id} remains PENDING for other doctors`);
       
       // Get current declined doctors list
       const currentDeclinedDoctors = serviceRequest.declinedByDoctors || [];
@@ -686,7 +686,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
           },
         });
         
-        console.log(`✅ Added doctor ${doctorId} to declined list for request ${id}`);
+        (`✅ Added doctor ${doctorId} to declined list for request ${id}`);
       }
       
       return {
@@ -876,7 +876,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         chargeId
       } = ctx.request.body;
       
-      console.log('Creating direct request with data:', {
+      ('Creating direct request with data:', {
         businessId, doctorId, serviceId, urgencyLevel, serviceType, description, estimatedDuration, serviceDateTime,
         businessLatitude, businessLongitude, distanceFilter,
         firstName, lastName, phoneNumber, urgency, symptoms, notes,
@@ -990,7 +990,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         
         requestData.paymentDetails = JSON.stringify(paymentDetails);
         
-        console.log('💰 Adding payment information to direct service request:', {
+        ('💰 Adding payment information to direct service request:', {
           isPaid: requestData.isPaid,
           paymentIntentId: requestData.paymentIntentId,
           totalAmount: requestData.totalAmount,
@@ -1004,16 +1004,16 @@ module.exports = createCoreController('api::service-request.service-request', ({
         populate: ['business', 'doctor'],
       });
 
-      console.log('Direct service request created:', serviceRequest.id);
+      ('Direct service request created:', serviceRequest.id);
 
       // Send WhatsApp notification to the selected doctor
       try {
-        console.log('Attempting to send WhatsApp notification to selected doctor...');
+        ('Attempting to send WhatsApp notification to selected doctor...');
         const whatsappService = strapi.service('whatsapp');
-        console.log('WhatsApp service retrieved:', !!whatsappService);
+        ('WhatsApp service retrieved:', !!whatsappService);
         
         if (whatsappService) {
-          console.log('Sending notification to doctor:', {
+          ('Sending notification to doctor:', {
             id: doctor.id,
             name: `${doctor.firstName} ${doctor.lastName}`,
             phone: doctor.phone
@@ -1026,7 +1026,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
           }
           
           await whatsappService.sendServiceRequestNotification(doctor, serviceRequest, businessForNotification);
-          console.log(`WhatsApp notification sent to selected doctor: ${doctor.firstName} ${doctor.lastName}`);
+          (`WhatsApp notification sent to selected doctor: ${doctor.firstName} ${doctor.lastName}`);
         } else {
           console.error('WhatsApp service not found!');
         }
@@ -1051,7 +1051,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
     try {
       const { doctorId } = ctx.params;
       
-      console.log('Getting available requests for doctor:', doctorId);
+      ('Getting available requests for doctor:', doctorId);
       
       // Get all pending or accepted requests that are either:
       // 1. Unassigned (no doctor) - general requests that any doctor can accept
@@ -1088,7 +1088,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         sort: 'requestedAt:desc',
       });
 
-      console.log(`Found ${requests.length} available requests for doctor ${doctorId}`);
+      (`Found ${requests.length} available requests for doctor ${doctorId}`);
       
       return requests;
     } catch (error) {
@@ -1127,27 +1127,27 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const { id } = ctx.params;
       const { paymentMethod, paymentDetails, paymentIntentId, chargeId, receiptUrl, currency = 'gbp' } = ctx.request.body;
 
-      console.log(`Processing payment for service request ${id} with method ${paymentMethod}`);
-      console.log(`Payment intent ID: ${paymentIntentId}`);
+      (`Processing payment for service request ${id} with method ${paymentMethod}`);
+      (`Payment intent ID: ${paymentIntentId}`);
 
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
         populate: ['doctor', 'business'],
       });
 
       if (!serviceRequest) {
-        console.log(`Service request ${id} not found`);
+        (`Service request ${id} not found`);
         return ctx.notFound('Service request not found');
       }
 
-      console.log(`Service request ${id} status: ${serviceRequest.status}`);
+      (`Service request ${id} status: ${serviceRequest.status}`);
 
       if (serviceRequest.status !== 'completed') {
-        console.log(`Cannot process payment for request ${id} with status ${serviceRequest.status}`);
+        (`Cannot process payment for request ${id} with status ${serviceRequest.status}`);
         return ctx.badRequest('Can only process payment for completed service requests');
       }
 
       if (serviceRequest.isPaid) {
-        console.log(`Service request ${id} has already been paid`);
+        (`Service request ${id} has already been paid`);
         return ctx.badRequest('Service request has already been paid');
       }
 
@@ -1158,7 +1158,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const hours = serviceRequest.estimatedDuration || 1;
       const amount = hourlyRate * hours;
 
-      console.log(`Payment amount for request ${id}: ${amount}`);
+      (`Payment amount for request ${id}: ${amount}`);
 
       // Create comprehensive payment details object
       const completePaymentDetails = {
@@ -1191,7 +1191,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         populate: ['business', 'doctor'],
       });
 
-      console.log(`Payment processed successfully for request ${id} with payment intent ${paymentIntentId}`);
+      (`Payment processed successfully for request ${id} with payment intent ${paymentIntentId}`);
       return updatedServiceRequest;
     } catch (error) {
       console.error(`Error processing payment for request ${id}:`, error);
@@ -1304,7 +1304,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Create video call for online consultations
       if (isOnlineConsultation && serviceRequest.patientFirstName && serviceRequest.patientPhone) {
         try {
-          console.log('🎥 Creating video call for online consultation (WhatsApp acceptance)');
+          ('🎥 Creating video call for online consultation (WhatsApp acceptance)');
           
           const WherebyService = require('../../../services/whereby');
           const wherebyService = new WherebyService();
@@ -1314,7 +1314,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
           updateData.wherebyRoomUrl = meeting.roomUrl;
           updateData.wherebyMeetingId = meeting.meetingId;
           
-          console.log('✅ Video call created successfully (WhatsApp):', meeting.meetingId);
+          ('✅ Video call created successfully (WhatsApp):', meeting.meetingId);
 
         } catch (videoError) {
           console.error('❌ Failed to create video call (WhatsApp):', videoError.message);
@@ -1331,7 +1331,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Send video call notifications for online consultations
       if (isOnlineConsultation && updatedServiceRequest.wherebyRoomUrl && serviceRequest.patientPhone) {
         try {
-          console.log('📱 Sending video call notifications (WhatsApp acceptance)');
+          ('📱 Sending video call notifications (WhatsApp acceptance)');
           
           const WhatsAppService = require('../../../services/whatsapp');
           const whatsappServiceForVideo = new WhatsAppService();
@@ -1343,7 +1343,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
             updatedServiceRequest.wherebyRoomUrl
           );
           
-          console.log('✅ WhatsApp video call notifications sent successfully (WhatsApp acceptance)');
+          ('✅ WhatsApp video call notifications sent successfully (WhatsApp acceptance)');
 
           // Send Email notifications
           try {
@@ -1356,7 +1356,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
               updatedServiceRequest.wherebyRoomUrl
             );
             
-            console.log('✅ Email video call notifications sent successfully (WhatsApp acceptance)');
+            ('✅ Email video call notifications sent successfully (WhatsApp acceptance)');
             
           } catch (emailError) {
             console.error('❌ Failed to send video call emails (WhatsApp acceptance, continuing anyway):', emailError.message);
@@ -1467,7 +1467,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
   async whatsappRejectRequest(ctx) {
     try {
       const { token } = ctx.params;
-      console.log(`🔍 WhatsApp reject called with token: ${token}`);
+      (`🔍 WhatsApp reject called with token: ${token}`);
       
       const WhatsAppService = require('../../../services/whatsapp');
       const whatsappService = new WhatsAppService();
@@ -1475,7 +1475,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Verify and decode the token
       const { serviceRequestId, doctorId } = whatsappService.verifyAcceptanceToken(token);
       
-      console.log(`🔍 Token verified - Service Request ID: ${serviceRequestId}, Doctor ID: ${doctorId}`);
+      (`🔍 Token verified - Service Request ID: ${serviceRequestId}, Doctor ID: ${doctorId}`);
 
       // Get the service request
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', serviceRequestId, {
@@ -1483,7 +1483,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       });
 
       if (!serviceRequest) {
-        console.log(`❌ Service request ${serviceRequestId} not found or expired`);
+        (`❌ Service request ${serviceRequestId} not found or expired`);
         // Generate a friendly HTML page for missing/expired service request
         const html = `
           <!DOCTYPE html>
@@ -1516,7 +1516,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       }
 
       if (serviceRequest.status !== 'pending') {
-        console.log(`❌ Service request ${serviceRequestId} is no longer available. Current status: ${serviceRequest.status}`);
+        (`❌ Service request ${serviceRequestId} is no longer available. Current status: ${serviceRequest.status}`);
         const html = `
           <!DOCTYPE html>
           <html>
@@ -1555,8 +1555,8 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       // Track this doctor's rejection without changing the service request status
       // This helps avoid sending the same request to this doctor again
-      console.log(`🔍 Doctor ${doctor.firstName} ${doctor.lastName} (ID: ${doctorId}) declined service request ${serviceRequestId}`);
-      console.log(`✅ Service request remains PENDING for other doctors to accept`);
+      (`🔍 Doctor ${doctor.firstName} ${doctor.lastName} (ID: ${doctorId}) declined service request ${serviceRequestId}`);
+      (`✅ Service request remains PENDING for other doctors to accept`);
       
       // Add this doctor to the declined list to hide it from their dashboard
       try {
@@ -1574,7 +1574,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
             },
           });
           
-          console.log(`✅ Added doctor ${doctorId} to declined list for request ${serviceRequestId} (WhatsApp)`);
+          (`✅ Added doctor ${doctorId} to declined list for request ${serviceRequestId} (WhatsApp)`);
         }
       } catch (trackingError) {
         console.error('Error tracking WhatsApp individual rejection:', trackingError);
@@ -1726,10 +1726,10 @@ module.exports = createCoreController('api::service-request.service-request', ({
       };
 
       // Send test notification
-      console.log('🔍 About to send test notification...');
-      console.log('Doctor phone:', doctor.phone);
-      console.log('Mock service request:', mockServiceRequest);
-      console.log('Mock business:', mockBusiness);
+      ('🔍 About to send test notification...');
+      ('Doctor phone:', doctor.phone);
+      ('Mock service request:', mockServiceRequest);
+      ('Mock business:', mockBusiness);
       
       const result = await whatsappService.sendServiceRequestNotification(
         doctor, 
@@ -1855,7 +1855,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const WhatsAppService = require('../../../services/whatsapp');
       const whatsappService = new WhatsAppService();
 
-      console.log('🔧 Starting WhatsApp setup diagnosis...');
+      ('🔧 Starting WhatsApp setup diagnosis...');
 
       const results = {
         phoneNumber: phoneNumber,
@@ -1873,14 +1873,14 @@ module.exports = createCoreController('api::service-request.service-request', ({
           formatted: formattedPhone,
           apiFormat: formattedPhone.replace('+', '')
         };
-        console.log('✅ Phone number formatting: OK');
+        ('✅ Phone number formatting: OK');
       } catch (error) {
         results.diagnosis.phoneFormatting = {
           success: false,
           error: error.message
         };
         results.recommendations.push('Fix phone number format - ensure it includes country code');
-        console.log('❌ Phone number formatting: FAILED');
+        ('❌ Phone number formatting: FAILED');
       }
 
       // 2. Check WhatsApp Business API credentials
@@ -1900,11 +1900,11 @@ module.exports = createCoreController('api::service-request.service-request', ({
       try {
         const verifiedNumbers = await whatsappService.getVerifiedPhoneNumbers();
         results.diagnosis.verifiedNumbers = verifiedNumbers;
-        console.log('✅ Retrieved verified numbers list');
+        ('✅ Retrieved verified numbers list');
       } catch (error) {
         results.diagnosis.verifiedNumbers = { error: error.message };
         results.recommendations.push('Check WhatsApp Business account permissions');
-        console.log('❌ Failed to get verified numbers');
+        ('❌ Failed to get verified numbers');
       }
 
       // 4. Test phone verification status
@@ -1944,7 +1944,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       results.recommendations.push('Ensure your WhatsApp Business account is fully verified');
       results.recommendations.push('Check that your app is approved for production (not sandbox mode)');
 
-      console.log('🔧 Diagnosis complete:', JSON.stringify(results, null, 2));
+      ('🔧 Diagnosis complete:', JSON.stringify(results, null, 2));
 
       return {
         success: true,
@@ -1966,7 +1966,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
   // Helper method to cancel all related requests when one is accepted
   async cancelRelatedRequests(acceptedRequestId, strapi) {
     try {
-      console.log(`Cancelling related requests for accepted request ID: ${acceptedRequestId}`);
+      (`Cancelling related requests for accepted request ID: ${acceptedRequestId}`);
       
       // Get the accepted request to find its originalRequestId
       const acceptedRequest = await strapi.entityService.findOne('api::service-request.service-request', acceptedRequestId);
@@ -2012,7 +2012,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         });
 
         for (const relatedRequest of relatedRequests) {
-          console.log(`Cancelling related request ID: ${relatedRequest.id} for doctor: ${relatedRequest.doctor?.id}`);
+          (`Cancelling related request ID: ${relatedRequest.id} for doctor: ${relatedRequest.doctor?.id}`);
           
           await strapi.entityService.update('api::service-request.service-request', relatedRequest.id, {
             data: {
@@ -2022,7 +2022,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
           });
         }
         
-        console.log(`Cancelled ${relatedRequests.length} related requests with filter:`, filter);
+        (`Cancelled ${relatedRequests.length} related requests with filter:`, filter);
       }
       
     } catch (error) {
@@ -2062,7 +2062,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         search 
       } = query;
 
-      console.log('Getting transaction history with params:', query);
+      ('Getting transaction history with params:', query);
 
       // Build filter for paid service requests
       const filters = {
@@ -2096,7 +2096,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         };
       }
 
-      console.log('Filters being used:', JSON.stringify(filters, null, 2));
+      ('Filters being used:', JSON.stringify(filters, null, 2));
 
       // Get paid service requests with populated relations
       const transactions = await strapi.entityService.findMany('api::service-request.service-request', {
@@ -2107,7 +2107,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         limit: parseInt(limit),
       });
 
-      console.log(`Found ${transactions.length} transactions`);
+      (`Found ${transactions.length} transactions`);
 
       // Calculate summary statistics
       const allPaidRequests = await strapi.entityService.findMany('api::service-request.service-request', {
@@ -2163,7 +2163,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         );
       }
 
-      console.log(`Returning ${filteredTransactions.length} transactions after filtering`);
+      (`Returning ${filteredTransactions.length} transactions after filtering`);
 
       return {
         transactions: filteredTransactions,
@@ -2189,7 +2189,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
   // Get doctor earnings summary
   async getDoctorEarnings(ctx) {
     try {
-      console.log('Getting doctor earnings summary');
+      ('Getting doctor earnings summary');
 
       // Get all paid service requests with doctor information
       const paidRequests = await strapi.entityService.findMany('api::service-request.service-request', {
@@ -2201,7 +2201,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         populate: ['doctor'],
       });
 
-      console.log(`Found ${paidRequests.length} paid requests for doctor earnings calculation`);
+      (`Found ${paidRequests.length} paid requests for doctor earnings calculation`);
 
       // Group by doctor and calculate earnings
       const doctorEarnings = {};
@@ -2233,7 +2233,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Convert to array and sort by earnings
       const earnings = Object.values(doctorEarnings).sort((a, b) => b.totalEarnings - a.totalEarnings);
 
-      console.log(`Found earnings for ${earnings.length} doctors`);
+      (`Found earnings for ${earnings.length} doctors`);
 
       return earnings;
 
@@ -2246,18 +2246,18 @@ module.exports = createCoreController('api::service-request.service-request', ({
   // Calculate cost based on service pricing
   async calculateCost(ctx) {
     try {
-      console.log('📊 Calculate cost request body:', ctx.request.body);
+      ('📊 Calculate cost request body:', ctx.request.body);
       
       // Support both direct serviceId and data.serviceId formats
       const requestData = ctx.request.body.data || ctx.request.body;
       const serviceId = requestData.serviceId || requestData.service;
 
       if (!serviceId) {
-        console.log('❌ No serviceId provided in request');
+        ('❌ No serviceId provided in request');
         return ctx.badRequest('Service ID is required');
       }
 
-      console.log('🔍 Looking for service ID:', serviceId);
+      ('🔍 Looking for service ID:', serviceId);
 
       // Get the service with pricing information
       const service = await strapi.entityService.findOne('api::service.service', serviceId, {
@@ -2265,11 +2265,11 @@ module.exports = createCoreController('api::service-request.service-request', ({
       });
 
       if (!service) {
-        console.log('❌ Service not found:', serviceId);
+        ('❌ Service not found:', serviceId);
         return ctx.notFound('Service not found');
       }
 
-      console.log('✅ Service found:', service);
+      ('✅ Service found:', service);
 
       const serviceCharge = await getBookingFee(strapi); // Dynamic service charge for all requests
       const servicePrice = parseFloat(service.price) || 0;
@@ -2291,7 +2291,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         }
       };
 
-      console.log('✅ Cost calculation result:', result);
+      ('✅ Cost calculation result:', result);
       return result;
 
     } catch (error) {

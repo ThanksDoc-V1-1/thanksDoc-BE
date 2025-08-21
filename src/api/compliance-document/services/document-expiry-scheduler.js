@@ -8,7 +8,7 @@
 module.exports = ({ strapi }) => ({
 
   async updateDocumentExpiryStatuses() {
-    console.log('🔄 Starting scheduled document expiry status update...');
+    ('🔄 Starting scheduled document expiry status update...');
     
     try {
       const today = new Date();
@@ -26,7 +26,7 @@ module.exports = ({ strapi }) => ({
         limit: -1
       });
 
-      console.log(`📄 Found ${documents.length} documents with auto-expiry enabled`);
+      (`📄 Found ${documents.length} documents with auto-expiry enabled`);
 
       let statusUpdated = 0;
       let notificationsToSend = [];
@@ -65,7 +65,7 @@ module.exports = ({ strapi }) => ({
             });
 
             statusUpdated++;
-            console.log(`📋 Updated ${doc.documentName} for doctor ${doc.doctor?.firstName} ${doc.doctor?.lastName} - Status: ${newStatus}`);
+            (`📋 Updated ${doc.documentName} for doctor ${doc.doctor?.firstName} ${doc.doctor?.lastName} - Status: ${newStatus}`);
 
             // Queue notification
             if (sendNotification && doc.doctor) {
@@ -94,7 +94,7 @@ module.exports = ({ strapi }) => ({
       // Update doctor verification statuses for affected doctors
       let doctorVerificationUpdates = 0;
       if (doctorsToUpdateVerification.size > 0) {
-        console.log(`🔄 Updating verification status for ${doctorsToUpdateVerification.size} doctors affected by document expiry...`);
+        (`🔄 Updating verification status for ${doctorsToUpdateVerification.size} doctors affected by document expiry...`);
         
         try {
           const doctorVerificationService = strapi.service('api::compliance-document.doctor-verification');
@@ -116,15 +116,15 @@ module.exports = ({ strapi }) => ({
 
       // Send notifications (you can integrate with email service or notification system)
       if (notificationsToSend.length > 0) {
-        console.log(`📧 Queuing ${notificationsToSend.length} expiry notifications`);
+        (`📧 Queuing ${notificationsToSend.length} expiry notifications`);
         await this.sendExpiryNotifications(notificationsToSend);
       }
 
-      console.log(`✅ Document expiry status update completed:`);
-      console.log(`   - Documents processed: ${documents.length}`);
-      console.log(`   - Status updates: ${statusUpdated}`);
-      console.log(`   - Doctor verification updates: ${doctorVerificationUpdates}`);
-      console.log(`   - Notifications sent: ${notificationsToSend.length}`);
+      (`✅ Document expiry status update completed:`);
+      (`   - Documents processed: ${documents.length}`);
+      (`   - Status updates: ${statusUpdated}`);
+      (`   - Doctor verification updates: ${doctorVerificationUpdates}`);
+      (`   - Notifications sent: ${notificationsToSend.length}`);
 
       return {
         documentsProcessed: documents.length,
@@ -141,19 +141,19 @@ module.exports = ({ strapi }) => ({
   },
 
   async sendExpiryNotifications(notifications) {
-    console.log('📧 Sending expiry notifications...');
+    ('📧 Sending expiry notifications...');
     
     for (const notification of notifications) {
       try {
         // Here you can integrate with your email service
         // For now, we'll just log the notifications
-        console.log(`📧 Notification for ${notification.doctorName} (${notification.doctorEmail}):`);
-        console.log(`   Document: ${notification.documentName}`);
-        console.log(`   Status: ${notification.status}`);
-        console.log(`   ${notification.status === 'expired' ? 'Expired on' : 'Expires on'}: ${notification.expiryDate}`);
+        (`📧 Notification for ${notification.doctorName} (${notification.doctorEmail}):`);
+        (`   Document: ${notification.documentName}`);
+        (`   Status: ${notification.status}`);
+        (`   ${notification.status === 'expired' ? 'Expired on' : 'Expires on'}: ${notification.expiryDate}`);
         
         if (notification.status === 'expiring') {
-          console.log(`   Days until expiry: ${notification.daysUntilExpiry}`);
+          (`   Days until expiry: ${notification.daysUntilExpiry}`);
         }
 
         // TODO: Integrate with actual email service (e.g., SendGrid, Nodemailer, etc.)

@@ -18,7 +18,7 @@ module.exports = createCoreController('api::professional-reference-submission.pr
         return ctx.badRequest('Token is required');
       }
 
-      console.log('🔍 Finding reference submission by token:', token);
+      ('🔍 Finding reference submission by token:', token);
       
       const submission = await strapi.entityService.findMany('api::professional-reference-submission.professional-reference-submission', {
         filters: {
@@ -63,7 +63,7 @@ module.exports = createCoreController('api::professional-reference-submission.pr
       const { token } = ctx.params;
       const submissionData = ctx.request.body;
       
-      console.log('📝 Submitting reference form for token:', token);
+      ('📝 Submitting reference form for token:', token);
       
       if (!token) {
         return ctx.badRequest('Token is required');
@@ -116,7 +116,7 @@ module.exports = createCoreController('api::professional-reference-submission.pr
         }
       );
 
-      console.log('✅ Reference form submitted successfully:', updatedSubmission.id);
+      ('✅ Reference form submitted successfully:', updatedSubmission.id);
 
       ctx.send({
         success: true,
@@ -135,7 +135,7 @@ module.exports = createCoreController('api::professional-reference-submission.pr
     try {
       const { doctorId } = ctx.params;
       
-      console.log('🔍 Getting reference submissions for doctor:', doctorId);
+      ('🔍 Getting reference submissions for doctor:', doctorId);
       
       const submissions = await strapi.entityService.findMany('api::professional-reference-submission.professional-reference-submission', {
         filters: {

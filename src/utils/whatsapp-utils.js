@@ -103,7 +103,7 @@ class WhatsAppUtils {
         }
       }
 
-      console.log(`Found ${updates.length} phone numbers to update`);
+      (`Found ${updates.length} phone numbers to update`);
       
       for (const update of updates) {
         await strapi.entityService.update('api::doctor.doctor', update.id, {
@@ -111,7 +111,7 @@ class WhatsAppUtils {
             phone: update.newPhone
           }
         });
-        console.log(`Updated doctor ${update.id}: ${update.oldPhone} → ${update.newPhone}`);
+        (`Updated doctor ${update.id}: ${update.oldPhone} → ${update.newPhone}`);
       }
 
       return {

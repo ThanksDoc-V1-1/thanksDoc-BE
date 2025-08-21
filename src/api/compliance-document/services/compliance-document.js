@@ -13,7 +13,7 @@ module.exports = createCoreService('api::compliance-document.compliance-document
 
   // Get S3 service instance
   getS3Service() {
-    console.log('\n=== S3 Service Creation - Using Strapi ENV ===');
+    ('\n=== S3 Service Creation - Using Strapi ENV ===');
     
     // Import Strapi's env function to properly access environment variables
     const strapi = require('@strapi/strapi');
@@ -26,27 +26,27 @@ module.exports = createCoreService('api::compliance-document.compliance-document
       bucketName: process.env.AWS_S3_BUCKET
     };
     
-    console.log('Environment variables loaded by Strapi:');
-    console.log('AWS_ACCESS_KEY_ID:', awsConfig.accessKeyId || 'MISSING');
-    console.log('AWS_SECRET_ACCESS_KEY:', awsConfig.secretAccessKey ? 'Set (length: ' + awsConfig.secretAccessKey.length + ')' : 'MISSING');
-    console.log('AWS_REGION:', awsConfig.region);
-    console.log('AWS_S3_BUCKET:', awsConfig.bucketName || 'MISSING');
+    ('Environment variables loaded by Strapi:');
+    ('AWS_ACCESS_KEY_ID:', awsConfig.accessKeyId || 'MISSING');
+    ('AWS_SECRET_ACCESS_KEY:', awsConfig.secretAccessKey ? 'Set (length: ' + awsConfig.secretAccessKey.length + ')' : 'MISSING');
+    ('AWS_REGION:', awsConfig.region);
+    ('AWS_S3_BUCKET:', awsConfig.bucketName || 'MISSING');
     
     // Additional debugging - let's check what Strapi thinks the env vars are
-    console.log('\n=== Additional debugging ===');
+    ('\n=== Additional debugging ===');
     try {
       // Check if we can access Strapi's config
       if (strapi.config && strapi.config.get) {
-        console.log('Strapi config AWS_ACCESS_KEY_ID:', strapi.config.get('AWS_ACCESS_KEY_ID'));
-        console.log('Strapi config AWS_S3_BUCKET:', strapi.config.get('AWS_S3_BUCKET'));
+        ('Strapi config AWS_ACCESS_KEY_ID:', strapi.config.get('AWS_ACCESS_KEY_ID'));
+        ('Strapi config AWS_S3_BUCKET:', strapi.config.get('AWS_S3_BUCKET'));
       }
     } catch (e) {
-      console.log('Could not access Strapi config:', e.message);
+      ('Could not access Strapi config:', e.message);
     }
     
-    console.log('Raw process.env AWS values:');
-    console.log('process.env.AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID);
-    console.log('process.env.AWS_S3_BUCKET:', process.env.AWS_S3_BUCKET);
+    ('Raw process.env AWS values:');
+    ('process.env.AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID);
+    ('process.env.AWS_S3_BUCKET:', process.env.AWS_S3_BUCKET);
     
     return new S3Service(awsConfig);
   },
@@ -102,19 +102,19 @@ module.exports = createCoreService('api::compliance-document.compliance-document
 
       // If replacing existing documents, delete all old ones first
       if (replaceExisting && Array.isArray(replaceExisting)) {
-        console.log(`🗑️ Removing ${replaceExisting.length} existing documents of the same type`);
+        (`🗑️ Removing ${replaceExisting.length} existing documents of the same type`);
         
         for (const oldDoc of replaceExisting) {
           try {
             // Delete from S3 if s3Key exists
             if (oldDoc.s3Key) {
               await s3Service.deleteFile(oldDoc.s3Key);
-              console.log(`✅ Deleted S3 file: ${oldDoc.s3Key}`);
+              (`✅ Deleted S3 file: ${oldDoc.s3Key}`);
             }
             
             // Delete from database
             await strapi.entityService.delete('api::compliance-document.compliance-document', oldDoc.id);
-            console.log(`✅ Deleted database record: ${oldDoc.id}`);
+            (`✅ Deleted database record: ${oldDoc.id}`);
           } catch (deleteError) {
             console.error(`❌ Error deleting old document ${oldDoc.id}:`, deleteError);
             // Continue with other deletions even if one fails
@@ -129,7 +129,7 @@ module.exports = createCoreService('api::compliance-document.compliance-document
               await s3Service.deleteFile(oldDoc.s3Key);
             }
             await strapi.entityService.delete('api::compliance-document.compliance-document', replaceExisting);
-            console.log(`✅ Deleted legacy single document: ${replaceExisting}`);
+            (`✅ Deleted legacy single document: ${replaceExisting}`);
           } catch (deleteError) {
             console.error(`❌ Error deleting legacy document ${replaceExisting}:`, deleteError);
           }

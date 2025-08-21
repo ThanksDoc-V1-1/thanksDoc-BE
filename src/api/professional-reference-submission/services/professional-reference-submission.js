@@ -18,8 +18,8 @@ module.exports = createCoreService('api::professional-reference-submission.profe
   // Create reference submission entries and send emails
   async createReferenceSubmissions(doctorId, professionalReferences) {
     try {
-      console.log('🎯 Creating reference submissions for doctor:', doctorId);
-      console.log('📝 Number of references:', professionalReferences?.length);
+      ('🎯 Creating reference submissions for doctor:', doctorId);
+      ('📝 Number of references:', professionalReferences?.length);
 
       const submissions = [];
       const EmailService = require('../../../services/email.service');
@@ -67,7 +67,7 @@ module.exports = createCoreService('api::professional-reference-submission.profe
               }
             });
 
-            console.log('✅ Email sent to reference:', reference.email);
+            ('✅ Email sent to reference:', reference.email);
           } catch (emailError) {
             console.error('❌ Failed to send email to reference:', reference.email, emailError);
           }
@@ -79,7 +79,7 @@ module.exports = createCoreService('api::professional-reference-submission.profe
         }
       }
 
-      console.log('✅ Created reference submissions:', submissions.length);
+      ('✅ Created reference submissions:', submissions.length);
       return submissions;
 
     } catch (error) {

@@ -7,24 +7,31 @@
 
 const jwt = require('jsonwebtoken');
 
-module.exports = async (policyContext, config, { strapi }) => {
-  const { ctx } = policyContext;
-  
-  const authorization = ctx.request.header.authorization;
+module.exports = async (ctx, config, { strapi }) => {
+  // In Strapi v5, the first argument is the Koa ctx
+  const authorization = ctx?.request?.header?.authorization || ctx?.headers?.authorization;
+  console.log('🔒 custom-auth policy invoked for', ctx?.request?.method, ctx?.request?.url);
   
   if (!authorization) {
+    console.log('🔒 No Authorization header');
     return false; // No authorization header
   }
   
   const token = authorization.replace('Bearer ', '');
   
   if (!token) {
+    console.log('🔒 No Bearer token');
     return false; // No token provided
   }
   
   try {
     // Verify the custom JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    if (typeof decoded !== 'string') {
+      console.log('🔒 Token decoded for', decoded.email, 'role', decoded.role);
+    } else {
+      console.log('🔒 Token decoded as string');
+    }
     
     // Ensure decoded is an object with our expected properties
     if (typeof decoded === 'string' || !decoded.email || !decoded.role) {
@@ -32,7 +39,7 @@ module.exports = async (policyContext, config, { strapi }) => {
       return false;
     }
     
-    console.log('🔐 Custom auth policy: Token validated for user:', decoded.email);
+  console.log('🔐 Custom auth policy: Token validated for user:', decoded.email);
     
     // Set user context based on role
     if (decoded.role === 'admin') {
@@ -48,7 +55,7 @@ module.exports = async (policyContext, config, { strapi }) => {
           role: 'admin',
           isAuthenticated: true
         };
-        console.log('✅ Admin authenticated:', ctx.state.user.email);
+  console.log('✅ Admin authenticated:', ctx.state.user.email);
         return true;
       }
     } else if (decoded.role === 'doctor') {
@@ -64,7 +71,7 @@ module.exports = async (policyContext, config, { strapi }) => {
           role: 'doctor',
           isAuthenticated: true
         };
-        console.log('✅ Doctor authenticated:', ctx.state.user.email);
+  console.log('✅ Doctor authenticated:', ctx.state.user.email);
         return true;
       }
     } else if (decoded.role === 'business') {
@@ -80,7 +87,7 @@ module.exports = async (policyContext, config, { strapi }) => {
           role: 'business',
           isAuthenticated: true
         };
-        console.log('✅ Business authenticated:', ctx.state.user.email);
+  console.log('✅ Business authenticated:', ctx.state.user.email);
         return true;
       }
     }
@@ -88,7 +95,7 @@ module.exports = async (policyContext, config, { strapi }) => {
     return false; // User not found in database
     
   } catch (error) {
-    console.log('🚫 Custom auth policy: Token validation failed:', error.message);
+  console.log('🚫 Custom auth policy: Token validation failed:', error.message);
     return false; // Invalid token
   }
 };
