@@ -106,6 +106,14 @@ module.exports = {
     },
     {
       method: 'PUT',
+      path: '/service-requests/:id/doctor-decline',
+      handler: 'service-request.doctorDeclineRequest',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'PUT',
       path: '/service-requests/:id/complete',
       handler: 'service-request.completeServiceRequest',
       config: {

@@ -177,6 +177,12 @@
     "distanceFilter": {
       "type": "integer",
       "required": false
+    },
+    "declinedByDoctors": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::doctor.doctor",
+      "required": false
     }
   }
 }

@@ -1243,6 +1243,10 @@ export interface ApiServiceRequestServiceRequest
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     currency: Schema.Attribute.String & Schema.Attribute.DefaultTo<'GBP'>;
+    declinedByDoctors: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::doctor.doctor'
+    >;
     description: Schema.Attribute.Text & Schema.Attribute.Required;
     distanceFilter: Schema.Attribute.Integer;
     doctor: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;

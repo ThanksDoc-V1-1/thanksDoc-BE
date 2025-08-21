@@ -37,7 +37,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       
       // Build the query parameters properly
       const queryParams = {
-        populate: ['business', 'doctor'],
+        populate: ['business', 'doctor', 'declinedByDoctors'],
         ...(query.sort && { sort: query.sort }),
         ...(query.start && { start: parseInt(query.start) }),
         ...(query.limit && { limit: parseInt(query.limit) }),
@@ -588,11 +588,16 @@ module.exports = createCoreController('api::service-request.service-request', ({
     }
   },
 
-  // Reject a service request
+  // Reject a service request (WARNING: This marks the ENTIRE request as rejected)
   async rejectServiceRequest(ctx) {
     try {
       const { id } = ctx.params;
       const { doctorId, reason } = ctx.request.body;
+
+      console.log(`⚠️  WARNING: rejectServiceRequest called - this will mark ENTIRE request ${id} as REJECTED`);
+      console.log(`⚠️  Called by doctor ID: ${doctorId}`);
+      console.log(`⚠️  Reason: ${reason}`);
+      console.log(`⚠️  If this was called from WhatsApp decline, it's a bug!`);
 
       // Get the service request
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
@@ -614,6 +619,8 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return ctx.badRequest('Doctor not found');
       }
 
+      console.log(`🔴 MARKING SERVICE REQUEST ${id} AS REJECTED - this will remove it from ALL doctors`);
+
       // Update the service request
       const updatedServiceRequest = await strapi.entityService.update('api::service-request.service-request', id, {
         data: {
@@ -628,6 +635,74 @@ module.exports = createCoreController('api::service-request.service-request', ({
       return updatedServiceRequest;
     } catch (error) {
       ctx.throw(500, `Error rejecting service request: ${error.message}`);
+    }
+  },
+
+  // Individual doctor rejection (doesn't change request status - keeps it available for other doctors)
+  async doctorDeclineRequest(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { doctorId, reason } = ctx.request.body;
+
+      console.log(`✅ Individual doctor decline called - request ${id} will remain PENDING for other doctors`);
+      console.log(`🔍 Doctor ID: ${doctorId}, Reason: ${reason}`);
+
+      // Get the service request
+      const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
+        populate: ['business', 'doctor', 'declinedByDoctors'],
+      });
+
+      if (!serviceRequest) {
+        return ctx.notFound('Service request not found');
+      }
+
+      if (serviceRequest.status !== 'pending') {
+        return ctx.badRequest('Service request is no longer available');
+      }
+
+      // Get doctor details
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId);
+      
+      if (!doctor) {
+        return ctx.badRequest('Doctor not found');
+      }
+
+      // Log the individual rejection without changing the request status
+      console.log(`📝 Doctor ${doctor.firstName} ${doctor.lastName} (ID: ${doctorId}) declined service request ${id}`);
+      console.log(`✅ Service request ${id} remains PENDING for other doctors`);
+      
+      // Get current declined doctors list
+      const currentDeclinedDoctors = serviceRequest.declinedByDoctors || [];
+      const currentDeclinedDoctorIds = currentDeclinedDoctors.map(d => d.id);
+      
+      // Add this doctor to the declined list if not already there
+      if (!currentDeclinedDoctorIds.includes(doctorId)) {
+        const updatedDeclinedDoctorIds = [...currentDeclinedDoctorIds, doctorId];
+        
+        // Update the service request to include this doctor in the declined list
+        await strapi.entityService.update('api::service-request.service-request', id, {
+          data: {
+            declinedByDoctors: updatedDeclinedDoctorIds,
+          },
+        });
+        
+        console.log(`✅ Added doctor ${doctorId} to declined list for request ${id}`);
+      }
+      
+      return {
+        success: true,
+        message: 'Your decline has been recorded. The request will be offered to other doctors.',
+        serviceRequest: {
+          id: serviceRequest.id,
+          status: serviceRequest.status, // Should remain 'pending'
+        },
+        doctor: {
+          id: doctor.id,
+          name: `${doctor.firstName} ${doctor.lastName}`,
+        }
+      };
+    } catch (error) {
+      ctx.throw(500, `Error recording doctor decline: ${error.message}`);
     }
   },
 
@@ -1392,11 +1467,15 @@ module.exports = createCoreController('api::service-request.service-request', ({
   async whatsappRejectRequest(ctx) {
     try {
       const { token } = ctx.params;
+      console.log(`🔍 WhatsApp reject called with token: ${token}`);
+      
       const WhatsAppService = require('../../../services/whatsapp');
       const whatsappService = new WhatsAppService();
 
       // Verify and decode the token
       const { serviceRequestId, doctorId } = whatsappService.verifyAcceptanceToken(token);
+      
+      console.log(`🔍 Token verified - Service Request ID: ${serviceRequestId}, Doctor ID: ${doctorId}`);
 
       // Get the service request
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', serviceRequestId, {
@@ -1404,6 +1483,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       });
 
       if (!serviceRequest) {
+        console.log(`❌ Service request ${serviceRequestId} not found or expired`);
         // Generate a friendly HTML page for missing/expired service request
         const html = `
           <!DOCTYPE html>
@@ -1436,6 +1516,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       }
 
       if (serviceRequest.status !== 'pending') {
+        console.log(`❌ Service request ${serviceRequestId} is no longer available. Current status: ${serviceRequest.status}`);
         const html = `
           <!DOCTYPE html>
           <html>
@@ -1470,6 +1551,34 @@ module.exports = createCoreController('api::service-request.service-request', ({
       
       if (!doctor) {
         return ctx.badRequest('Doctor not found');
+      }
+
+      // Track this doctor's rejection without changing the service request status
+      // This helps avoid sending the same request to this doctor again
+      console.log(`🔍 Doctor ${doctor.firstName} ${doctor.lastName} (ID: ${doctorId}) declined service request ${serviceRequestId}`);
+      console.log(`✅ Service request remains PENDING for other doctors to accept`);
+      
+      // Add this doctor to the declined list to hide it from their dashboard
+      try {
+        const currentDeclinedDoctors = serviceRequest.declinedByDoctors || [];
+        const currentDeclinedDoctorIds = currentDeclinedDoctors.map(d => d.id);
+        
+        // Add this doctor to the declined list if not already there
+        if (!currentDeclinedDoctorIds.includes(doctorId)) {
+          const updatedDeclinedDoctorIds = [...currentDeclinedDoctorIds, doctorId];
+          
+          // Update the service request to include this doctor in the declined list
+          await strapi.entityService.update('api::service-request.service-request', serviceRequestId, {
+            data: {
+              declinedByDoctors: updatedDeclinedDoctorIds,
+            },
+          });
+          
+          console.log(`✅ Added doctor ${doctorId} to declined list for request ${serviceRequestId} (WhatsApp)`);
+        }
+      } catch (trackingError) {
+        console.error('Error tracking WhatsApp individual rejection:', trackingError);
+        // Don't fail the main flow if tracking fails
       }
 
       // Send confirmation message
