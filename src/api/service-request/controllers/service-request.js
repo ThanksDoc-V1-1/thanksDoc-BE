@@ -28,6 +28,13 @@ const getBookingFee = async (strapi) => {
 };
 
 module.exports = createCoreController('api::service-request.service-request', ({ strapi }) => ({
+
+  // Override the default create to ensure verification checks
+  async create(ctx) {
+    console.log('⚠️  WARNING: Default create endpoint called. Redirecting to createServiceRequest for verification.');
+    // Redirect to our custom createServiceRequest which has proper verification
+    return await this.createServiceRequest(ctx);
+  },
   
   async find(ctx) {
     try {
@@ -126,7 +133,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
   // Find nearby doctors when a service request is created
   async findNearbyDoctors(ctx) {
     try {
-      const { businessId, latitude, longitude, radius = 10 } = ctx.request.body;
+      const { businessId, serviceId } = ctx.request.body;
       
       // Get business details
       const business = await strapi.entityService.findOne('api::business.business', businessId);
@@ -135,41 +142,30 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return ctx.badRequest('Business not found');
       }
 
-      // Find all available doctors within radius (using simple distance calculation)
+      // Build filters for doctors
+      const filters = {
+        isAvailable: true,
+        isVerified: true,
+      };
+
+      // Add service filter if serviceId is provided
+      if (serviceId) {
+        filters.services = { id: { $eq: serviceId } };
+      }
+
+      // Find all available and verified doctors (no distance filtering)
       const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
-        filters: {
-          isAvailable: true,
-          isVerified: true,
-        },
-        populate: ['profilePicture'],
-        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization', 'isAvailable', 'isVerified', 'latitude', 'longitude'],
+        filters,
+        populate: ['profilePicture', 'services'],
+        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization', 'isAvailable', 'isVerified'],
       });
 
-      // Calculate distance and filter doctors within radius
-      const nearbyDoctors = doctors.filter(doctor => {
-        const distance = calculateDistance(
-          parseFloat(latitude),
-          parseFloat(longitude),
-          parseFloat(doctor.latitude),
-          parseFloat(doctor.longitude)
-        );
-        return distance <= radius;
-      }).map(doctor => ({
-        ...doctor,
-        distance: calculateDistance(
-          parseFloat(latitude),
-          parseFloat(longitude),
-          parseFloat(doctor.latitude),
-          parseFloat(doctor.longitude)
-        )
-      })).sort((a, b) => a.distance - b.distance);
-
       return {
-        doctors: nearbyDoctors,
-        count: nearbyDoctors.length
+        doctors: doctors,
+        count: doctors.length
       };
     } catch (error) {
-      ctx.throw(500, `Error finding nearby doctors: ${error.message}`);
+      ctx.throw(500, `Error finding doctors: ${error.message}`);
     }
   },
 
@@ -187,10 +183,6 @@ module.exports = createCoreController('api::service-request.service-request', ({
         serviceDateTime,
         preferredDoctorId,
         doctorSelectionType,
-        // Distance filtering parameters
-        businessLatitude,
-        businessLongitude,
-        distanceFilter,
         // Patient information for online consultations
         patientFirstName,
         patientLastName,
@@ -209,10 +201,9 @@ module.exports = createCoreController('api::service-request.service-request', ({
         chargeId
       } = ctx.request.body;
       
-      ('Creating service request with data:', {
+      console.log('Creating service request with data:', {
         businessId, urgencyLevel, serviceType, serviceId, description, estimatedDuration, 
         serviceDateTime, preferredDoctorId, doctorSelectionType,
-        businessLatitude, businessLongitude, distanceFilter,
         patientFirstName, patientLastName, patientPhone, patientEmail,
         // Payment information
         isPaid, paymentMethod, paymentIntentId, paymentStatus, paidAt, totalAmount, servicePrice, serviceCharge, currency, chargeId
@@ -251,10 +242,6 @@ module.exports = createCoreController('api::service-request.service-request', ({
         requestedAt: new Date(),
         status: 'pending',
         publishedAt: new Date(),
-        // Store distance filtering parameters for fallback logic
-        businessLatitude: businessLatitude,
-        businessLongitude: businessLongitude, 
-        distanceFilter: distanceFilter,
       };
 
       // Add payment information if provided (for pre-paid requests)
@@ -324,13 +311,18 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       // Add doctor if specific doctor is selected
       if (preferredDoctorId && (doctorSelectionType === 'previous' || doctorSelectionType === 'any')) {
-        // Validate that the doctor exists and is available
-        const selectedDoctor = await strapi.entityService.findOne('api::doctor.doctor', preferredDoctorId);
+        // Validate that the doctor exists, is available, and is verified
+        const selectedDoctor = await strapi.entityService.findOne('api::doctor.doctor', preferredDoctorId, {
+          fields: ['id', 'firstName', 'lastName', 'isAvailable', 'isVerified']
+        });
         if (!selectedDoctor) {
           return ctx.badRequest('Selected doctor not found');
         }
         if (!selectedDoctor.isAvailable) {
           return ctx.badRequest('Selected doctor is currently unavailable');
+        }
+        if (!selectedDoctor.isVerified) {
+          return ctx.badRequest('Selected doctor is not verified and cannot receive service requests');
         }
         
         serviceRequestData.doctor = preferredDoctorId;
@@ -364,62 +356,75 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       // Handle WhatsApp notifications
       if (preferredDoctorId && (doctorSelectionType === 'previous' || doctorSelectionType === 'any')) {
-        // Send notification to the selected doctor
+        // Send notification to the selected doctor only if they are verified
         try {
-          const selectedDoctor = await strapi.entityService.findOne('api::doctor.doctor', preferredDoctorId);
-          
-          ('Sending WhatsApp notification to selected doctor:', {
-            id: selectedDoctor.id,
-            name: `${selectedDoctor.firstName} ${selectedDoctor.lastName}`,
-            phone: selectedDoctor.phone
+          const selectedDoctor = await strapi.entityService.findOne('api::doctor.doctor', preferredDoctorId, {
+            fields: ['id', 'firstName', 'lastName', 'phone', 'email', 'isAvailable', 'isVerified']
           });
           
-          const whatsappService = strapi.service('whatsapp');
-          if (whatsappService) {
-            // Send notification with timeout to avoid blocking the response
-            Promise.race([
-              whatsappService.sendServiceRequestNotification(selectedDoctor, serviceRequest, business),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('WhatsApp timeout')), 10000))
-            ]).then(() => {
-              whatsappNotificationsSent = 1;
-              notifiedDoctorsCount = 1;
-              (`WhatsApp notification sent to selected doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`);
-            }).catch(whatsappError => {
-              console.error('Failed to send WhatsApp notification to selected doctor:', whatsappError.message || whatsappError);
+          // Check if the doctor is verified before sending notification
+          if (!selectedDoctor) {
+            console.log('Selected doctor not found:', preferredDoctorId);
+            // Fall back to finding all verified doctors
+          } else if (!selectedDoctor.isVerified) {
+            console.log('Selected doctor is not verified, skipping notification:', {
+              id: selectedDoctor.id,
+              name: `${selectedDoctor.firstName} ${selectedDoctor.lastName}`,
+              isVerified: selectedDoctor.isVerified
             });
+            // Fall back to finding all verified doctors
           } else {
-            console.error('WhatsApp service not found!');
+            // Doctor is verified, proceed with notification
+            console.log('Sending WhatsApp notification to verified selected doctor:', {
+              id: selectedDoctor.id,
+              name: `${selectedDoctor.firstName} ${selectedDoctor.lastName}`,
+              phone: selectedDoctor.phone,
+              isVerified: selectedDoctor.isVerified
+            });
+            
+            const whatsappService = strapi.service('whatsapp');
+            if (whatsappService) {
+              // Send notification with timeout to avoid blocking the response
+              Promise.race([
+                whatsappService.sendServiceRequestNotification(selectedDoctor, serviceRequest, business),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('WhatsApp timeout')), 10000))
+              ]).then(() => {
+                whatsappNotificationsSent = 1;
+                notifiedDoctorsCount = 1;
+                console.log(`WhatsApp notification sent to verified selected doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`);
+              }).catch(whatsappError => {
+                console.error('Failed to send WhatsApp notification to selected doctor:', whatsappError.message || whatsappError);
+              });
+              
+              // Early return since we found and notified a verified doctor
+              return ctx.send({
+                data: serviceRequest,
+                notifiedDoctorsCount: notifiedDoctorsCount,
+                whatsappNotificationsSent: whatsappNotificationsSent,
+                message: `Service request created successfully and notification sent to verified doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`
+              });
+            } else {
+              console.error('WhatsApp service not found!');
+            }
           }
         } catch (whatsappError) {
           console.error('Failed to send WhatsApp notification to selected doctor:', whatsappError);
         }
       } else {
-        // No specific doctor selected - find nearby doctors based on distance filter
+        // No specific doctor selected - find all verified doctors who offer the service
         try {
-          // Use business location from parameters or fallback to stored business location
-          const businessLat = businessLatitude || business.latitude;
-          const businessLng = businessLongitude || business.longitude;
-          const radius = distanceFilter && distanceFilter !== -1 ? distanceFilter : 50; // Default to 50km if not specified or "anywhere"
-          
-          ('🔍 Finding nearby doctors with distance filter:', {
-            businessLatitude: businessLat,
-            businessLongitude: businessLng,
-            distanceFilter: distanceFilter,
-            radius: radius
-          });
+          console.log('🔍 Finding all available and verified doctors for service:', serviceId);
           
           const nearbyDoctorsResponse = await this.findNearbyDoctors({
             request: {
               body: {
                 businessId,
-                latitude: businessLat,
-                longitude: businessLng,
-                radius: radius
+                serviceId: serviceId // Pass serviceId instead of location data
               }
             }
           });
 
-          (`Found ${nearbyDoctorsResponse.count} nearby doctors`);
+          console.log(`Found ${nearbyDoctorsResponse.count} available and verified doctors`);
           notifiedDoctorsCount = nearbyDoctorsResponse.count;
 
         // Send WhatsApp notifications to nearby doctors
@@ -481,11 +486,17 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return ctx.badRequest('Service request is no longer available');
       }
 
-      // Get doctor details
-      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId);
+      // Get doctor details and check verification
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
+        fields: ['id', 'firstName', 'lastName', 'phone', 'email', 'isAvailable', 'isVerified']
+      });
       
       if (!doctor) {
         return ctx.badRequest('Doctor not found');
+      }
+
+      if (!doctor.isVerified) {
+        return ctx.badRequest('Only verified doctors can accept service requests');
       }
 
       // Check if this is an online consultation
@@ -797,6 +808,25 @@ module.exports = createCoreController('api::service-request.service-request', ({
     try {
       const { doctorId } = ctx.params;
 
+      // First, check if the doctor is verified
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
+        fields: ['id', 'firstName', 'lastName', 'isVerified']
+      });
+      
+      if (!doctor) {
+        return ctx.badRequest('Doctor not found');
+      }
+      
+      if (!doctor.isVerified) {
+        console.log('Unverified doctor attempted to access their requests:', {
+          doctorId: doctor.id,
+          name: `${doctor.firstName} ${doctor.lastName}`,
+          isVerified: doctor.isVerified
+        });
+        // Return empty array for unverified doctors
+        return [];
+      }
+
       const serviceRequests = await strapi.entityService.findMany('api::service-request.service-request', {
         filters: {
           doctor: doctorId,
@@ -852,10 +882,6 @@ module.exports = createCoreController('api::service-request.service-request', ({
         description, 
         estimatedDuration,
         serviceDateTime, // New field for requested service date/time
-        // Distance filtering parameters
-        businessLatitude,
-        businessLongitude,
-        distanceFilter,
         // Patient portal fields
         firstName,
         lastName,
@@ -876,9 +902,8 @@ module.exports = createCoreController('api::service-request.service-request', ({
         chargeId
       } = ctx.request.body;
       
-      ('Creating direct request with data:', {
+      console.log('Creating direct request with data:', {
         businessId, doctorId, serviceId, urgencyLevel, serviceType, description, estimatedDuration, serviceDateTime,
-        businessLatitude, businessLongitude, distanceFilter,
         firstName, lastName, phoneNumber, urgency, symptoms, notes,
         // Payment information
         isPaid, paymentMethod, paymentIntentId, paymentStatus, paidAt, totalAmount, servicePrice, serviceCharge, currency, chargeId
@@ -910,14 +935,20 @@ module.exports = createCoreController('api::service-request.service-request', ({
         }
       }
 
-      // Validate doctor exists and is available
-      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId);
+      // Validate doctor exists, is available, and is verified
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
+        fields: ['id', 'firstName', 'lastName', 'phone', 'email', 'isAvailable', 'isVerified']
+      });
       if (!doctor) {
         return ctx.badRequest('Doctor not found');
       }
 
       if (!doctor.isAvailable) {
         return ctx.badRequest('Doctor is currently unavailable');
+      }
+
+      if (!doctor.isVerified) {
+        return ctx.badRequest('Doctor is not verified and cannot receive service requests');
       }
 
       // Validate serviceDateTime if provided
@@ -946,10 +977,6 @@ module.exports = createCoreController('api::service-request.service-request', ({
         requestedAt: new Date(),
         requestedServiceDateTime: requestedServiceDateTime,
         status: 'pending',
-        // Store distance filtering parameters for fallback logic
-        businessLatitude: businessLatitude,
-        businessLongitude: businessLongitude,
-        distanceFilter: distanceFilter,
       } : {
         // Patient request data
         doctor: doctorId,
@@ -1051,7 +1078,26 @@ module.exports = createCoreController('api::service-request.service-request', ({
     try {
       const { doctorId } = ctx.params;
       
-      ('Getting available requests for doctor:', doctorId);
+      console.log('Getting available requests for doctor:', doctorId);
+      
+      // First, check if the doctor is verified
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
+        fields: ['id', 'firstName', 'lastName', 'isVerified']
+      });
+      
+      if (!doctor) {
+        return ctx.badRequest('Doctor not found');
+      }
+      
+      if (!doctor.isVerified) {
+        console.log('Unverified doctor attempted to access requests:', {
+          doctorId: doctor.id,
+          name: `${doctor.firstName} ${doctor.lastName}`,
+          isVerified: doctor.isVerified
+        });
+        // Return empty array for unverified doctors
+        return [];
+      }
       
       // Get all pending or accepted requests that are either:
       // 1. Unassigned (no doctor) - general requests that any doctor can accept
@@ -1088,7 +1134,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         sort: 'requestedAt:desc',
       });
 
-      (`Found ${requests.length} available requests for doctor ${doctorId}`);
+      console.log(`Found ${requests.length} available requests for verified doctor ${doctorId}`);
       
       return requests;
     } catch (error) {
@@ -2300,17 +2346,3 @@ module.exports = createCoreController('api::service-request.service-request', ({
     }
   },
 }));
-
-// Helper function to calculate distance between two coordinates
-function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Radius of the Earth in kilometers
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const distance = R * c; // Distance in kilometers
-  return distance;
-}
