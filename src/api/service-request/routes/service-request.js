@@ -195,6 +195,14 @@ module.exports = {
     },
     {
       method: 'POST',
+      path: '/service-requests/test-interactive-whatsapp',
+      handler: 'service-request.testInteractiveWhatsapp',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'POST',
       path: '/service-requests/diagnose-whatsapp',
       handler: 'service-request.diagnoseWhatsappSetup',
       config: {

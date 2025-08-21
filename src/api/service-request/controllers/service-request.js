@@ -1642,6 +1642,77 @@ module.exports = createCoreController('api::service-request.service-request', ({
     }
   },
 
+  // Test endpoint for WhatsApp interactive messages
+  async testInteractiveWhatsapp(ctx) {
+    try {
+      const { doctorId, testMessage } = ctx.request.body;
+
+      if (!doctorId) {
+        return ctx.badRequest('Doctor ID is required');
+      }
+
+      // Get doctor details
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
+        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization'],
+      });
+      
+      if (!doctor) {
+        return ctx.badRequest('Doctor not found');
+      }
+
+      const WhatsAppService = require('../../../services/whatsapp');
+      const whatsappService = new WhatsAppService();
+
+      // Create a mock service request for testing
+      const mockServiceRequest = {
+        id: 12345, // Use a recognizable test ID
+        serviceType: 'Online Consultation - Test',
+        urgencyLevel: 'medium',
+        estimatedDuration: 20,
+        description: testMessage || 'This is a test interactive message from ThanksDoc system with clickable buttons'
+      };
+
+      const mockBusiness = {
+        name: 'Test Medical Center',
+        address: '123 Test Medical Street, Test City',
+        phone: '+1234567890'
+      };
+
+      // Force interactive message by temporarily setting environment variable
+      const originalValue = process.env.WHATSAPP_USE_INTERACTIVE_BUTTONS;
+      process.env.WHATSAPP_USE_INTERACTIVE_BUTTONS = 'true';
+
+      try {
+        // Send interactive message
+        const result = await whatsappService.sendServiceRequestNotification(
+          doctor, 
+          mockServiceRequest, 
+          mockBusiness
+        );
+
+        const doctorDisplayName = whatsappService.getDoctorDisplayName(doctor);
+
+        return {
+          success: true,
+          message: 'Test WhatsApp interactive message sent successfully',
+          doctor: {
+            id: doctor.id,
+            name: doctorDisplayName,
+            phone: doctor.phone
+          },
+          messageId: result.messages?.[0]?.id || 'N/A',
+          note: 'Check WhatsApp for interactive Accept/Decline buttons'
+        };
+      } finally {
+        // Restore original value
+        process.env.WHATSAPP_USE_INTERACTIVE_BUTTONS = originalValue;
+      }
+    } catch (error) {
+      console.error('Error in testInteractiveWhatsapp:', error);
+      return ctx.badRequest(`Error sending test interactive message: ${error.message}`);
+    }
+  },
+
   // Admin endpoint to format doctor phone numbers
   async formatDoctorPhoneNumbers(ctx) {
     try {

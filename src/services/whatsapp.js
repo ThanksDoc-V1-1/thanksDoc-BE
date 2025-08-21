@@ -380,35 +380,53 @@ class WhatsAppService {
             parameters: [
               {
                 type: "text",
-                text: doctorName
+                text: doctorName // {{1}} Doctor name
               },
               {
                 type: "text",
-                text: serviceRequest.serviceType || "Medical service"
+                text: serviceRequest.serviceType || "Medical service" // {{2}} Service type
               },
               {
                 type: "text",
-                text: business.name || business.businessName || "Healthcare provider"
+                text: business.name || business.businessName || "Healthcare provider" // {{3}} Business name
               },
               {
                 type: "text",
-                text: business.address || "Location not specified"
+                text: business.address || "Location not specified" // {{4}} Address
               },
               {
                 type: "text",
-                text: serviceRequest.estimatedDuration?.toString() || "Not specified"
+                text: serviceRequest.estimatedDuration?.toString() || "Not specified" // {{5}} Duration
               },
               {
                 type: "text",
-                text: acceptUrl
+                text: serviceRequest.description || "No additional details" // {{6}} Description
               },
               {
                 type: "text",
-                text: rejectUrl
-              },
+                text: serviceDateTime // {{7}} Service date/time
+              }
+            ]
+          },
+          {
+            type: "button",
+            sub_type: "url",
+            index: "0",
+            parameters: [
               {
                 type: "text",
-                text: serviceDateTime
+                text: acceptUrl // {{8}} Dynamic URL for Accept button
+              }
+            ]
+          },
+          {
+            type: "button",
+            sub_type: "url", 
+            index: "1",
+            parameters: [
+              {
+                type: "text",
+                text: rejectUrl // {{9}} Dynamic URL for Decline button
               }
             ]
           }
@@ -517,6 +535,13 @@ class WhatsAppService {
    * Build text message (fallback when no template is approved)
    */
   buildTextMessage(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor = null) {
+    // Check if interactive messages are enabled
+    const useInteractiveButtons = process.env.WHATSAPP_USE_INTERACTIVE_BUTTONS === 'true';
+    
+    if (useInteractiveButtons) {
+      return this.buildInteractiveMessage(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
+    }
+    
     const urgencyEmoji = this.getUrgencyEmoji(serviceRequest.urgencyLevel);
     const serviceEmoji = this.getServiceEmoji(serviceRequest.serviceType);
     const doctorName = doctor ? this.getDoctorDisplayName(doctor) : 'Doctor';
@@ -574,6 +599,87 @@ ${serviceRequest.urgencyLevel === 'emergency' ? '🚨 *EMERGENCY REQUEST*' : ''}
       type: "text",
       text: {
         body: messageText
+      }
+    };
+  }
+
+  /**
+   * Build interactive message with clickable buttons
+   */
+  buildInteractiveMessage(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor = null) {
+    const urgencyEmoji = this.getUrgencyEmoji(serviceRequest.urgencyLevel);
+    const serviceEmoji = this.getServiceEmoji(serviceRequest.serviceType);
+    const doctorName = doctor ? this.getDoctorDisplayName(doctor) : 'Doctor';
+
+    // Handle both business requests and direct patient requests
+    const isBusinessRequest = business && business.name;
+    
+    let messageText;
+    
+    if (isBusinessRequest) {
+      // Business request message without links (buttons will handle actions)
+      messageText = `🏥 *NEW SERVICE REQUEST* ${urgencyEmoji}
+
+👨‍⚕️ *Hello Dr. ${doctorName}*
+
+${serviceEmoji} *Service:* ${serviceRequest.serviceType}
+🏢 *Business:* ${business.name}
+📍 *Location:* ${business.address}
+⏱️ *Duration:* ${serviceRequest.estimatedDuration || 20} minute(s)
+${serviceRequest.urgencyLevel === 'emergency' ? '🚨 *EMERGENCY REQUEST*' : ''}
+
+📝 *Details:* ${serviceRequest.description || 'No additional details'}
+
+⏰ This request expires in 24 hours.
+👇 Please choose your action below:`;
+    } else {
+      // Direct patient request message
+      messageText = `🏥 *NEW PATIENT REQUEST* ${urgencyEmoji}
+
+👨‍⚕️ *Hello Dr. ${doctorName}*
+
+${serviceEmoji} *Service:* ${serviceRequest.serviceType}
+👤 *Patient:* ${serviceRequest.patientName || 'Not specified'}
+📞 *Contact:* ${serviceRequest.patientPhone || 'Not provided'}
+${serviceRequest.urgencyLevel === 'emergency' ? '🚨 *EMERGENCY REQUEST*' : ''}
+
+📝 *Symptoms:* ${serviceRequest.description || 'Not specified'}
+📋 *Notes:* ${serviceRequest.notes || 'None'}
+
+⏰ This request expires in 24 hours.
+👇 Please choose your action below:`;
+    }
+
+    // Generate acceptance token for payload
+    const acceptanceToken = this.generateAcceptanceToken(serviceRequest.id, doctor.id);
+
+    return {
+      messaging_product: "whatsapp",
+      to: doctorPhone,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: {
+          text: messageText
+        },
+        action: {
+          buttons: [
+            {
+              type: "reply",
+              reply: {
+                id: `accept_${serviceRequest.id}_${doctor.id}`,
+                title: "✅ Accept"
+              }
+            },
+            {
+              type: "reply",
+              reply: {
+                id: `decline_${serviceRequest.id}_${doctor.id}`,
+                title: "❌ Decline"
+              }
+            }
+          ]
+        }
       }
     };
   }
@@ -843,7 +949,77 @@ The doctor will contact you shortly to coordinate the visit.`;
         
         console.log(`🎯 Button clicked - ID: ${buttonId}, Title: ${buttonTitle}, From: ${from}`);
         
-        // Process as if it's a text message with the button title
+        // Parse button ID to extract action, service request ID, and doctor ID
+        // Format: accept_123_456 or decline_123_456
+        const buttonParts = buttonId.split('_');
+        if (buttonParts.length === 3) {
+          const action = buttonParts[0]; // 'accept' or 'decline'
+          const serviceRequestId = parseInt(buttonParts[1]);
+          const doctorId = parseInt(buttonParts[2]);
+          
+          console.log(`📋 Parsed button data - Action: ${action}, Service Request: ${serviceRequestId}, Doctor: ${doctorId}`);
+          
+          // Find doctor by phone number to verify
+          const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
+            filters: {
+              phone: {
+                $containsi: from // Flexible phone matching
+              }
+            }
+          });
+
+          if (doctors.length === 0) {
+            console.log(`❌ No doctor found with phone: ${from}`);
+            await this.sendSimpleMessage(from, "❌ Sorry, we couldn't verify your identity. Please contact support.");
+            return;
+          }
+
+          const doctor = doctors[0];
+          
+          // Verify doctor ID matches
+          if (doctor.id !== doctorId) {
+            console.log(`❌ Doctor ID mismatch - Found: ${doctor.id}, Expected: ${doctorId}`);
+            await this.sendSimpleMessage(from, "❌ Security verification failed. Please contact support.");
+            return;
+          }
+
+          // Find the specific service request
+          const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', serviceRequestId, {
+            populate: ['business', 'doctor']
+          });
+
+          if (!serviceRequest) {
+            console.log(`❌ Service request not found: ${serviceRequestId}`);
+            await this.sendSimpleMessage(from, "❌ Service request not found or has expired.");
+            return;
+          }
+
+          // Check if request is still pending
+          if (serviceRequest.status !== 'pending') {
+            console.log(`❌ Service request status is not pending: ${serviceRequest.status}`);
+            await this.sendSimpleMessage(from, `❌ This request is no longer available (Status: ${serviceRequest.status.toUpperCase()}).`);
+            return;
+          }
+
+          // Process the action
+          if (action === 'accept') {
+            console.log(`✅ Processing ACCEPT for request ${serviceRequestId} by doctor ${doctorId}`);
+            await this.acceptServiceRequest(serviceRequestId, doctorId);
+            await this.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
+            
+            // Send business notification if business phone is available
+            if (serviceRequest.business?.phone) {
+              await this.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
+            }
+          } else if (action === 'decline') {
+            console.log(`❌ Processing DECLINE for request ${serviceRequestId} by doctor ${doctorId}`);
+            await this.sendConfirmationMessage(doctor.phone, 'reject', serviceRequest, serviceRequest.business);
+          }
+          
+          return;
+        }
+        
+        // Fallback: Process as if it's a text message with the button title
         const simulatedTextMessage = {
           from: from,
           text: {
@@ -855,6 +1031,13 @@ The doctor will contact you shortly to coordinate the visit.`;
       }
     } catch (error) {
       console.error('Error processing interactive message:', error);
+      
+      // Send error message to user
+      try {
+        await this.sendSimpleMessage(message.from, "❌ Sorry, there was an error processing your request. Please try again or contact support.");
+      } catch (sendError) {
+        console.error('Failed to send error message:', sendError);
+      }
     }
   }
 
@@ -989,6 +1172,29 @@ The doctor will contact you shortly to coordinate the visit.`;
         }
       }
       
+      throw error;
+    }
+  }
+
+  /**
+   * Send a simple text message
+   */
+  async sendSimpleMessage(phone, messageText) {
+    try {
+      const formattedPhone = this.formatPhoneNumber(phone);
+      
+      const payload = {
+        messaging_product: "whatsapp",
+        to: formattedPhone,
+        type: "text",
+        text: {
+          body: messageText
+        }
+      };
+      
+      return await this.sendWhatsAppMessage(payload);
+    } catch (error) {
+      console.error('Failed to send simple message:', error);
       throw error;
     }
   }

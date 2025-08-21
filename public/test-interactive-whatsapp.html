@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Interactive Messages Demo - ThanksDoc</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #128c7e 0%, #075e54 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #128c7e;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .demo-section {
+            margin-bottom: 40px;
+        }
+
+        .phone-mockup {
+            background: #e5ddd5;
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
+            position: relative;
+            border: 3px solid #128c7e;
+        }
+
+        .phone-header {
+            background: #128c7e;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .message-bubble {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin: 10px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .message-bubble:before {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 10px;
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-right: 10px solid white;
+        }
+
+        .message-text {
+            font-size: 16px;
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .whatsapp-button {
+            flex: 1;
+            padding: 12px 20px;
+            border: 1px solid #25d366;
+            border-radius: 25px;
+            background: white;
+            color: #25d366;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .whatsapp-button:hover {
+            background: #25d366;
+            color: white;
+        }
+
+        .whatsapp-button.accept {
+            border-color: #25d366;
+            color: #25d366;
+        }
+
+        .whatsapp-button.decline {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .whatsapp-button.accept:hover {
+            background: #25d366;
+            color: white;
+        }
+
+        .whatsapp-button.decline:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .comparison-item {
+            text-align: center;
+        }
+
+        .comparison-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .old-method {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .new-method {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .link-example {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+
+        .features {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+
+        .features h3 {
+            color: #128c7e;
+            margin-bottom: 20px;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-list li:before {
+            content: "✅";
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .status {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .implementation-steps {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+
+        .step {
+            padding: 15px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 10px;
+            border-left: 4px solid #128c7e;
+        }
+
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 WhatsApp Interactive Messages</h1>
+            <p>Enhanced Doctor Response System for ThanksDoc</p>
+        </div>
+
+        <div class="content">
+            <div class="demo-section">
+                <h2>📱 New Interactive Message Experience</h2>
+                <p>Here's how doctors will receive and respond to service requests with the new interactive buttons:</p>
+
+                <div class="phone-mockup">
+                    <div class="phone-header">
+                        <span>📱</span>
+                        <strong>WhatsApp Business</strong>
+                        <span style="margin-left: auto;">🟢</span>
+                    </div>
+
+                    <div class="message-bubble">
+                        <div class="message-text">
+                            <strong>🏥 NEW SERVICE REQUEST ⚡</strong><br><br>
+                            👨‍⚕️ <strong>Hello Dr. Kurshid Mohammad</strong><br><br>
+                            🩺 <strong>Service:</strong> Online Consultation - Test<br>
+                            🏢 <strong>Business:</strong> Test Medical Center<br>
+                            📍 <strong>Location:</strong> 123 Test Medical Street, Test City<br>
+                            ⏱️ <strong>Duration:</strong> 20 minute(s)<br><br>
+                            📝 <strong>Details:</strong> This is a test interactive message from ThanksDoc system with clickable buttons<br><br>
+                            ⏰ This request expires in 24 hours.<br>
+                            👇 Please choose your action below:
+                        </div>
+
+                        <div class="button-container">
+                            <button class="whatsapp-button accept" onclick="simulateResponse('accept')">✅ Accept</button>
+                            <button class="whatsapp-button decline" onclick="simulateResponse('decline')">❌ Decline</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="comparison">
+                <div class="comparison-item">
+                    <div class="comparison-title old-method">❌ Old Method (Links)</div>
+                    <p>Doctors had to click long URLs that were difficult to distinguish and prone to errors:</p>
+                    <div class="link-example">
+                        ✅ Accept: http://localhost:1337/api/service-requests/whatsapp-accept/eyJzZXJ2aWNlUmVxdWVzdElkIjo0NzgsImRvY3RvcklkIjoyMi...
+                    </div>
+                    <div class="link-example">
+                        ❌ Decline: http://localhost:1337/api/service-requests/whatsapp-reject/eyJzZXJ2aWNlUmVxdWVzdElkIjo0NzgsImRvY3RvcklkIjoyMi...
+                    </div>
+                </div>
+
+                <div class="comparison-item">
+                    <div class="comparison-title new-method">✅ New Method (Buttons)</div>
+                    <p>Clean, intuitive buttons that are easy to tap and impossible to confuse:</p>
+                    <div style="margin: 20px 0;">
+                        <button class="whatsapp-button accept" style="margin: 5px;">✅ Accept</button>
+                        <button class="whatsapp-button decline" style="margin: 5px;">❌ Decline</button>
+                    </div>
+                    <p><em>One-tap response with immediate feedback</em></p>
+                </div>
+            </div>
+
+            <div class="features">
+                <h3>🚀 Key Benefits</h3>
+                <ul class="feature-list">
+                    <li>One-tap response - no need to click complex URLs</li>
+                    <li>Clear visual distinction between Accept and Decline</li>
+                    <li>Reduced risk of accidental wrong responses</li>
+                    <li>Better mobile experience with touch-friendly buttons</li>
+                    <li>Immediate confirmation and feedback</li>
+                    <li>Professional appearance matching WhatsApp Business standards</li>
+                </ul>
+            </div>
+
+            <div class="status">
+                <h3>📋 Implementation Status</h3>
+                <p><strong>✅ Backend Code:</strong> Complete - Interactive message handling implemented</p>
+                <p><strong>✅ Webhook Processing:</strong> Complete - Button responses properly processed</p>
+                <p><strong>⚠️ WhatsApp API:</strong> Requires WhatsApp Business Account approval for interactive messages</p>
+                <p><strong>🔧 Fallback:</strong> Current link-based system remains functional during transition</p>
+            </div>
+
+            <div class="implementation-steps">
+                <h3>🔧 Implementation Steps</h3>
+                
+                <div class="step">
+                    <strong>Step 1:</strong> Enable interactive messages in environment configuration
+                    <br><code>WHATSAPP_USE_INTERACTIVE_BUTTONS=true</code>
+                </div>
+
+                <div class="step">
+                    <strong>Step 2:</strong> WhatsApp Business API approval for interactive message templates
+                    <br><em>(May require verification process with Meta)</em>
+                </div>
+
+                <div class="step">
+                    <strong>Step 3:</strong> Test with approved WhatsApp Business numbers
+                    <br><em>Currently configured for phone: +256784528444</em>
+                </div>
+
+                <div class="step">
+                    <strong>Step 4:</strong> Gradual rollout with fallback to link-based system
+                    <br><em>Automatic fallback if interactive messages fail</em>
+                </div>
+            </div>
+
+            <div id="response-demo" style="display: none; background: #d4edda; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h4>🎉 Response Received!</h4>
+                <p id="response-text"></p>
+                <p><em>In the real system, this would trigger the service request acceptance/rejection workflow.</em></p>
+            </div>
+
+            <div style="text-align: center; margin: 40px 0; color: #666;">
+                <p><strong>ThanksDoc</strong> - Connecting healthcare professionals</p>
+                <p>🔧 Technical implementation complete • 📱 Awaiting WhatsApp Business approval</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function simulateResponse(action) {
+            const demo = document.getElementById('response-demo');
+            const text = document.getElementById('response-text');
+            
+            if (action === 'accept') {
+                text.innerHTML = '<strong>✅ Service Request Accepted!</strong><br>Doctor will be notified and can proceed with the consultation.';
+                demo.style.background = '#d4edda';
+            } else {
+                text.innerHTML = '<strong>❌ Service Request Declined</strong><br>The system will find another available doctor.';
+                demo.style.background = '#f8d7da';
+            }
+            
+            demo.style.display = 'block';
+            demo.scrollIntoView({ behavior: 'smooth' });
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                demo.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
