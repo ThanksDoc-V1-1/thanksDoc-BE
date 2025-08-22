@@ -364,10 +364,70 @@ module.exports = {
         // Remove services from the creation data as we'll connect them separately
         delete doctorData.services;
         
-  console.log('👨‍⚕️ Creating doctor without services first...');
-        user = await strapi.entityService.create('api::doctor.doctor', {
-          data: doctorData,
+        console.log('📝 Doctor data to be created:', {
+          email: doctorData.email,
+          licenseNumber: doctorData.licenseNumber,
+          firstName: doctorData.firstName,
+          lastName: doctorData.lastName
         });
+        
+        // Check if email already exists
+        const existingDoctorByEmail = await strapi.entityService.findMany('api::doctor.doctor', {
+          filters: { email: doctorData.email },
+          limit: 1
+        });
+        
+        if (existingDoctorByEmail && existingDoctorByEmail.length > 0) {
+          console.log('❌ Email already exists:', doctorData.email);
+          return ctx.badRequest('An account with this email address already exists');
+        }
+        
+        // Check if license number already exists
+        const existingDoctorByLicense = await strapi.entityService.findMany('api::doctor.doctor', {
+          filters: { licenseNumber: doctorData.licenseNumber },
+          limit: 1
+        });
+        
+        if (existingDoctorByLicense && existingDoctorByLicense.length > 0) {
+          console.log('❌ License number already exists:', doctorData.licenseNumber);
+          return ctx.badRequest('A doctor with this license number is already registered');
+        }
+        
+  console.log('👨‍⚕️ Creating doctor without services first...');
+        try {
+          user = await strapi.entityService.create('api::doctor.doctor', {
+            data: doctorData,
+          });
+        } catch (createError) {
+          console.error('❌ Doctor creation failed:', createError.message);
+          console.error('❌ Full error details:', JSON.stringify(createError, null, 2));
+          
+          // Extract more details from the error
+          if (createError.details && createError.details.errors) {
+            console.error('❌ Validation errors:', createError.details.errors);
+            const firstError = createError.details.errors[0];
+            if (firstError && firstError.path) {
+              console.error('❌ Field causing error:', firstError.path);
+              if (firstError.path.includes('email')) {
+                return ctx.badRequest('An account with this email address already exists');
+              } else if (firstError.path.includes('licenseNumber') || firstError.path.includes('licence')) {
+                return ctx.badRequest('A doctor with this license number is already registered');
+              }
+            }
+          }
+          
+          if (createError.message.includes('unique')) {
+            // Check which field might be causing the unique constraint violation
+            if (createError.message.includes('email')) {
+              return ctx.badRequest('An account with this email address already exists');
+            } else if (createError.message.includes('licenseNumber') || createError.message.includes('licence')) {
+              return ctx.badRequest('A doctor with this license number is already registered');
+            } else {
+              return ctx.badRequest('This information conflicts with an existing account. Please check your email and license number.');
+            }
+          }
+          throw createError; // Re-throw if it's not a unique constraint error
+        }
         
   console.log('✅ Doctor created with ID:', user.id);
         
@@ -880,6 +940,56 @@ module.exports = {
     } catch (error) {
       console.error('Reset password error:', error);
       return ctx.internalServerError('An error occurred while resetting your password');
+    }
+  },
+
+  async checkEmail(ctx) {
+    try {
+      const { email } = ctx.params;
+      
+      console.log('🔍 Checking email existence for:', email);
+      
+      // Check in doctors table
+      const doctorExists = await strapi.db.query('api::doctor.doctor').findOne({
+        where: { email },
+        select: ['id', 'email']
+      });
+      
+      // Check in business table
+      const businessExists = await strapi.db.query('api::business.business').findOne({
+        where: { email },
+        select: ['id', 'email']
+      });
+      
+      // Check in admin table
+      const adminExists = await strapi.db.query('api::admin.admin').findOne({
+        where: { email },
+        select: ['id', 'email']
+      });
+      
+      console.log('📊 Email check results:');
+      console.log('- Doctor exists:', doctorExists ? 'YES' : 'NO');
+      console.log('- Business exists:', businessExists ? 'YES' : 'NO');
+      console.log('- Admin exists:', adminExists ? 'YES' : 'NO');
+      
+      return ctx.send({
+        email,
+        exists: {
+          doctor: !!doctorExists,
+          business: !!businessExists,
+          admin: !!adminExists,
+          any: !!(doctorExists || businessExists || adminExists)
+        },
+        records: {
+          doctor: doctorExists,
+          business: businessExists,
+          admin: adminExists
+        }
+      });
+      
+    } catch (error) {
+      console.error('Check email error:', error);
+      return ctx.internalServerError('An error occurred while checking email');
     }
   }
 };

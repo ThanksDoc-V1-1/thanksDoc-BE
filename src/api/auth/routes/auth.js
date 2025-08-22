@@ -77,6 +77,16 @@ module.exports = {
       },
     },
     {
+      method: 'GET',
+      path: '/auth/check-email/:email',
+      handler: 'auth.checkEmail',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
       method: 'POST',
       path: '/auth/change-password',
       handler: 'auth.changePassword',

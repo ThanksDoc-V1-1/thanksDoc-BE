@@ -868,7 +868,7 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
     isVerified: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     languages: Schema.Attribute.JSON;
     lastName: Schema.Attribute.String & Schema.Attribute.Required;
-    latitude: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    latitude: Schema.Attribute.Decimal;
     licenseNumber: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
@@ -878,7 +878,7 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
       'api::doctor.doctor'
     > &
       Schema.Attribute.Private;
-    longitude: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    longitude: Schema.Attribute.Decimal;
     name: Schema.Attribute.String & Schema.Attribute.Required;
     password: Schema.Attribute.String &
       Schema.Attribute.Required &

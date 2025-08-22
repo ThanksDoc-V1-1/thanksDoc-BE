@@ -79,11 +79,11 @@
     },
     "latitude": {
       "type": "decimal",
-      "required": true
+      "required": false
     },
     "longitude": {
       "type": "decimal",
-      "required": true
+      "required": false
     },
     "address": {
       "type": "text",
