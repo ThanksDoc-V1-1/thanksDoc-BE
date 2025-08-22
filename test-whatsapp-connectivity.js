@@ -35,16 +35,17 @@ async function testConnectivityAndTemplate() {
     // Now test the template
     const mockServiceRequest = {
       id: 'test-123',
-      serviceType: 'General Consultation',
+      serviceType: 'Cardiology',
       requestedServiceDateTime: new Date().toISOString(),
-      estimatedDuration: 30,
-      serviceCost: 50
+      estimatedDuration: 45,
+      serviceCost: 70, // £70 service cost
+      servicePrice: 70 // £70 service price (same as serviceCost for testing)
     };
 
     const mockBusiness = {
-      name: 'Test Medical Center',
-      businessName: 'Test Medical Center',
-      address: '123 Test Street, Test City'
+      name: 'Mulago Pharmacy',
+      businessName: 'Mulago Pharmacy',
+      address: 'King streety'
     };
 
     const mockDoctor = {

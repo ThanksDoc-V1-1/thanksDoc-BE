@@ -325,6 +325,48 @@ class WhatsAppService {
   buildDoctorAcceptRequestTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor = null) {
     const doctorName = doctor ? this.getDoctorDisplayName(doctor) : 'Doctor';
     
+    // Calculate doctor's take-home pay (90% of service cost, same as dashboard)
+    const calculateDoctorTakeHome = (servicePrice) => {
+      return servicePrice * 0.9; // Doctor keeps 90%, ThanksDoc takes 10%
+    };
+    
+    // Get the service price from multiple possible sources
+    let servicePrice = 0;
+    
+    // Try to get BASE service price (what doctor gets paid from) - NOT total amount
+    if (serviceRequest.servicePrice && parseFloat(serviceRequest.servicePrice) > 0) {
+      servicePrice = parseFloat(serviceRequest.servicePrice);
+      console.log('💰 Using serviceRequest.servicePrice (base price):', servicePrice);
+    } else if (serviceRequest.serviceCost && parseFloat(serviceRequest.serviceCost) > 0) {
+      servicePrice = parseFloat(serviceRequest.serviceCost);
+      console.log('💰 Using serviceRequest.serviceCost (base price):', servicePrice);
+    } else if (serviceRequest.service && serviceRequest.service.price && parseFloat(serviceRequest.service.price) > 0) {
+      servicePrice = parseFloat(serviceRequest.service.price);
+      console.log('💰 Using serviceRequest.service.price (base price):', servicePrice);
+    } else if (serviceRequest.totalAmount && parseFloat(serviceRequest.totalAmount) > 0) {
+      // Fallback to totalAmount only if no base service price is available
+      servicePrice = parseFloat(serviceRequest.totalAmount);
+      console.log('💰 Using serviceRequest.totalAmount as fallback:', servicePrice);
+      console.log('⚠️ Warning: Using totalAmount instead of base service price - doctor take-home calculation may be incorrect');
+    } else {
+      console.log('⚠️ No service price found in serviceRequest:', {
+        servicePrice: serviceRequest.servicePrice,
+        serviceCost: serviceRequest.serviceCost,
+        totalAmount: serviceRequest.totalAmount,
+        serviceData: serviceRequest.service,
+        availableKeys: Object.keys(serviceRequest)
+      });
+    }
+    
+    const doctorTakeHome = servicePrice > 0 ? calculateDoctorTakeHome(servicePrice) : 0;
+    const formattedTakeHome = doctorTakeHome > 0 ? `£${doctorTakeHome.toFixed(2)}` : 'To be confirmed';
+    
+    console.log('💰 Price calculation:', {
+      servicePrice,
+      doctorTakeHome,
+      formattedTakeHome
+    });
+    
     // Format service date and time for display
     const formatServiceDateTime = (dateTimeString) => {
       ('🔍 formatServiceDateTime called with:', dateTimeString, 'Type:', typeof dateTimeString);
@@ -400,23 +442,23 @@ class WhatsAppService {
               },
               {
                 type: "text",
-                text: "Unknown" // {{5}} Distance (to be implemented later)
+                text: serviceRequest.estimatedDuration?.toString() || "Unknown" // {{5}} Duration in minutes
               },
               {
                 type: "text",
-                text: serviceDate // {{6}} Date
+                text: formattedTakeHome // {{6}} Pay (doctor's take-home after 10% commission)
               },
               {
                 type: "text",
-                text: serviceTime // {{7}} Time
+                text: "Unknown" // {{7}} Distance (to be implemented later)
               },
               {
                 type: "text",
-                text: serviceRequest.estimatedDuration?.toString() || "Not specified" // {{8}} Duration in minutes
+                text: serviceDate // {{8}} Date
               },
               {
                 type: "text",
-                text: serviceRequest.serviceCost?.toString() || "Not specified" // {{9}} Pay (doctor's take-home)
+                text: serviceTime // {{9}} Time
               }
             ]
           },
