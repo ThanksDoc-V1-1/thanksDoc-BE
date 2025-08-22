@@ -19,7 +19,7 @@ class WhatsAppService {
     
     // Template configurations
     this.useTemplate = process.env.WHATSAPP_USE_TEMPLATE === 'true';
-    this.templateName = process.env.WHATSAPP_TEMPLATE_NAME || 'doctor_accept_request';
+    this.templateName = process.env.WHATSAPP_TEMPLATE_NAME || 'doctor_receive_request';
     this.doctorConfirmationTemplate = process.env.WHATSAPP_TEMPLATE_DOCTOR_CONFIRMATION || 'doctor_confirmation';
     this.businessNotificationTemplate = process.env.WHATSAPP_TEMPLATE_BUSINESS_NOTIFICATION || 'doctor_assigned';
     this.passwordResetTemplate = process.env.WHATSAPP_TEMPLATE_PASSWORD_RESET || 'password_reset_doc';
@@ -112,6 +112,24 @@ class WhatsAppService {
    * Send WhatsApp notification to doctor about new service request
    */
   async sendServiceRequestNotification(doctor, serviceRequest, business) {
+    console.log('🚀 STARTING sendServiceRequestNotification');
+    console.log('🔍 Doctor data:', {
+      id: doctor.id,
+      firstName: doctor.firstName,
+      lastName: doctor.lastName,
+      phone: doctor.phone
+    });
+    console.log('🔍 ServiceRequest data:', {
+      id: serviceRequest.id,
+      serviceType: serviceRequest.serviceType,
+      status: serviceRequest.status
+    });
+    console.log('🔍 Business data:', {
+      id: business?.id,
+      name: business?.name,
+      businessName: business?.businessName
+    });
+    
     let doctorPhone = null;
     let messageData = null;
     
@@ -173,12 +191,20 @@ class WhatsAppService {
    * Build WhatsApp message payload for Business API
    */
   async buildWhatsAppMessage(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor = null) {
+    console.log('🔨 buildWhatsAppMessage called');
+    console.log('🔍 useTemplate env var:', process.env.WHATSAPP_USE_TEMPLATE);
+    console.log('🔍 templateName env var:', process.env.WHATSAPP_TEMPLATE_NAME);
+    
     // Try to use template first, fall back to text message
     const useTemplate = process.env.WHATSAPP_USE_TEMPLATE === 'true';
     
+    console.log('🔍 useTemplate resolved to:', useTemplate);
+    
     if (useTemplate && process.env.WHATSAPP_TEMPLATE_NAME) {
+      console.log('🔍 Using buildTemplateMessage');
       return this.buildTemplateMessage(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
     } else {
+      console.log('🔍 Using buildTextMessage');
       return this.buildTextMessage(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
     }
   }
@@ -189,85 +215,12 @@ class WhatsAppService {
   buildTemplateMessage(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor = null) {
     const templateName = process.env.WHATSAPP_TEMPLATE_NAME;
     
-    // Handle different template types
-    if (templateName === 'hello_world') {
-      return this.buildHelloWorldTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
-    } else if (templateName === 'sample_issue_resolution') {
-      return this.buildIssueResolutionTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
-    } else if (templateName === 'doctor_accept_request' || templateName === 'new_doctor_accept_request') {
-      return this.buildDoctorAcceptRequestTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
-    }
+    console.log('🔍 DEBUG: buildTemplateMessage called with templateName:', templateName);
+    console.log('🔍 DEBUG: Checking conditions...');
     
-    // Default template structure for custom ThanksDoc templates
-    return {
-      messaging_product: "whatsapp",
-      to: doctorPhone,
-      type: "template",
-      template: {
-        name: templateName,
-        language: {
-          code: "en_US"
-        },
-        components: [
-          {
-            type: "header",
-            parameters: [
-              {
-                type: "text",
-                text: "🏥 NEW SERVICE REQUEST"
-              }
-            ]
-          },
-          {
-            type: "body",
-            parameters: [
-              {
-                type: "text",
-                text: business.name
-              },
-              {
-                type: "text", 
-                text: serviceRequest.serviceType
-              },
-              {
-                type: "text",
-                text: business.address
-              },
-              {
-                type: "text",
-                text: serviceRequest.estimatedDuration.toString()
-              },
-              {
-                type: "text",
-                text: serviceRequest.description || 'No additional details'
-              }
-            ]
-          },
-          {
-            type: "button",
-            sub_type: "url",
-            index: "0",
-            parameters: [
-              {
-                type: "text",
-                text: acceptUrl.split('/').pop() // Get the token part for the URL
-              }
-            ]
-          },
-          {
-            type: "button",
-            sub_type: "url", 
-            index: "1",
-            parameters: [
-              {
-                type: "text",
-                text: rejectUrl.split('/').pop() // Get the token part for the URL
-              }
-            ]
-          }
-        ]
-      }
-    };
+    // FORCE ALL REQUESTS TO USE buildDoctorAcceptRequestTemplate - NO EXCEPTIONS
+    console.log('🔍 DEBUG: FORCING buildDoctorAcceptRequestTemplate for ALL requests');
+    return this.buildDoctorAcceptRequestTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
   }
 
   /**

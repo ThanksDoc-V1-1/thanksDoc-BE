@@ -30,7 +30,7 @@ async function testConnectivityAndTemplate() {
       return; // Stop here if basic connectivity fails
     }
 
-    console.log('\n📋 Step 2: Testing template (new_doctor_accept_request)...');
+    console.log('\n📋 Step 2: Testing template (doctor_receive_request)...');
     
     // Now test the template
     const mockServiceRequest = {

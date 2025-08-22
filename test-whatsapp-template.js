@@ -33,8 +33,8 @@ async function testTemplate() {
     const acceptUrl = `${process.env.BASE_URL}/api/service-request/accept-via-whatsapp/test-token-accept`;
     const rejectUrl = `${process.env.BASE_URL}/api/service-request/reject-via-whatsapp/test-token-reject`;
     
-    // Build the template payload
-    const templateMessage = whatsappService.buildDoctorAcceptRequestTemplate(
+    // Build the template payload using the routing logic
+    const templateMessage = whatsappService.buildTemplateMessage(
       testPhoneNumber,
       mockServiceRequest,
       mockBusiness,
