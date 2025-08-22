@@ -383,8 +383,10 @@ module.exports = createCoreController('api::service-request.service-request', ({
             });
             
             const whatsappService = strapi.service('whatsapp');
+            const emailService = new (require('../../../services/email.service'))();
+            
             if (whatsappService) {
-              // Send notification with timeout to avoid blocking the response
+              // Send WhatsApp notification with timeout to avoid blocking the response
               Promise.race([
                 whatsappService.sendServiceRequestNotification(selectedDoctor, serviceRequest, business),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('WhatsApp timeout')), 10000))
@@ -395,17 +397,25 @@ module.exports = createCoreController('api::service-request.service-request', ({
               }).catch(whatsappError => {
                 console.error('Failed to send WhatsApp notification to selected doctor:', whatsappError.message || whatsappError);
               });
-              
-              // Early return since we found and notified a verified doctor
-              return ctx.send({
-                data: serviceRequest,
-                notifiedDoctorsCount: notifiedDoctorsCount,
-                whatsappNotificationsSent: whatsappNotificationsSent,
-                message: `Service request created successfully and notification sent to verified doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`
-              });
             } else {
               console.error('WhatsApp service not found!');
             }
+
+            // Send email notification
+            try {
+              await emailService.sendServiceRequestNotification(selectedDoctor, serviceRequest, business);
+              console.log(`Email notification sent to verified selected doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`);
+            } catch (emailError) {
+              console.error('Failed to send email notification to selected doctor:', emailError.message || emailError);
+            }
+              
+            // Early return since we found and notified a verified doctor
+            return ctx.send({
+              data: serviceRequest,
+              notifiedDoctorsCount: notifiedDoctorsCount,
+              whatsappNotificationsSent: whatsappNotificationsSent,
+              message: `Service request created successfully and notification sent to verified doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`
+            });
           }
         } catch (whatsappError) {
           console.error('Failed to send WhatsApp notification to selected doctor:', whatsappError);
@@ -427,8 +437,10 @@ module.exports = createCoreController('api::service-request.service-request', ({
           console.log(`Found ${nearbyDoctorsResponse.count} available and verified doctors`);
           notifiedDoctorsCount = nearbyDoctorsResponse.count;
 
-        // Send WhatsApp notifications to nearby doctors
+        // Send WhatsApp and Email notifications to nearby doctors
         const whatsappService = strapi.service('whatsapp');
+        const emailService = new (require('../../../services/email.service'))();
+        
         if (whatsappService) {
           // Send WhatsApp notifications without waiting for completion to avoid timeouts
           const notificationPromises = nearbyDoctorsResponse.doctors.map(async (doctor) => {
@@ -445,7 +457,23 @@ module.exports = createCoreController('api::service-request.service-request', ({
           
           // Don't wait for all WhatsApp notifications to complete
           Promise.allSettled(notificationPromises);
-        }          (`WhatsApp notifications sent to ${whatsappNotificationsSent} out of ${nearbyDoctorsResponse.count} doctors`);
+        }
+
+        // Send email notifications to all doctors
+        const emailPromises = nearbyDoctorsResponse.doctors.map(async (doctor) => {
+          try {
+            await emailService.sendServiceRequestNotification(doctor, serviceRequest, business);
+            console.log(`Email notification sent to Dr. ${doctor.firstName} ${doctor.lastName}`);
+          } catch (error) {
+            console.error(`Failed to send email notification to Dr. ${doctor.firstName} ${doctor.lastName}:`, error.message || error);
+          }
+        });
+
+        // Send emails in parallel but don't wait for completion
+        Promise.allSettled(emailPromises);
+
+        console.log(`WhatsApp notifications sent to ${whatsappNotificationsSent} out of ${nearbyDoctorsResponse.count} doctors`);
+        console.log(`Email notifications sent to ${nearbyDoctorsResponse.count} doctors`);
         } catch (error) {
           console.error('Error finding nearby doctors or sending notifications:', error);
         }
@@ -1033,30 +1061,41 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       ('Direct service request created:', serviceRequest.id);
 
-      // Send WhatsApp notification to the selected doctor
+      // Send WhatsApp and Email notifications to the selected doctor
       try {
-        ('Attempting to send WhatsApp notification to selected doctor...');
+        console.log('Attempting to send notifications to selected doctor...');
         const whatsappService = strapi.service('whatsapp');
-        ('WhatsApp service retrieved:', !!whatsappService);
+        const emailService = new (require('../../../services/email.service'))();
+        console.log('WhatsApp service retrieved:', !!whatsappService);
         
+        // Get business data for the notification (for business requests)
+        let businessForNotification = null;
+        if (isBusinessRequest) {
+          businessForNotification = await strapi.entityService.findOne('api::business.business', businessId);
+        }
+        
+        // Send WhatsApp notification
         if (whatsappService) {
-          ('Sending notification to doctor:', {
+          console.log('Sending WhatsApp notification to doctor:', {
             id: doctor.id,
             name: `${doctor.firstName} ${doctor.lastName}`,
             phone: doctor.phone
           });
           
-          // Get business data for the notification (for business requests)
-          let businessForNotification = null;
-          if (isBusinessRequest) {
-            businessForNotification = await strapi.entityService.findOne('api::business.business', businessId);
-          }
-          
           await whatsappService.sendServiceRequestNotification(doctor, serviceRequest, businessForNotification);
-          (`WhatsApp notification sent to selected doctor: ${doctor.firstName} ${doctor.lastName}`);
+          console.log(`WhatsApp notification sent to selected doctor: ${doctor.firstName} ${doctor.lastName}`);
         } else {
           console.error('WhatsApp service not found!');
         }
+
+        // Send Email notification
+        try {
+          await emailService.sendServiceRequestNotification(doctor, serviceRequest, businessForNotification);
+          console.log(`Email notification sent to selected doctor: ${doctor.firstName} ${doctor.lastName}`);
+        } catch (emailError) {
+          console.error('Failed to send email notification to selected doctor:', emailError.message);
+        }
+
       } catch (whatsappError) {
         console.error('Failed to send WhatsApp notification to selected doctor:', whatsappError.message);
         console.error('WhatsApp error details:', whatsappError);
@@ -2343,6 +2382,111 @@ module.exports = createCoreController('api::service-request.service-request', ({
     } catch (error) {
       console.error('❌ Error calculating service cost:', error);
       ctx.throw(500, `Error calculating service cost: ${error.message}`);
+    }
+  },
+
+  // Email-based accept request
+  async emailAcceptRequest(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { doctorId } = ctx.query;
+
+      console.log(`📧 Email accept request - Service Request ID: ${id}, Doctor ID: ${doctorId}`);
+
+      // Validate the service request exists and is pending
+      const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
+        populate: ['business', 'doctor', 'service']
+      });
+
+      if (!serviceRequest) {
+        return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/error?message=Service request not found`);
+      }
+
+      if (serviceRequest.status !== 'pending') {
+        return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/error?message=Service request is no longer available`);
+      }
+
+      // Validate the doctor exists and is verified
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
+        fields: ['id', 'firstName', 'lastName', 'isAvailable', 'isVerified']
+      });
+
+      if (!doctor) {
+        return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/error?message=Doctor not found`);
+      }
+
+      if (!doctor.isVerified) {
+        return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/error?message=Doctor is not verified`);
+      }
+
+      if (!doctor.isAvailable) {
+        return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/error?message=Doctor is currently unavailable`);
+      }
+
+      // Accept the service request
+      const updatedRequest = await strapi.entityService.update('api::service-request.service-request', id, {
+        data: {
+          status: 'accepted',
+          doctor: doctorId,
+          acceptedAt: new Date(),
+        },
+        populate: ['business', 'doctor', 'service']
+      });
+
+      // Update doctor availability
+      await strapi.entityService.update('api::doctor.doctor', doctorId, {
+        data: { isAvailable: false }
+      });
+
+      console.log(`✅ Service request ${id} accepted by Dr. ${doctor.firstName} ${doctor.lastName} via email`);
+
+      // Redirect to success page
+      return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/doctor/dashboard?accepted=${id}`);
+
+    } catch (error) {
+      console.error('❌ Error accepting service request via email:', error);
+      return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/error?message=Failed to accept request`);
+    }
+  },
+
+  // Email-based ignore request
+  async emailIgnoreRequest(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { doctorId } = ctx.query;
+
+      console.log(`📧 Email ignore request - Service Request ID: ${id}, Doctor ID: ${doctorId}`);
+
+      // Validate the service request exists
+      const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
+        populate: ['business', 'doctor', 'service']
+      });
+
+      if (!serviceRequest) {
+        return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/error?message=Service request not found`);
+      }
+
+      // Validate the doctor exists and is verified
+      const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
+        fields: ['id', 'firstName', 'lastName', 'isVerified']
+      });
+
+      if (!doctor) {
+        return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/error?message=Doctor not found`);
+      }
+
+      if (!doctor.isVerified) {
+        return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/error?message=Doctor is not verified`);
+      }
+
+      console.log(`ℹ️ Service request ${id} ignored by Dr. ${doctor.firstName} ${doctor.lastName} via email`);
+
+      // Redirect to dashboard with ignore confirmation
+      return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/doctor/dashboard?ignored=${id}`);
+
+    } catch (error) {
+      console.error('❌ Error ignoring service request via email:', error);
+      return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/error?message=Failed to process request`);
     }
   },
 }));

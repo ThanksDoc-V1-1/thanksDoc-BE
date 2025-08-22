@@ -259,5 +259,22 @@ module.exports = {
         auth: false,
       },
     },
+    // Email-based accept/ignore endpoints
+    {
+      method: 'GET',
+      path: '/service-requests/email-accept/:id',
+      handler: 'service-request.emailAcceptRequest',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'GET',
+      path: '/service-requests/email-ignore/:id',
+      handler: 'service-request.emailIgnoreRequest',
+      config: {
+        auth: false,
+      },
+    },
   ],
 };

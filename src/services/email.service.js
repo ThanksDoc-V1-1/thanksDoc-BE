@@ -89,7 +89,7 @@ class EmailService {
 
     try {
       const result = await this.transporter.sendMail(mailOptions);
-      ('Verification email sent successfully:', result.messageId);
+      console.log('Verification email sent successfully:', result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error('Error sending verification email:', error);
@@ -173,7 +173,7 @@ class EmailService {
 
     try {
       const result = await this.transporter.sendMail(mailOptions);
-      ('Welcome email sent successfully:', result.messageId);
+      console.log('Welcome email sent successfully:', result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error('Error sending welcome email:', error);
@@ -441,7 +441,7 @@ class EmailService {
         notifications.push({ type: 'patient_email', success: false, error: 'No email address provided' });
       }
 
-      ('✅ Video call email notifications completed:', notifications);
+      console.log('✅ Video call email notifications completed:', notifications);
       return notifications;
 
     } catch (error) {
@@ -545,6 +545,131 @@ class EmailService {
     } catch (error) {
       console.error(`❌ Failed to send professional reference request email to ${referenceEmail}:`, error);
       throw new Error('Failed to send professional reference request email');
+    }
+  }
+
+  /**
+   * Send service request notification to doctor via email
+   */
+  async sendServiceRequestNotification(doctor, serviceRequest, business) {
+    const acceptUrl = `${process.env.FRONTEND_DASHBOARD_URL}/api/service-requests/email-accept/${serviceRequest.id}?doctorId=${doctor.id}`;
+    const ignoreUrl = `${process.env.FRONTEND_DASHBOARD_URL}/api/service-requests/email-ignore/${serviceRequest.id}?doctorId=${doctor.id}`;
+    const dashboardUrl = `${process.env.FRONTEND_DASHBOARD_URL}/doctor/dashboard`;
+
+    const scheduledTime = serviceRequest.requestedServiceDateTime 
+      ? new Date(serviceRequest.requestedServiceDateTime).toLocaleString('en-GB', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      : 'As soon as possible';
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: doctor.email,
+      subject: `New Service Request - ${business.businessName}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>New Service Request - ThanksDoc</title>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #3b82f6; color: white; padding: 20px; text-align: center; }
+            .content { padding: 30px 20px; background: #f9fafb; }
+            .button { 
+              display: inline-block; 
+              padding: 14px 28px; 
+              text-decoration: none !important; 
+              border-radius: 6px; 
+              margin: 10px 5px; 
+              font-weight: bold; 
+              font-size: 16px;
+              border: none;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              text-align: center;
+            }
+            .accept-btn { 
+              background: #10b981 !important; 
+              color: #ffffff !important; 
+            }
+            .ignore-btn { 
+              background: #6b7280 !important; 
+              color: #ffffff !important; 
+            }
+            .dashboard-btn { 
+              background: #3b82f6 !important; 
+              color: #ffffff !important; 
+            }
+            .footer { padding: 20px; text-align: center; color: #666; font-size: 14px; }
+            .request-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6; }
+            .urgency-high { color: #dc2626; font-weight: bold; }
+            .urgency-medium { color: #d97706; font-weight: bold; }
+            .urgency-low { color: #059669; font-weight: bold; }
+            .button-container { text-align: center; margin: 25px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🩺 New Service Request</h1>
+              <p>You have received a new consultation request</p>
+            </div>
+            <div class="content">
+              <h2>Hello Dr. ${doctor.firstName} ${doctor.lastName},</h2>
+              <p>You have received a new service request from <strong>${business.businessName}</strong>.</p>
+              
+              <div class="request-details">
+                <h3>📋 Request Details</h3>
+                <p><strong>Business:</strong> ${business.businessName}</p>
+                <p><strong>Service Type:</strong> ${serviceRequest.serviceType}</p>
+                <p><strong>Urgency:</strong> <span class="urgency-${serviceRequest.urgencyLevel}">${serviceRequest.urgencyLevel.toUpperCase()}</span></p>
+                <p><strong>Scheduled Time:</strong> ${scheduledTime}</p>
+                <p><strong>Duration:</strong> ${serviceRequest.estimatedDuration} hour(s)</p>
+                ${serviceRequest.description ? `<p><strong>Description:</strong> ${serviceRequest.description}</p>` : ''}
+                ${serviceRequest.patientFirstName ? `<p><strong>Patient:</strong> ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName || ''}</p>` : ''}
+              </div>
+              
+              <div class="button-container">
+                <h3>Quick Actions</h3>
+                <a href="${acceptUrl}" class="button accept-btn">✅ Accept Request</a>
+                <a href="${ignoreUrl}" class="button ignore-btn">❌ Ignore Request</a>
+              </div>
+              
+              <div style="text-align: center; margin-top: 20px;">
+                <p>Or view more details in your dashboard:</p>
+                <a href="${dashboardUrl}" class="button dashboard-btn">🏥 Open Dashboard</a>
+              </div>
+              
+              <div style="background: #fef3c7; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+                <p><strong>⏰ Time Sensitive:</strong> Please respond to this request as soon as possible. The business is waiting for your confirmation.</p>
+              </div>
+              
+              <p>Best regards,<br>The ThanksDoc Team</p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} ThanksDoc. All rights reserved.</p>
+              <p>This is an automated email regarding your ThanksDoc service requests.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    try {
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log(`✅ Service request email sent to Dr. ${doctor.firstName} ${doctor.lastName}: ${result.messageId}`);
+      return { success: true, messageId: result.messageId };
+    } catch (error) {
+      console.error(`❌ Failed to send service request email to Dr. ${doctor.firstName} ${doctor.lastName}:`, error);
+      throw new Error('Failed to send service request email');
     }
   }
 }
