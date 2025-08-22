@@ -1288,6 +1288,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
   async whatsappAcceptRequest(ctx) {
     try {
       const { token } = ctx.params;
+      const { confirm } = ctx.query;
       const WhatsAppService = require('../../../services/whatsapp');
       const whatsappService = new WhatsAppService();
 
@@ -1298,6 +1299,35 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', serviceRequestId, {
         populate: ['business', 'doctor'],
       });
+
+      // If no confirmation parameter, this is likely WhatsApp's link preview crawling
+      // Show a simple redirect page instead of accepting the request
+      if (!confirm) {
+        const redirectHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Accept Service Request</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <meta http-equiv="refresh" content="0;url=?confirm=yes">
+              <style>
+                  body { font-family: Arial, sans-serif; padding: 20px; text-align: center; background: #f5f5f5; }
+                  .container { max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 10px; }
+                  .loading { font-size: 18px; color: #666; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <div class="loading">Processing your request...</div>
+                  <p>If you are not redirected automatically, <a href="?confirm=yes">click here</a>.</p>
+              </div>
+          </body>
+          </html>
+        `;
+        
+        ctx.type = 'text/html';
+        return ctx.send(redirectHtml);
+      }
 
       if (!serviceRequest) {
         // Generate a friendly HTML page for missing/expired service request
