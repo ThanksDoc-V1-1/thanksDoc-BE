@@ -2,7 +2,8 @@ const WhatsAppService = require('./src/services/whatsapp');
 
 async function testTemplate() {
   try {
-    console.log('🧪 Testing WhatsApp Template: new_doctor_accept_request');
+    const whatsappService = new WhatsAppService();
+    console.log(`🧪 Testing WhatsApp Template: ${whatsappService.templateName}`);
     
     // Create mock data for testing
     const mockServiceRequest = {
@@ -31,8 +32,6 @@ async function testTemplate() {
     // Generate test URLs
     const acceptUrl = `${process.env.BASE_URL}/api/service-request/accept-via-whatsapp/test-token-accept`;
     const rejectUrl = `${process.env.BASE_URL}/api/service-request/reject-via-whatsapp/test-token-reject`;
-
-    const whatsappService = new WhatsAppService();
     
     // Build the template payload
     const templateMessage = whatsappService.buildDoctorAcceptRequestTemplate(

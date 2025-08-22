@@ -469,18 +469,18 @@ class WhatsAppService {
             parameters: [
               {
                 type: "text",
-                text: acceptUrl
+                text: acceptUrl.split('/').pop() // Just the token
               }
             ]
           },
           {
             type: "button",
-            sub_type: "url",
+            sub_type: "url", 
             index: "1",
             parameters: [
               {
                 type: "text",
-                text: rejectUrl
+                text: acceptUrl.split('/').pop() // Same token for both buttons
               }
             ]
           }
