@@ -1288,6 +1288,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
   async whatsappAcceptRequest(ctx) {
     try {
       const { token } = ctx.params;
+      const { confirm } = ctx.query; // Check for confirmation parameter
       const WhatsAppService = require('../../../services/whatsapp');
       const whatsappService = new WhatsAppService();
 
@@ -1298,6 +1299,65 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', serviceRequestId, {
         populate: ['business', 'doctor'],
       });
+
+      if (!serviceRequest) {
+        return ctx.badRequest('Service request not found or has expired');
+      }
+
+      // If no confirmation parameter, show confirmation page
+      if (!confirm) {
+        const confirmationHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Confirm Service Request Acceptance</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <style>
+                  body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+                  .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                  .header { text-align: center; margin-bottom: 30px; }
+                  .logo { color: #007bff; font-size: 24px; font-weight: bold; }
+                  .service-info { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+                  .buttons { display: flex; gap: 10px; margin-top: 30px; }
+                  .btn { flex: 1; padding: 15px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; text-decoration: none; text-align: center; }
+                  .btn-accept { background: #28a745; color: white; }
+                  .btn-cancel { background: #6c757d; color: white; }
+                  .btn:hover { opacity: 0.9; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <div class="header">
+                      <div class="logo">ThanksDoc</div>
+                      <h2>Confirm Service Request</h2>
+                  </div>
+                  
+                  <div class="service-info">
+                      <p><strong>Service:</strong> ${serviceRequest.serviceType}</p>
+                      <p><strong>Business:</strong> ${serviceRequest.business?.name}</p>
+                      <p><strong>Location:</strong> ${serviceRequest.business?.address}</p>
+                      <p><strong>Duration:</strong> ${serviceRequest.estimatedDuration} minutes</p>
+                  </div>
+                  
+                  <p>Do you want to accept this service request?</p>
+                  
+                  <div class="buttons">
+                      <a href="?confirm=yes" class="btn btn-accept">✅ Accept Request</a>
+                      <a href="${process.env.FRONTEND_DASHBOARD_URL}/doctor/dashboard" class="btn btn-cancel">❌ Cancel</a>
+                  </div>
+              </div>
+          </body>
+          </html>
+        `;
+        
+        ctx.type = 'text/html';
+        return ctx.send(confirmationHtml);
+      }
+
+      // Only proceed with acceptance if explicitly confirmed
+      if (confirm !== 'yes') {
+        return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/doctor/dashboard`);
+      }
 
       if (!serviceRequest) {
         // Generate a friendly HTML page for missing/expired service request

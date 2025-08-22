@@ -149,8 +149,8 @@ class WhatsAppService {
       }
 
       const acceptanceToken = this.generateAcceptanceToken(serviceRequest.id, doctor.id);
-      const acceptUrl = acceptanceToken; // Just the token for {{8}}
-      const rejectUrl = acceptanceToken; // Just the token for {{9}}
+      const acceptUrl = acceptanceToken; // Token for accept button
+      const rejectUrl = acceptanceToken; // Same token but will use different endpoint URL
 
       // Format doctor's phone number for WhatsApp (remove + and any formatting)
       doctorPhone = this.formatPhoneNumber(doctor.phone);
@@ -433,7 +433,7 @@ class WhatsAppService {
             parameters: [
               {
                 type: "text",
-                text: acceptUrl.split('/').pop() // Same token for both buttons
+                text: rejectUrl.split('/').pop() // Use reject token for second button
               }
             ]
           }
