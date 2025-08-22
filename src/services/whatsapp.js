@@ -400,31 +400,45 @@ class WhatsAppService {
               },
               {
                 type: "text",
-                text: serviceRequest.estimatedDuration?.toString() || "Not specified" // {{5}} Duration in minutes
+                text: "Unknown" // {{5}} Distance (to be implemented later)
               },
               {
                 type: "text",
-                text: serviceRequest.serviceCost?.toString() || "Not specified" // {{6}} Pay (doctor's take-home)
+                text: serviceDate // {{6}} Date
               },
               {
                 type: "text",
-                text: "Unknown" // {{7}} Distance (to be implemented later)
+                text: serviceTime // {{7}} Time
               },
               {
                 type: "text",
-                text: serviceDate // {{8}} Date
+                text: serviceRequest.estimatedDuration?.toString() || "Not specified" // {{8}} Duration in minutes
               },
               {
                 type: "text",
-                text: serviceTime // {{9}} Time
-              },
+                text: serviceRequest.serviceCost?.toString() || "Not specified" // {{9}} Pay (doctor's take-home)
+              }
+            ]
+          },
+          {
+            type: "button",
+            sub_type: "url",
+            index: "0",
+            parameters: [
               {
                 type: "text",
-                text: acceptUrl // {{10}} Accept button token
-              },
+                text: acceptUrl
+              }
+            ]
+          },
+          {
+            type: "button",
+            sub_type: "url",
+            index: "1",
+            parameters: [
               {
                 type: "text",
-                text: rejectUrl // {{11}} Decline button token
+                text: rejectUrl
               }
             ]
           }
