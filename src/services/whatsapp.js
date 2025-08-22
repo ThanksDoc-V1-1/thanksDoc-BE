@@ -131,8 +131,8 @@ class WhatsAppService {
       }
 
       const acceptanceToken = this.generateAcceptanceToken(serviceRequest.id, doctor.id);
-      const acceptUrl = `${this.baseUrl}/api/service-requests/whatsapp-accept/${acceptanceToken}`;
-      const rejectUrl = `${this.baseUrl}/api/service-requests/whatsapp-reject/${acceptanceToken}`;
+      const acceptUrl = acceptanceToken; // Just the token for {{8}}
+      const rejectUrl = acceptanceToken; // Just the token for {{9}}
 
       // Format doctor's phone number for WhatsApp (remove + and any formatting)
       doctorPhone = this.formatPhoneNumber(doctor.phone);

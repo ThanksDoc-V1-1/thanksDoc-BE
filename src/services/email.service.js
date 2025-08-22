@@ -552,6 +552,13 @@ class EmailService {
    * Send service request notification to doctor via email
    */
   async sendServiceRequestNotification(doctor, serviceRequest, business) {
+    console.log('📧 Email Service Debug - serviceRequest data:', {
+      servicePrice: serviceRequest.servicePrice,
+      totalAmount: serviceRequest.totalAmount,
+      service: serviceRequest.service,
+      id: serviceRequest.id
+    });
+    
     const acceptUrl = `${process.env.BASE_URL}/api/service-requests/email-accept/${serviceRequest.id}?doctorId=${doctor.id}`;
     const ignoreUrl = `${process.env.BASE_URL}/api/service-requests/email-ignore/${serviceRequest.id}?doctorId=${doctor.id}`;
     const dashboardUrl = `${process.env.FRONTEND_DASHBOARD_URL}/doctor/dashboard`;
@@ -629,9 +636,9 @@ class EmailService {
                 <h3>📋 Request Details</h3>
                 <p><strong>Business:</strong> ${business.businessName}</p>
                 <p><strong>Service Type:</strong> ${serviceRequest.serviceType}</p>
-                <p><strong>Urgency:</strong> <span class="urgency-${serviceRequest.urgencyLevel}">${serviceRequest.urgencyLevel.toUpperCase()}</span></p>
                 <p><strong>Scheduled Time:</strong> ${scheduledTime}</p>
-                <p><strong>Duration:</strong> ${serviceRequest.estimatedDuration} hour(s)</p>
+                <p><strong>Duration:</strong> ${serviceRequest.estimatedDuration} mins</p>
+                <p><strong>Pay:</strong> £${serviceRequest.serviceCost || Math.round(((serviceRequest.servicePrice || serviceRequest.totalAmount || serviceRequest.service?.price || 0) * 0.9))}</p>
                 ${serviceRequest.description ? `<p><strong>Description:</strong> ${serviceRequest.description}</p>` : ''}
                 ${serviceRequest.patientFirstName ? `<p><strong>Patient:</strong> ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName || ''}</p>` : ''}
               </div>
