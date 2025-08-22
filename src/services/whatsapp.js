@@ -331,7 +331,7 @@ class WhatsAppService {
       
       if (!dateTimeString) {
         ('🔍 formatServiceDateTime: No dateTimeString provided');
-        return 'Not specified';
+        return { date: 'Not specified', time: 'Not specified' };
       }
       
       try {
@@ -342,28 +342,32 @@ class WhatsAppService {
         
         if (isNaN(date.getTime())) {
           ('🔍 formatServiceDateTime: Invalid date');
-          return 'Not specified';
+          return { date: 'Not specified', time: 'Not specified' };
         }
         
-        const formatted = date.toLocaleString('en-GB', {
+        const dateFormatted = date.toLocaleDateString('en-GB', {
           year: 'numeric',
           month: 'short',
           day: 'numeric',
+          timeZone: 'Africa/Nairobi' // East Africa Time
+        });
+        
+        const timeFormatted = date.toLocaleTimeString('en-GB', {
           hour: '2-digit',
           minute: '2-digit',
           hour12: true,
           timeZone: 'Africa/Nairobi' // East Africa Time
         });
         
-        ('🔍 formatServiceDateTime formatted output:', formatted);
-        return formatted; // Don't add "Scheduled for" here as it's already in the Facebook template
+        ('🔍 formatServiceDateTime formatted output:', { date: dateFormatted, time: timeFormatted });
+        return { date: dateFormatted, time: timeFormatted };
       } catch (error) {
         console.error('❌ formatServiceDateTime error:', error);
-        return 'Not specified';
+        return { date: 'Not specified', time: 'Not specified' };
       }
     };
     
-    const serviceDateTime = formatServiceDateTime(serviceRequest.requestedServiceDateTime);
+    const { date: serviceDate, time: serviceTime } = formatServiceDateTime(serviceRequest.requestedServiceDateTime);
     
     return {
       messaging_product: "whatsapp",
@@ -384,7 +388,7 @@ class WhatsAppService {
               },
               {
                 type: "text",
-                text: serviceRequest.serviceType || "Medical service" // {{2}} Service type
+                text: serviceRequest.serviceType || "Medical service" // {{2}} Job Type
               },
               {
                 type: "text",
@@ -392,41 +396,35 @@ class WhatsAppService {
               },
               {
                 type: "text",
-                text: business.address || "Location not specified" // {{4}} Address
+                text: business.address || "Location not specified" // {{4}} Location
               },
               {
                 type: "text",
-                text: serviceRequest.estimatedDuration?.toString() || "Not specified" // {{5}} Duration
+                text: serviceRequest.estimatedDuration?.toString() || "Not specified" // {{5}} Duration in minutes
               },
               {
                 type: "text",
-                text: serviceDateTime // {{6}} Service date/time
+                text: serviceRequest.serviceCost?.toString() || "Not specified" // {{6}} Pay (doctor's take-home)
               },
               {
                 type: "text",
-                text: serviceRequest.serviceCost?.toString() || "Not specified" // {{7}} Service Cost
-              }
-            ]
-          },
-          {
-            type: "button",
-            sub_type: "url",
-            index: "0",
-            parameters: [
+                text: "Unknown" // {{7}} Distance (to be implemented later)
+              },
               {
                 type: "text",
-                text: acceptUrl // {{8}} Dynamic URL for Accept button
-              }
-            ]
-          },
-          {
-            type: "button",
-            sub_type: "url", 
-            index: "1",
-            parameters: [
+                text: serviceDate // {{8}} Date
+              },
               {
                 type: "text",
-                text: rejectUrl // {{9}} Dynamic URL for Decline button
+                text: serviceTime // {{9}} Time
+              },
+              {
+                type: "text",
+                text: acceptUrl // {{10}} Accept button token
+              },
+              {
+                type: "text",
+                text: rejectUrl // {{11}} Decline button token
               }
             ]
           }
