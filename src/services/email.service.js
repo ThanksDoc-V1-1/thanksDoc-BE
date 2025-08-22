@@ -552,8 +552,8 @@ class EmailService {
    * Send service request notification to doctor via email
    */
   async sendServiceRequestNotification(doctor, serviceRequest, business) {
-    const acceptUrl = `${process.env.FRONTEND_DASHBOARD_URL}/api/service-requests/email-accept/${serviceRequest.id}?doctorId=${doctor.id}`;
-    const ignoreUrl = `${process.env.FRONTEND_DASHBOARD_URL}/api/service-requests/email-ignore/${serviceRequest.id}?doctorId=${doctor.id}`;
+    const acceptUrl = `${process.env.BASE_URL}/api/service-requests/email-accept/${serviceRequest.id}?doctorId=${doctor.id}`;
+    const ignoreUrl = `${process.env.BASE_URL}/api/service-requests/email-ignore/${serviceRequest.id}?doctorId=${doctor.id}`;
     const dashboardUrl = `${process.env.FRONTEND_DASHBOARD_URL}/doctor/dashboard`;
 
     const scheduledTime = serviceRequest.requestedServiceDateTime 
