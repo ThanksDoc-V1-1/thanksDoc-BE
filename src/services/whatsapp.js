@@ -417,8 +417,21 @@ class WhatsAppService {
     
     const { date: serviceDate, time: serviceTime } = formatServiceDateTime(serviceRequest.requestedServiceDateTime);
     
-    // Calculate distance between business and doctor
-    const distance = this.calculateDistanceInMiles(business, doctor);
+    // Calculate distance between business and doctor (or show "Online" for online services)
+    let distanceText;
+    if (serviceRequest.service && serviceRequest.service.category === 'online') {
+      distanceText = "Online";
+    } else {
+      distanceText = this.calculateDistanceInMiles(business, doctor);
+    }
+    
+    // Determine location text based on service category
+    let locationText;
+    if (serviceRequest.service && serviceRequest.service.category === 'online') {
+      locationText = "Online";
+    } else {
+      locationText = business.address || "Location not specified";
+    }
     
     return {
       messaging_product: "whatsapp",
@@ -447,7 +460,7 @@ class WhatsAppService {
               },
               {
                 type: "text",
-                text: business.address || "Location not specified" // {{4}} Location
+                text: locationText // {{4}} Location - "Online" for online services, business address for in-person
               },
               {
                 type: "text",
@@ -459,7 +472,7 @@ class WhatsAppService {
               },
               {
                 type: "text",
-                text: distance // {{7}} Distance in miles between business and doctor
+                text: distanceText // {{7}} Distance in miles between business and doctor, or "Online" for online services
               },
               {
                 type: "text",
