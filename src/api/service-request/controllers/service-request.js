@@ -153,18 +153,64 @@ module.exports = createCoreController('api::service-request.service-request', ({
         filters.services = { id: { $eq: serviceId } };
       }
 
-      // Find all available and verified doctors (no distance filtering)
-      const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
+      // Find all available and verified doctors with service radius included
+      const allDoctors = await strapi.entityService.findMany('api::doctor.doctor', {
         filters,
         populate: ['profilePicture', 'services'],
-        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization', 'isAvailable', 'isVerified', 'latitude', 'longitude'],
+        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization', 'isAvailable', 'isVerified', 'latitude', 'longitude', 'serviceRadius'],
       });
 
+      // If business has location data, filter doctors based on their service radius preferences
+      let filteredDoctors = allDoctors;
+      if (business.latitude && business.longitude) {
+        const { calculateDistance } = require('../../../utils/distance');
+        
+        filteredDoctors = allDoctors.filter(doctor => {
+          // Skip doctors without location data
+          if (!doctor.latitude || !doctor.longitude) {
+            console.log(`⚠️ Doctor ${doctor.firstName} ${doctor.lastName} has no location data - excluding`);
+            return false;
+          }
+
+          // Get doctor's service radius (default to 12 miles if not set)
+          const doctorServiceRadiusMiles = doctor.serviceRadius || 12;
+          
+          // If doctor accepts requests from anywhere, include them
+          if (doctorServiceRadiusMiles === -1) {
+            console.log(`✅ Doctor ${doctor.firstName} ${doctor.lastName} accepts requests from anywhere`);
+            return true;
+          }
+
+          // Calculate distance between business and doctor
+          const distanceKm = calculateDistance(
+            parseFloat(business.latitude),
+            parseFloat(business.longitude),
+            parseFloat(doctor.latitude),
+            parseFloat(doctor.longitude)
+          );
+          
+          // Convert to miles (1 km = 0.621371 miles)
+          const distanceMiles = distanceKm * 0.621371;
+          
+          // Check if business is within doctor's service radius
+          const isWithinRadius = distanceMiles <= doctorServiceRadiusMiles;
+          
+          console.log(`🔍 Doctor ${doctor.firstName} ${doctor.lastName}: distance=${distanceMiles.toFixed(1)}mi, radius=${doctorServiceRadiusMiles}mi, withinRadius=${isWithinRadius}`);
+          
+          return isWithinRadius;
+        });
+
+        console.log(`📍 Distance filtering: ${allDoctors.length} total doctors -> ${filteredDoctors.length} within service radius`);
+      } else {
+        console.log('⚠️ Business has no location data - skipping distance filtering');
+      }
+
       return {
-        doctors: doctors,
-        count: doctors.length
+        doctors: filteredDoctors,
+        count: filteredDoctors.length
       };
     } catch (error) {
+      console.error('Error finding doctors:', error);
       ctx.throw(500, `Error finding doctors: ${error.message}`);
     }
   },

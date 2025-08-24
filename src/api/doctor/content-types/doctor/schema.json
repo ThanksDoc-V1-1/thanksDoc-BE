@@ -113,6 +113,11 @@
       "type": "boolean",
       "default": false
     },
+    "serviceRadius": {
+      "type": "integer",
+      "default": 12,
+      "description": "Maximum distance in miles for receiving service requests"
+    },
     "verificationStatusUpdatedAt": {
       "type": "datetime"
     },

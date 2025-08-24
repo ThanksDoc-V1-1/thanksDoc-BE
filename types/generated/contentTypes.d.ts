@@ -896,6 +896,7 @@ export interface ApiDoctorDoctor extends Struct.CollectionTypeSchema {
       'oneToMany',
       'api::professional-reference-submission.professional-reference-submission'
     >;
+    serviceRadius: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<12>;
     services: Schema.Attribute.Relation<'manyToMany', 'api::service.service'>;
     specialization: Schema.Attribute.String;
     state: Schema.Attribute.String & Schema.Attribute.Required;
