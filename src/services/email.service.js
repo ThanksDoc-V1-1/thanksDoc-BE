@@ -554,9 +554,41 @@ class EmailService {
   async sendServiceRequestNotification(doctor, serviceRequest, business) {
     console.log('📧 Email Service Debug - serviceRequest data:', {
       servicePrice: serviceRequest.servicePrice,
+      serviceCost: serviceRequest.serviceCost,
       totalAmount: serviceRequest.totalAmount,
       service: serviceRequest.service,
       id: serviceRequest.id
+    });
+    
+    // Calculate doctor's take-home pay (90% of service cost, same as WhatsApp and dashboard)
+    const calculateDoctorTakeHome = (servicePrice) => {
+      return servicePrice * 0.9; // Doctor keeps 90%, ThanksDoc takes 10%
+    };
+    
+    // Get the service price from multiple possible sources (same logic as WhatsApp service)
+    let servicePrice = 0;
+    
+    // Try to get BASE service price (what doctor gets paid from) - NOT total amount
+    if (serviceRequest.servicePrice && parseFloat(serviceRequest.servicePrice) > 0) {
+      servicePrice = parseFloat(serviceRequest.servicePrice);
+      console.log('💰 Email: Using serviceRequest.servicePrice (base price):', servicePrice);
+    } else if (serviceRequest.serviceCost && parseFloat(serviceRequest.serviceCost) > 0) {
+      servicePrice = parseFloat(serviceRequest.serviceCost);
+      console.log('💰 Email: Using serviceRequest.serviceCost (base price):', servicePrice);
+    } else if (serviceRequest.service && serviceRequest.service.price && parseFloat(serviceRequest.service.price) > 0) {
+      servicePrice = parseFloat(serviceRequest.service.price);
+      console.log('💰 Email: Using serviceRequest.service.price (base price):', servicePrice);
+    } else {
+      console.log('⚠️ Email: No base service price found, cannot calculate doctor take-home');
+    }
+    
+    const doctorTakeHome = servicePrice > 0 ? calculateDoctorTakeHome(servicePrice) : 0;
+    const formattedTakeHome = doctorTakeHome > 0 ? `£${doctorTakeHome.toFixed(2)}` : 'To be confirmed';
+    
+    console.log('💰 Email price calculation:', {
+      servicePrice,
+      doctorTakeHome,
+      formattedTakeHome
     });
     
     const acceptUrl = `${process.env.BASE_URL}/api/service-requests/email-accept/${serviceRequest.id}?doctorId=${doctor.id}`;
@@ -638,7 +670,7 @@ class EmailService {
                 <p><strong>Service Type:</strong> ${serviceRequest.serviceType}</p>
                 <p><strong>Scheduled Time:</strong> ${scheduledTime}</p>
                 <p><strong>Duration:</strong> ${serviceRequest.estimatedDuration} mins</p>
-                <p><strong>Pay:</strong> £${serviceRequest.serviceCost || Math.round(((serviceRequest.servicePrice || serviceRequest.totalAmount || serviceRequest.service?.price || 0) * 0.9))}</p>
+                <p><strong>Pay:</strong> ${formattedTakeHome}</p>
                 ${serviceRequest.description ? `<p><strong>Description:</strong> ${serviceRequest.description}</p>` : ''}
                 ${serviceRequest.patientFirstName ? `<p><strong>Patient:</strong> ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName || ''}</p>` : ''}
               </div>
