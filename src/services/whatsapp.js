@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const axios = require('axios');
 const crypto = require('crypto');
+const { calculateDistance } = require('../utils/distance');
 
 class WhatsAppService {
   constructor() {
@@ -127,13 +128,23 @@ class WhatsAppService {
     console.log('🔍 Business data:', {
       id: business?.id,
       name: business?.name,
-      businessName: business?.businessName
+      businessName: business?.businessName,
+      latitude: business?.latitude,
+      longitude: business?.longitude
+    });
+    console.log('🔍 Doctor data:', {
+      id: doctor?.id,
+      firstName: doctor?.firstName,
+      lastName: doctor?.lastName,
+      phone: doctor?.phone,
+      latitude: doctor?.latitude,
+      longitude: doctor?.longitude
     });
     
     let doctorPhone = null;
     let messageData = null;
     
-    ('🔍 WhatsApp sendServiceRequestNotification called with serviceRequest:', {
+    console.log('🔍 WhatsApp sendServiceRequestNotification called with serviceRequest:', {
       id: serviceRequest.id,
       serviceDateTime: serviceRequest.serviceDateTime,
       requestedServiceDateTime: serviceRequest.requestedServiceDateTime,
@@ -168,7 +179,7 @@ class WhatsAppService {
       // Use the new diagnostic send method
       const response = await this.sendWhatsAppMessage(messageData);
 
-      (`WhatsApp notification sent to Dr. ${this.getDoctorDisplayName(doctor)}: ${response.messages[0].id}`);
+      console.log(`WhatsApp notification sent to Dr. ${this.getDoctorDisplayName(doctor)}: ${response.messages[0].id}`);
       return response;
     } catch (error) {
       console.error(`Failed to send WhatsApp notification to Dr. ${this.getDoctorDisplayName(doctor)}:`);
@@ -273,6 +284,48 @@ class WhatsAppService {
   }
 
   /**
+   * Calculate distance between business and doctor in miles
+   */
+  calculateDistanceInMiles(business, doctor) {
+    // Check if both business and doctor have valid coordinates
+    if (!business || !doctor) {
+      return 'Unknown';
+    }
+    
+    const businessLat = parseFloat(business.latitude);
+    const businessLng = parseFloat(business.longitude);
+    const doctorLat = parseFloat(doctor.latitude);
+    const doctorLng = parseFloat(doctor.longitude);
+    
+    // Validate coordinates
+    if (isNaN(businessLat) || isNaN(businessLng) || isNaN(doctorLat) || isNaN(doctorLng)) {
+      return 'Unknown';
+    }
+    
+    // Calculate distance in kilometers using Haversine formula
+    const distanceKm = calculateDistance(businessLat, businessLng, doctorLat, doctorLng);
+    
+    // Convert to miles (1 km = 0.621371 miles)
+    const distanceMiles = distanceKm * 0.621371;
+    
+    // Format the distance nicely
+    if (distanceMiles < 0.1) {
+      // Very close - show in feet
+      const feet = Math.round(distanceMiles * 5280);
+      return `${feet}ft`;
+    } else if (distanceMiles < 1) {
+      // Less than a mile - show one decimal place
+      return `${distanceMiles.toFixed(1)} miles`;
+    } else if (distanceMiles < 10) {
+      // Less than 10 miles - show one decimal place
+      return `${distanceMiles.toFixed(1)} miles`;
+    } else {
+      // 10+ miles - round to nearest mile
+      return `${Math.round(distanceMiles)} miles`;
+    }
+  }
+
+  /**
    * Build Doctor Accept Request template message
    */
   buildDoctorAcceptRequestTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor = null) {
@@ -364,6 +417,9 @@ class WhatsAppService {
     
     const { date: serviceDate, time: serviceTime } = formatServiceDateTime(serviceRequest.requestedServiceDateTime);
     
+    // Calculate distance between business and doctor
+    const distance = this.calculateDistanceInMiles(business, doctor);
+    
     return {
       messaging_product: "whatsapp",
       to: doctorPhone,
@@ -403,7 +459,7 @@ class WhatsAppService {
               },
               {
                 type: "text",
-                text: "Unknown" // {{7}} Distance (to be implemented later)
+                text: distance // {{7}} Distance in miles between business and doctor
               },
               {
                 type: "text",
@@ -1137,11 +1193,11 @@ The doctor will contact you shortly to coordinate the visit.`;
    */
   async sendWhatsAppMessage(payload) {
     try {
-      ('📱 Sending WhatsApp message to:', payload.to);
-      ('📱 Message type:', payload.type);
-      ('📱 API URL:', this.apiUrl);
-      ('📱 Access Token (first 20 chars):', this.accessToken?.substring(0, 20) + '...');
-      ('📱 Full payload:', JSON.stringify(payload, null, 2));
+      console.log('📱 Sending WhatsApp message to:', payload.to);
+      console.log('📱 Message type:', payload.type);
+      console.log('📱 API URL:', this.apiUrl);
+      console.log('📱 Access Token (first 20 chars):', this.accessToken?.substring(0, 20) + '...');
+      console.log('📱 Full payload:', JSON.stringify(payload, null, 2));
       
       const response = await axios.post(this.apiUrl, payload, {
         headers: {
@@ -1151,8 +1207,8 @@ The doctor will contact you shortly to coordinate the visit.`;
         timeout: 10000, // 10 second timeout
       });
 
-      ('✅ WhatsApp API Response:', response.status, response.statusText);
-      ('✅ Response data:', JSON.stringify(response.data, null, 2));
+      console.log('✅ WhatsApp API Response:', response.status, response.statusText);
+      console.log('✅ Response data:', JSON.stringify(response.data, null, 2));
       
       return response.data;
     } catch (error) {

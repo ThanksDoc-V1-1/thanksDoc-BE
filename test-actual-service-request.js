@@ -12,7 +12,9 @@ async function testActualServiceRequestFlow() {
       id: 123,
       firstName: 'Dr. Test',
       lastName: 'Doctor',
-      phone: '+256784528444' // Your WhatsApp number
+      phone: '+256784528444', // Your WhatsApp number
+      latitude: 0.3476, // Kampala coordinates
+      longitude: 32.5825
     };
     
     const mockServiceRequest = {
@@ -30,7 +32,9 @@ async function testActualServiceRequestFlow() {
       name: 'Test Emergency Clinic',
       businessName: 'Test Emergency Clinic',
       address: '456 Emergency Street, Urgent City',
-      phone: '+256700000000'
+      phone: '+256700000000',
+      latitude: 0.3136, // Entebbe coordinates (close to Kampala)
+      longitude: 32.4415
     };
     
     console.log('📞 Calling sendServiceRequestNotification...');

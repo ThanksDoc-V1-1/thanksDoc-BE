@@ -157,7 +157,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
         filters,
         populate: ['profilePicture', 'services'],
-        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization', 'isAvailable', 'isVerified'],
+        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization', 'isAvailable', 'isVerified', 'latitude', 'longitude'],
       });
 
       return {
@@ -442,21 +442,25 @@ module.exports = createCoreController('api::service-request.service-request', ({
         const emailService = new (require('../../../services/email.service'))();
         
         if (whatsappService) {
-          // Send WhatsApp notifications without waiting for completion to avoid timeouts
+          // Send WhatsApp notifications and properly count successes
           const notificationPromises = nearbyDoctorsResponse.doctors.map(async (doctor) => {
             try {
               await Promise.race([
                 whatsappService.sendServiceRequestNotification(doctor, serviceRequest, business),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('WhatsApp timeout')), 10000)) // 10 second timeout
               ]);
-              whatsappNotificationsSent++;
+              return { success: true, doctor };
             } catch (error) {
               console.error(`Failed to send WhatsApp notification to Dr. ${doctor.firstName} ${doctor.lastName}:`, error.message || error);
+              return { success: false, doctor, error };
             }
           });
           
-          // Don't wait for all WhatsApp notifications to complete
-          Promise.allSettled(notificationPromises);
+          // Wait for all WhatsApp notifications to complete and count successes
+          const results = await Promise.allSettled(notificationPromises);
+          whatsappNotificationsSent = results.filter(result => 
+            result.status === 'fulfilled' && result.value.success
+          ).length;
         }
 
         // Send email notifications to all doctors
