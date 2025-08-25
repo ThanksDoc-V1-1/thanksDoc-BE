@@ -292,13 +292,19 @@ class WhatsAppService {
       return 'Unknown';
     }
     
-    const businessLat = parseFloat(business.latitude);
-    const businessLng = parseFloat(business.longitude);
-    const doctorLat = parseFloat(doctor.latitude);
-    const doctorLng = parseFloat(doctor.longitude);
+    // Handle both string and number coordinates
+    const businessLat = business.latitude ? parseFloat(business.latitude) : NaN;
+    const businessLng = business.longitude ? parseFloat(business.longitude) : NaN;
+    const doctorLat = doctor.latitude ? parseFloat(doctor.latitude) : NaN;
+    const doctorLng = doctor.longitude ? parseFloat(doctor.longitude) : NaN;
     
     // Validate coordinates
     if (isNaN(businessLat) || isNaN(businessLng) || isNaN(doctorLat) || isNaN(doctorLng)) {
+      console.log('🔍 Distance calculation: Invalid coordinates detected', {
+        business: { lat: business.latitude, lng: business.longitude },
+        doctor: { lat: doctor.latitude, lng: doctor.longitude },
+        parsed: { businessLat, businessLng, doctorLat, doctorLng }
+      });
       return 'Unknown';
     }
     
