@@ -287,8 +287,26 @@ class WhatsAppService {
    * Calculate distance between business and doctor in miles
    */
   calculateDistanceInMiles(business, doctor) {
+    // Enhanced logging for production debugging
+    console.log('\n🔍 WhatsApp Distance Calculation Debug:');
+    console.log('📍 Business object keys:', business ? Object.keys(business) : 'null/undefined');
+    console.log('👨‍⚕️ Doctor object keys:', doctor ? Object.keys(doctor) : 'null/undefined');
+    console.log('📏 Business coordinates:', {
+      latitude: business ? business.latitude : 'N/A',
+      longitude: business ? business.longitude : 'N/A',
+      latType: business && business.latitude ? typeof business.latitude : 'N/A',
+      lngType: business && business.longitude ? typeof business.longitude : 'N/A'
+    });
+    console.log('👨‍⚕️ Doctor coordinates:', {
+      latitude: doctor ? doctor.latitude : 'N/A',
+      longitude: doctor ? doctor.longitude : 'N/A',
+      latType: doctor && doctor.latitude ? typeof doctor.latitude : 'N/A',
+      lngType: doctor && doctor.longitude ? typeof doctor.longitude : 'N/A'
+    });
+    
     // Check if both business and doctor have valid coordinates
     if (!business || !doctor) {
+      console.log('❌ Missing business or doctor object');
       return 'Unknown';
     }
     

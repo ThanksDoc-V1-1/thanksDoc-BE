@@ -407,7 +407,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         // Send notification to the selected doctor only if they are verified
         try {
           const selectedDoctor = await strapi.entityService.findOne('api::doctor.doctor', preferredDoctorId, {
-            fields: ['id', 'firstName', 'lastName', 'phone', 'email', 'isAvailable', 'isVerified']
+            fields: ['id', 'firstName', 'lastName', 'phone', 'email', 'isAvailable', 'isVerified', 'latitude', 'longitude', 'address']
           });
           
           // Check if the doctor is verified before sending notification
@@ -1017,7 +1017,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       // Validate doctor exists, is available, and is verified
       const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
-        fields: ['id', 'firstName', 'lastName', 'phone', 'email', 'isAvailable', 'isVerified']
+        fields: ['id', 'firstName', 'lastName', 'phone', 'email', 'isAvailable', 'isVerified', 'latitude', 'longitude', 'address']
       });
       if (!doctor) {
         return ctx.badRequest('Doctor not found');
@@ -1868,7 +1868,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       // Get doctor details
       const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
-        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization'],
+        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization', 'latitude', 'longitude', 'address'],
       });
       
       if (!doctor) {
@@ -1889,7 +1889,9 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const mockBusiness = {
         name: 'Test Clinic',
         address: '123 Test Street, Test City',
-        phone: '+1234567890'
+        phone: '+1234567890',
+        latitude: 0.34,
+        longitude: 32.58
       };
 
       // Send test notification
@@ -1933,7 +1935,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       // Get doctor details
       const doctor = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
-        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization'],
+        fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization', 'latitude', 'longitude', 'address'],
       });
       
       if (!doctor) {
@@ -1955,7 +1957,9 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const mockBusiness = {
         name: 'Test Medical Center',
         address: '123 Test Medical Street, Test City',
-        phone: '+1234567890'
+        phone: '+1234567890',
+        latitude: 0.34,
+        longitude: 32.58
       };
 
       // Force interactive message by temporarily setting environment variable
