@@ -255,8 +255,10 @@ module.exports = createCoreController('api::service-request.service-request', ({
         isPaid, paymentMethod, paymentIntentId, paymentStatus, paidAt, totalAmount, servicePrice, serviceCharge, currency, chargeId
       });
       
-      // Get business details
-      const business = await strapi.entityService.findOne('api::business.business', businessId);
+      // Get business details with coordinates
+      const business = await strapi.entityService.findOne('api::business.business', businessId, {
+        fields: ['*'] // Include all fields including latitude, longitude, and updated name
+      });
       
       if (!business) {
         return ctx.badRequest('Business not found');
