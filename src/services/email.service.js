@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { calculateDistance } = require('../utils/distance');
 
 class EmailService {
   constructor() {
@@ -549,6 +550,54 @@ class EmailService {
   }
 
   /**
+   * Calculate distance between business and doctor in miles
+   */
+  calculateDistanceInMiles(business, doctor) {
+    // Check if both business and doctor have valid coordinates
+    if (!business || !doctor) {
+      return 'Unknown';
+    }
+    
+    // Handle both string and number coordinates
+    const businessLat = business.latitude ? parseFloat(business.latitude) : NaN;
+    const businessLng = business.longitude ? parseFloat(business.longitude) : NaN;
+    const doctorLat = doctor.latitude ? parseFloat(doctor.latitude) : NaN;
+    const doctorLng = doctor.longitude ? parseFloat(doctor.longitude) : NaN;
+    
+    // Validate coordinates
+    if (isNaN(businessLat) || isNaN(businessLng) || isNaN(doctorLat) || isNaN(doctorLng)) {
+      console.log('🔍 Email Distance calculation: Invalid coordinates detected', {
+        business: { lat: business.latitude, lng: business.longitude },
+        doctor: { lat: doctor.latitude, lng: doctor.longitude },
+        parsed: { businessLat, businessLng, doctorLat, doctorLng }
+      });
+      return 'Unknown';
+    }
+    
+    // Calculate distance in kilometers using Haversine formula
+    const distanceKm = calculateDistance(businessLat, businessLng, doctorLat, doctorLng);
+    
+    // Convert to miles (1 km = 0.621371 miles)
+    const distanceMiles = distanceKm * 0.621371;
+    
+    // Format the distance nicely
+    if (distanceMiles < 0.1) {
+      // Very close - show in feet
+      const feet = Math.round(distanceMiles * 5280);
+      return `${feet}ft`;
+    } else if (distanceMiles < 1) {
+      // Less than a mile - show one decimal place
+      return `${distanceMiles.toFixed(1)} miles`;
+    } else if (distanceMiles < 10) {
+      // Less than 10 miles - show one decimal place
+      return `${distanceMiles.toFixed(1)} miles`;
+    } else {
+      // 10+ miles - round to nearest mile
+      return `${Math.round(distanceMiles)} miles`;
+    }
+  }
+
+  /**
    * Send service request notification to doctor via email
    */
   async sendServiceRequestNotification(doctor, serviceRequest, business) {
@@ -589,6 +638,23 @@ class EmailService {
       servicePrice,
       doctorTakeHome,
       formattedTakeHome
+    });
+
+    // Calculate distance between business and doctor (or show "Online" for online services)
+    let distanceText;
+    let locationText;
+    if (serviceRequest.service && serviceRequest.service.category === 'online') {
+      distanceText = "Online";
+      locationText = "Online";
+    } else {
+      distanceText = this.calculateDistanceInMiles(business, doctor);
+      locationText = business.address || "Address not specified";
+    }
+    
+    console.log('📍 Email distance calculation:', {
+      distanceText,
+      locationText,
+      isOnline: serviceRequest.service && serviceRequest.service.category === 'online'
     });
     
     const acceptUrl = `${process.env.BASE_URL}/api/service-requests/email-accept/${serviceRequest.id}?doctorId=${doctor.id}`;
@@ -667,9 +733,11 @@ class EmailService {
               <div class="request-details">
                 <h3>📋 Request Details</h3>
                 <p><strong>Business:</strong> ${business.businessName}</p>
+                <p><strong>Location:</strong> ${locationText}</p>
                 <p><strong>Service Type:</strong> ${serviceRequest.serviceType}</p>
                 <p><strong>Scheduled Time:</strong> ${scheduledTime}</p>
                 <p><strong>Duration:</strong> ${serviceRequest.estimatedDuration} mins</p>
+                <p><strong>Distance:</strong> ${distanceText}</p>
                 <p><strong>Pay:</strong> ${formattedTakeHome}</p>
                 ${serviceRequest.description ? `<p><strong>Description:</strong> ${serviceRequest.description}</p>` : ''}
                 ${serviceRequest.patientFirstName ? `<p><strong>Patient:</strong> ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName || ''}</p>` : ''}
