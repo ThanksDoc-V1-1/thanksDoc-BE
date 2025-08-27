@@ -453,11 +453,15 @@ module.exports = createCoreController('api::service-request.service-request', ({
             try {
               await Promise.race([
                 emailService.sendServiceRequestNotification(selectedDoctor, serviceRequest, business),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 20000)) // 20 second timeout
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 45000)) // 45 second timeout
               ]);
               console.log(`Email notification sent to verified selected doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`);
             } catch (emailError) {
-              console.error('Failed to send email notification to selected doctor:', emailError.message || emailError);
+              if (emailError.message.includes('timeout')) {
+                console.warn(`⚠️ Email notification timed out for doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName} - continuing anyway`);
+              } else {
+                console.error('Failed to send email notification to selected doctor:', emailError.message || emailError);
+              }
             }
               
             // Early return since we found and notified a verified doctor
@@ -519,11 +523,15 @@ module.exports = createCoreController('api::service-request.service-request', ({
           try {
             await Promise.race([
               emailService.sendServiceRequestNotification(doctor, serviceRequest, business),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 20000)) // 20 second timeout
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 45000)) // 45 second timeout
             ]);
             console.log(`Email notification sent to Dr. ${doctor.firstName} ${doctor.lastName}`);
           } catch (error) {
-            console.error(`Failed to send email notification to Dr. ${doctor.firstName} ${doctor.lastName}:`, error.message || error);
+            if (error.message.includes('timeout')) {
+              console.warn(`⚠️ Email notification timed out for Dr. ${doctor.firstName} ${doctor.lastName} - continuing anyway`);
+            } else {
+              console.error(`Failed to send email notification to Dr. ${doctor.firstName} ${doctor.lastName}:`, error.message || error);
+            }
           }
         });
 
@@ -1150,11 +1158,15 @@ module.exports = createCoreController('api::service-request.service-request', ({
         try {
           await Promise.race([
             emailService.sendServiceRequestNotification(doctor, serviceRequest, businessForNotification),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 20000)) // 20 second timeout
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 45000)) // 45 second timeout
           ]);
           console.log(`Email notification sent to selected doctor: ${doctor.firstName} ${doctor.lastName}`);
         } catch (emailError) {
-          console.error('Failed to send email notification to selected doctor:', emailError.message);
+          if (emailError.message.includes('timeout')) {
+            console.warn(`⚠️ Email notification timed out for doctor: ${doctor.firstName} ${doctor.lastName} - continuing anyway`);
+          } else {
+            console.error('Failed to send email notification to selected doctor:', emailError.message);
+          }
         }
 
       } catch (whatsappError) {

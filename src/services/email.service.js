@@ -51,7 +51,7 @@ class EmailService {
   /**
    * Send email with timeout protection to prevent hanging
    */
-  async sendMailWithTimeout(mailOptions, timeoutMs = 30000) {
+  async sendMailWithTimeout(mailOptions, timeoutMs = 45000) { // Increased to 45 seconds for production
     try {
       const result = await Promise.race([
         this.transporter.sendMail(mailOptions),
@@ -67,7 +67,10 @@ class EmailService {
         command: error.command,
         message: error.message,
         to: mailOptions.to,
-        subject: mailOptions.subject
+        subject: mailOptions.subject,
+        host: process.env.EMAIL_HOST,
+        port: process.env.EMAIL_PORT,
+        secure: process.env.EMAIL_SECURE
       });
       
       // Provide specific error handling
@@ -76,7 +79,14 @@ class EmailService {
       } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
         throw new Error('Email server connection failed - please check email host configuration');
       } else if (error.message.includes('timeout')) {
-        throw new Error('Email send timeout - the email server is not responding');
+        // For timeout errors, don't throw - just log and return a "sent" status to prevent blocking
+        console.warn('⚠️ Email timeout in production - continuing without blocking the request');
+        return { 
+          success: false, 
+          messageId: 'timeout-' + Date.now(), 
+          timeout: true,
+          message: 'Email timed out but request continues' 
+        };
       } else {
         throw error;
       }
@@ -858,7 +868,14 @@ class EmailService {
     };
 
     try {
-      const result = await this.sendMailWithTimeout(mailOptions, 20000); // 20 second timeout for service requests
+      const result = await this.sendMailWithTimeout(mailOptions, 45000); // 45 second timeout for service requests
+      
+      // Handle timeout case gracefully
+      if (result.timeout) {
+        console.log(`⚠️ Service request email timed out but continuing: Dr. ${doctor.firstName} ${doctor.lastName}`);
+        return { success: false, messageId: result.messageId, timeout: true };
+      }
+      
       console.log(`✅ Service request email sent to Dr. ${doctor.firstName} ${doctor.lastName}: ${result.messageId}`);
       return { success: true, messageId: result.messageId };
     } catch (error) {
