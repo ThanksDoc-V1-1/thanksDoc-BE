@@ -464,7 +464,7 @@ class WhatsAppService {
       template: {
         name: this.templateName,
         language: {
-          code: "en_GB" // UK English
+          code: "en" // UK English
         },
         components: [
           {
