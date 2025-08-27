@@ -3,7 +3,11 @@ const { calculateDistance } = require('../utils/distance');
 
 class EmailService {
   constructor() {
-    this.transporter = nodemailer.createTransport({
+    // Detect if we're in production/Railway environment
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
+    
+    // Base configuration
+    const baseConfig = {
       host: process.env.EMAIL_HOST,
       port: parseInt(process.env.EMAIL_PORT),
       secure: process.env.EMAIL_SECURE === 'true',
@@ -11,7 +15,72 @@ class EmailService {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
-    });
+    };
+
+    // Production-specific configurations for Railway
+    if (isProduction) {
+      // Railway-optimized settings
+      baseConfig.connectionTimeout = 30000; // 30 seconds
+      baseConfig.greetingTimeout = 10000;   // 10 seconds
+      baseConfig.socketTimeout = 30000;     // 30 seconds
+      baseConfig.pool = false;              // Disable connection pooling
+      baseConfig.maxConnections = 1;        // Single connection
+      baseConfig.rateDelta = 1000;          // Rate limiting
+      baseConfig.rateLimit = 5;             // Max 5 emails per second
+      
+      // If using SSL on 465 fails, try TLS on 587
+      if (baseConfig.port === 465 && baseConfig.secure === true) {
+        console.log('🚀 Production detected: Attempting TLS configuration for better Railway compatibility');
+        baseConfig.port = 587;
+        baseConfig.secure = false;
+        baseConfig.requireTLS = true;
+      }
+    } else {
+      // Local development settings (faster timeouts)
+      baseConfig.connectionTimeout = 10000; // 10 seconds
+      baseConfig.greetingTimeout = 5000;    // 5 seconds
+      baseConfig.socketTimeout = 15000;     // 15 seconds
+    }
+
+    console.log(`📧 Email service initialized for ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} environment`);
+    console.log(`📧 Configuration: ${baseConfig.host}:${baseConfig.port} (secure: ${baseConfig.secure}, requireTLS: ${baseConfig.requireTLS || false})`);
+
+    this.transporter = nodemailer.createTransport(baseConfig);
+  }
+
+  /**
+   * Send email with timeout protection to prevent hanging
+   */
+  async sendMailWithTimeout(mailOptions, timeoutMs = 30000) {
+    try {
+      const result = await Promise.race([
+        this.transporter.sendMail(mailOptions),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error(`Email send timeout after ${timeoutMs/1000} seconds`)), timeoutMs)
+        )
+      ]);
+      return result;
+    } catch (error) {
+      // Log detailed error information
+      console.error('❌ Email send error details:', {
+        code: error.code,
+        command: error.command,
+        message: error.message,
+        to: mailOptions.to,
+        subject: mailOptions.subject
+      });
+      
+      // Provide specific error handling
+      if (error.code === 'EAUTH') {
+        throw new Error('Email authentication failed - please check email credentials');
+      } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+        throw new Error('Email server connection failed - please check email host configuration');
+      } else if (error.message.includes('timeout')) {
+        throw new Error('Email send timeout - the email server is not responding');
+      } else {
+        throw error;
+      }
+    }
   }
 
   async sendVerificationEmail(email, name, verificationToken, userType) {
@@ -89,7 +158,7 @@ class EmailService {
     };
 
     try {
-      const result = await this.transporter.sendMail(mailOptions);
+      const result = await this.sendMailWithTimeout(mailOptions);
       console.log('Verification email sent successfully:', result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
@@ -173,7 +242,7 @@ class EmailService {
     };
 
     try {
-      const result = await this.transporter.sendMail(mailOptions);
+      const result = await this.sendMailWithTimeout(mailOptions);
       console.log('Welcome email sent successfully:', result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
@@ -284,7 +353,7 @@ class EmailService {
     };
 
     try {
-      const result = await this.transporter.sendMail(mailOptions);
+      const result = await this.sendMailWithTimeout(mailOptions, 15000); // 15 second timeout
       (`✅ Video call email sent to doctor: ${doctor.email}`);
       return { success: true, messageId: result.messageId };
     } catch (error) {
@@ -397,7 +466,7 @@ class EmailService {
     };
 
     try {
-      const result = await this.transporter.sendMail(mailOptions);
+      const result = await this.sendMailWithTimeout(mailOptions, 15000); // 15 second timeout
       (`✅ Video call email sent to patient: ${serviceRequest.patientEmail}`);
       return { success: true, messageId: result.messageId };
     } catch (error) {
@@ -540,7 +609,7 @@ class EmailService {
     };
 
     try {
-      const result = await this.transporter.sendMail(mailOptions);
+      const result = await this.sendMailWithTimeout(mailOptions);
       (`✅ Professional reference request email sent to: ${referenceEmail}`);
       return { success: true, messageId: result.messageId };
     } catch (error) {
@@ -789,7 +858,7 @@ class EmailService {
     };
 
     try {
-      const result = await this.transporter.sendMail(mailOptions);
+      const result = await this.sendMailWithTimeout(mailOptions, 20000); // 20 second timeout for service requests
       console.log(`✅ Service request email sent to Dr. ${doctor.firstName} ${doctor.lastName}: ${result.messageId}`);
       return { success: true, messageId: result.messageId };
     } catch (error) {

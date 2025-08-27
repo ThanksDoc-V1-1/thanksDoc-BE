@@ -449,9 +449,12 @@ module.exports = createCoreController('api::service-request.service-request', ({
               console.error('WhatsApp service not found!');
             }
 
-            // Send email notification
+            // Send email notification with timeout
             try {
-              await emailService.sendServiceRequestNotification(selectedDoctor, serviceRequest, business);
+              await Promise.race([
+                emailService.sendServiceRequestNotification(selectedDoctor, serviceRequest, business),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 20000)) // 20 second timeout
+              ]);
               console.log(`Email notification sent to verified selected doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`);
             } catch (emailError) {
               console.error('Failed to send email notification to selected doctor:', emailError.message || emailError);
@@ -511,10 +514,13 @@ module.exports = createCoreController('api::service-request.service-request', ({
           ).length;
         }
 
-        // Send email notifications to all doctors
+        // Send email notifications to all doctors with timeout
         const emailPromises = nearbyDoctorsResponse.doctors.map(async (doctor) => {
           try {
-            await emailService.sendServiceRequestNotification(doctor, serviceRequest, business);
+            await Promise.race([
+              emailService.sendServiceRequestNotification(doctor, serviceRequest, business),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 20000)) // 20 second timeout
+            ]);
             console.log(`Email notification sent to Dr. ${doctor.firstName} ${doctor.lastName}`);
           } catch (error) {
             console.error(`Failed to send email notification to Dr. ${doctor.firstName} ${doctor.lastName}:`, error.message || error);
@@ -1140,9 +1146,12 @@ module.exports = createCoreController('api::service-request.service-request', ({
           console.error('WhatsApp service not found!');
         }
 
-        // Send Email notification
+        // Send Email notification with timeout
         try {
-          await emailService.sendServiceRequestNotification(doctor, serviceRequest, businessForNotification);
+          await Promise.race([
+            emailService.sendServiceRequestNotification(doctor, serviceRequest, businessForNotification),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 20000)) // 20 second timeout
+          ]);
           console.log(`Email notification sent to selected doctor: ${doctor.firstName} ${doctor.lastName}`);
         } catch (emailError) {
           console.error('Failed to send email notification to selected doctor:', emailError.message);
