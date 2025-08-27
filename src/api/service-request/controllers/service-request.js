@@ -453,7 +453,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
             try {
               await Promise.race([
                 emailService.sendServiceRequestNotification(selectedDoctor, serviceRequest, business),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 45000)) // 45 second timeout
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 30000)) // 30 second timeout
               ]);
               console.log(`Email notification sent to verified selected doctor: ${selectedDoctor.firstName} ${selectedDoctor.lastName}`);
             } catch (emailError) {
@@ -523,7 +523,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
           try {
             await Promise.race([
               emailService.sendServiceRequestNotification(doctor, serviceRequest, business),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 45000)) // 45 second timeout
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 30000)) // 30 second timeout
             ]);
             console.log(`Email notification sent to Dr. ${doctor.firstName} ${doctor.lastName}`);
           } catch (error) {
@@ -1158,7 +1158,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         try {
           await Promise.race([
             emailService.sendServiceRequestNotification(doctor, serviceRequest, businessForNotification),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 45000)) // 45 second timeout
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 30000)) // 30 second timeout
           ]);
           console.log(`Email notification sent to selected doctor: ${doctor.firstName} ${doctor.lastName}`);
         } catch (emailError) {

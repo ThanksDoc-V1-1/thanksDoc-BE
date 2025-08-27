@@ -28,13 +28,8 @@ class EmailService {
       baseConfig.rateDelta = 1000;          // Rate limiting
       baseConfig.rateLimit = 5;             // Max 5 emails per second
       
-      // If using SSL on 465 fails, try TLS on 587
-      if (baseConfig.port === 465 && baseConfig.secure === true) {
-        console.log('🚀 Production detected: Attempting TLS configuration for better Railway compatibility');
-        baseConfig.port = 587;
-        baseConfig.secure = false;
-        baseConfig.requireTLS = true;
-      }
+      // Keep the original email configuration - don't modify port/security settings
+      console.log('🚀 Production detected: Using configured email settings without modification');
     } else {
       // Local development settings (faster timeouts)
       baseConfig.connectionTimeout = 10000; // 10 seconds
@@ -51,7 +46,7 @@ class EmailService {
   /**
    * Send email with timeout protection to prevent hanging
    */
-  async sendMailWithTimeout(mailOptions, timeoutMs = 45000) { // Increased to 45 seconds for production
+  async sendMailWithTimeout(mailOptions, timeoutMs = 30000) { // 30 seconds should be sufficient
     try {
       const result = await Promise.race([
         this.transporter.sendMail(mailOptions),
