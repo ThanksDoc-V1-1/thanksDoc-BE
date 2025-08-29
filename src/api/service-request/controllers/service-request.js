@@ -1211,8 +1211,17 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return [];
       }
       
+      // First, get the doctor's services to filter requests appropriately
+      const doctorWithServices = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
+        populate: ['services'],
+        fields: ['id', 'firstName', 'lastName', 'services']
+      });
+      
+      const doctorServiceIds = doctorWithServices.services?.map(service => service.id) || [];
+      console.log(`Doctor ${doctorWithServices.firstName} ${doctorWithServices.lastName} offers services:`, doctorServiceIds);
+
       // Get all pending or accepted requests that are either:
-      // 1. Unassigned (no doctor) - general requests that any doctor can accept
+      // 1. Unassigned (no doctor) AND the doctor offers the requested service AND hasn't declined it
       // 2. Specifically assigned to this doctor (both pending and accepted)
       const requests = await strapi.entityService.findMany('api::service-request.service-request', {
         filters: {
@@ -1221,11 +1230,26 @@ module.exports = createCoreController('api::service-request.service-request', ({
               status: { $ne: 'cancelled' } // Exclude cancelled requests
             },
             {
+              declinedByDoctors: {
+                id: { $ne: doctorId } // Exclude requests this doctor has declined
+              }
+            },
+            {
               $or: [
                 { 
                   status: 'pending',
                   $or: [
-                    { doctor: null }, // Unassigned requests
+                    {
+                      $and: [
+                        { doctor: null }, // Unassigned requests
+                        { 
+                          $or: [
+                            { service: null }, // Requests without specific service (legacy)
+                            { service: { id: { $in: doctorServiceIds } } } // Requests for services this doctor offers
+                          ]
+                        }
+                      ]
+                    },
                     { doctor: doctorId } // Pending requests specifically for this doctor
                   ]
                 },
@@ -1241,12 +1265,20 @@ module.exports = createCoreController('api::service-request.service-request', ({
           business: { 
             fields: ['businessName', 'contactPersonName', 'phone', 'address', 'city', 'state', 'zipCode'] 
           },
-          doctor: true
+          doctor: true,
+          service: true, // Include service information for better filtering
+          declinedByDoctors: true // Include declined doctors info for filtering
         },
         sort: 'requestedAt:desc',
       });
 
       console.log(`Found ${requests.length} available requests for verified doctor ${doctorId}`);
+      console.log(`Requests breakdown:`, {
+        unassigned: requests.filter(r => !r.doctor).length,
+        assigned: requests.filter(r => r.doctor?.id === parseInt(doctorId)).length,
+        withService: requests.filter(r => r.service).length,
+        withoutService: requests.filter(r => !r.service).length
+      });
       
       return requests;
     } catch (error) {
