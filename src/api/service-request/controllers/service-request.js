@@ -142,6 +142,15 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return ctx.badRequest('Business not found');
       }
 
+      // Get service details to check if it's an online service
+      let serviceDetails = null;
+      let isOnlineService = false;
+      if (serviceId) {
+        serviceDetails = await strapi.entityService.findOne('api::service.service', serviceId);
+        isOnlineService = serviceDetails?.category === 'online';
+        console.log(`🌐 Service ${serviceDetails?.name} is ${isOnlineService ? 'online' : 'location-based'} (category: ${serviceDetails?.category})`);
+      }
+
       // Build filters for doctors
       const filters = {
         isAvailable: true,
@@ -160,7 +169,16 @@ module.exports = createCoreController('api::service-request.service-request', ({
         fields: ['id', 'name', 'firstName', 'lastName', 'phone', 'email', 'specialization', 'isAvailable', 'isVerified', 'latitude', 'longitude', 'serviceRadius'],
       });
 
-      // If business has location data, filter doctors based on their service radius preferences
+      // For online services, return all doctors who offer the service regardless of location
+      if (isOnlineService) {
+        console.log(`🌍 Online service detected - returning all ${allDoctors.length} doctors who offer this service regardless of location`);
+        return {
+          doctors: allDoctors,
+          count: allDoctors.length
+        };
+      }
+
+      // For in-person services, filter doctors based on their service radius preferences
       let filteredDoctors = allDoctors;
       if (business.latitude && business.longitude) {
         const { calculateDistance } = require('../../../utils/distance');

@@ -51,8 +51,12 @@ module.exports = {
             populate: ['services'],
           });
 
-          // Apply distance filtering if business location and distance filter are available
-          if (request.businessLatitude && request.businessLongitude && request.distanceFilter && request.distanceFilter !== -1) {
+          // Check if this is an online service
+          const isOnlineService = request.service.category === 'online';
+          console.log(`🌐 Service ${request.service.name} is ${isOnlineService ? 'online' : 'location-based'} (category: ${request.service.category})`);
+
+          // Apply distance filtering only for non-online services
+          if (!isOnlineService && request.businessLatitude && request.businessLongitude && request.distanceFilter && request.distanceFilter !== -1) {
             const { filterDoctorsByDistance } = require('../src/utils/distance');
             (`Applying distance filter: ${request.distanceFilter}km from business location (${request.businessLatitude}, ${request.businessLongitude})`);
             
@@ -64,6 +68,8 @@ module.exports = {
               parseInt(request.distanceFilter)
             );
             (`Distance filtering: ${beforeCount} doctors -> ${otherDoctors.length} doctors within ${request.distanceFilter}km`);
+          } else if (isOnlineService) {
+            (`🌍 Online service detected - broadcasting to all ${otherDoctors.length} doctors who offer this service regardless of location`);
           }
 
         (`Found ${otherDoctors.length} other doctors for service ID ${serviceId}.`);
