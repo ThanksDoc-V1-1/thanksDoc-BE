@@ -421,14 +421,14 @@ class WhatsAppService {
           year: 'numeric',
           month: 'short',
           day: 'numeric',
-          timeZone: 'Africa/Nairobi' // East Africa Time
+          timeZone: 'Europe/London' // UK Time (GMT/BST)
         });
         
         const timeFormatted = date.toLocaleTimeString('en-GB', {
           hour: '2-digit',
           minute: '2-digit',
           hour12: true,
-          timeZone: 'Africa/Nairobi' // East Africa Time
+          timeZone: 'Europe/London' // UK Time (GMT/BST)
         });
         
         ('🔍 formatServiceDateTime formatted output:', { date: dateFormatted, time: timeFormatted });
