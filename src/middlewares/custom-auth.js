@@ -131,15 +131,14 @@ module.exports = (config, { strapi }) => {
         ('🎯 Strapi user context established for:', strapiUser.email);
       }
       
-      // Proceed to next middleware
-      await next();
-      
     } catch (error) {
-      ('🚫 Custom auth middleware: Token validation failed:', error.message);
+      console.log('🚫 Custom auth middleware: Token validation failed:', error.message);
       
       // If custom token validation fails, let Strapi handle it
       // This allows fallback to standard Strapi authentication
-      await next();
     }
+    
+    // Always proceed to next middleware (only called once)
+    return await next();
   };
 };

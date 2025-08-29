@@ -615,17 +615,21 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const isOnlineConsultation = serviceRequest.serviceType?.toLowerCase().includes('online consultation') || 
                                     serviceRequest.service?.category === 'online';
 
+      // Remove hourlyRate calculation since it's no longer available in doctor model
+      console.log('💰 Service request acceptance:', {
+        doctorId: doctor.id,
+        serviceRequestId: id,
+        existingTotalAmount: serviceRequest.totalAmount
+      });
+
       let updateData = {
         doctor: doctorId,
         status: 'accepted',
         acceptedAt: new Date(),
-        totalAmount: doctor.hourlyRate * (serviceRequest.estimatedDuration || 1),
       };
-
-      // Only preserve existing totalAmount for paid requests
-      if (serviceRequest.totalAmount && serviceRequest.totalAmount > 0) {
-        delete updateData.totalAmount; // Don't overwrite existing amount
-      }
+      
+      // Preserve existing totalAmount - don't recalculate since hourlyRate is deprecated
+      // The totalAmount should be set from the service pricing system
 
       // Create video call for online consultations
       if (isOnlineConsultation && serviceRequest.patientFirstName && serviceRequest.patientPhone) {
@@ -1361,14 +1365,14 @@ module.exports = createCoreController('api::service-request.service-request', ({
         return ctx.badRequest('Service request has already been paid');
       }
 
-      // Calculate payment amount based on doctor rate and service duration
+      // Calculate payment amount - use existing totalAmount if available, otherwise use service pricing
       const doctor = serviceRequest.doctor;
       const business = serviceRequest.business;
-      const hourlyRate = doctor?.hourlyRate || 0;
-      const hours = serviceRequest.estimatedDuration || 1;
-      const amount = hourlyRate * hours;
+      
+      // Use existing totalAmount from service request (set during creation based on service pricing)
+      const amount = serviceRequest.totalAmount || 0;
 
-      (`Payment amount for request ${id}: ${amount}`);
+      console.log(`Payment amount for request ${id}: ${amount} (from existing totalAmount)`);
 
       // Create comprehensive payment details object
       const completePaymentDetails = {
@@ -1533,7 +1537,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         doctor: doctorId,
         status: 'accepted',
         acceptedAt: new Date(),
-        totalAmount: doctor.hourlyRate * (serviceRequest.estimatedDuration || 1),
+        // Removed totalAmount calculation since hourlyRate is no longer available
       };
 
       // Only preserve existing totalAmount for paid requests
