@@ -1214,7 +1214,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // First, get the doctor's services to filter requests appropriately
       const doctorWithServices = await strapi.entityService.findOne('api::doctor.doctor', doctorId, {
         populate: ['services'],
-        fields: ['id', 'firstName', 'lastName', 'services']
+        fields: ['id', 'firstName', 'lastName']
       });
       
       const doctorServiceIds = doctorWithServices.services?.map(service => service.id) || [];
