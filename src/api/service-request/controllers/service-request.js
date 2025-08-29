@@ -1230,11 +1230,6 @@ module.exports = createCoreController('api::service-request.service-request', ({
               status: { $ne: 'cancelled' } // Exclude cancelled requests
             },
             {
-              declinedByDoctors: {
-                id: { $ne: doctorId } // Exclude requests this doctor has declined
-              }
-            },
-            {
               $or: [
                 { 
                   status: 'pending',
@@ -1270,6 +1265,13 @@ module.exports = createCoreController('api::service-request.service-request', ({
           declinedByDoctors: true // Include declined doctors info for filtering
         },
         sort: 'requestedAt:desc',
+      });
+
+      // Filter out requests that have been declined by this doctor (client-side filtering for complex logic)
+      const filteredRequests = requests.filter(request => {
+        // Check if this doctor has declined this request
+        const hasDeclined = request.declinedByDoctors?.some(doctor => doctor.id === parseInt(doctorId));
+        return !hasDeclined;
       });
 
       console.log(`Found ${requests.length} available requests for verified doctor ${doctorId}`);
