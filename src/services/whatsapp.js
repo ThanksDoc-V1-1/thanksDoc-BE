@@ -420,15 +420,15 @@ class WhatsAppService {
         const dateFormatted = date.toLocaleDateString('en-GB', {
           year: 'numeric',
           month: 'short',
-          day: 'numeric',
-          timeZone: 'Europe/London' // UK Time (GMT/BST)
+          day: 'numeric'
+          // No timeZone conversion - use the exact date/time as selected
         });
         
         const timeFormatted = date.toLocaleTimeString('en-GB', {
           hour: '2-digit',
           minute: '2-digit',
-          hour12: true,
-          timeZone: 'Europe/London' // UK Time (GMT/BST)
+          hour12: true
+          // No timeZone conversion - use the exact time as selected
         });
         
         ('🔍 formatServiceDateTime formatted output:', { date: dateFormatted, time: timeFormatted });
