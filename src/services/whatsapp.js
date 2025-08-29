@@ -407,32 +407,71 @@ class WhatsAppService {
       }
       
       try {
-        ('🔍 formatServiceDateTime: Creating date from:', dateTimeString);
-        const date = new Date(dateTimeString);
-        ('🔍 Date object created:', date);
-        ('🔍 Date.getTime():', date.getTime());
+        ('🔍 formatServiceDateTime: Processing datetime string directly');
         
+        // Parse the datetime string directly to avoid timezone conversion
+        const date = new Date(dateTimeString);
         if (isNaN(date.getTime())) {
           ('🔍 formatServiceDateTime: Invalid date');
           return { date: 'Not specified', time: 'Not specified' };
         }
         
-        const dateFormatted = date.toLocaleDateString('en-GB', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-          // No timeZone conversion - use the exact date/time as selected
-        });
+        // Extract the original time components from the ISO string
+        // This preserves the exact time that was originally selected
+        let timeString = '';
+        let dateString = '';
         
-        const timeFormatted = date.toLocaleTimeString('en-GB', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-          // No timeZone conversion - use the exact time as selected
-        });
+        if (typeof dateTimeString === 'string' && dateTimeString.includes('T')) {
+          // Handle ISO format: "2025-09-03T14:17:00.000Z"
+          const [datePart, timePart] = dateTimeString.split('T');
+          const timeOnly = timePart.split('.')[0]; // Remove milliseconds and Z
+          const [hours, minutes] = timeOnly.split(':');
+          
+          console.log('🔍 Parsing ISO datetime:');
+          console.log('  - Original string:', dateTimeString);
+          console.log('  - Date part:', datePart);
+          console.log('  - Time part:', timePart);
+          console.log('  - Time only:', timeOnly);
+          console.log('  - Hours:', hours, 'Minutes:', minutes);
+          
+          // Format date
+          const dateObj = new Date(datePart);
+          dateString = dateObj.toLocaleDateString('en-GB', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+          
+          // Format time manually to preserve exact selected time
+          const hour24 = parseInt(hours);
+          const minute = parseInt(minutes);
+          const isPM = hour24 >= 12;
+          const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+          const minuteStr = minute.toString().padStart(2, '0');
+          timeString = `${hour12}:${minuteStr} ${isPM ? 'pm' : 'am'}`;
+          
+          console.log('🔍 Manual time formatting:');
+          console.log('  - hour24:', hour24, 'minute:', minute);
+          console.log('  - hour12:', hour12, 'isPM:', isPM);
+          console.log('  - Final time string:', timeString);
+          
+        } else {
+          // Fallback to regular formatting if not ISO format
+          dateString = date.toLocaleDateString('en-GB', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+          
+          timeString = date.toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+        }
         
-        ('🔍 formatServiceDateTime formatted output:', { date: dateFormatted, time: timeFormatted });
-        return { date: dateFormatted, time: timeFormatted };
+        ('🔍 formatServiceDateTime formatted output:', { date: dateString, time: timeString });
+        return { date: dateString, time: timeString };
       } catch (error) {
         console.error('❌ formatServiceDateTime error:', error);
         return { date: 'Not specified', time: 'Not specified' };
