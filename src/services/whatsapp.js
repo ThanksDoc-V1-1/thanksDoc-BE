@@ -6,6 +6,7 @@ require('dotenv').config();
 const axios = require('axios');
 const crypto = require('crypto');
 const { calculateDistance } = require('../utils/distance');
+const SecurityLogger = require('../utils/security-logger');
 
 class WhatsAppService {
   constructor() {
@@ -1043,7 +1044,7 @@ The doctor will contact you shortly to coordinate the visit.`;
    */
   async handleIncomingMessage(webhookData) {
     try {
-      ('📨 Received WhatsApp webhook data:', JSON.stringify(webhookData, null, 2));
+      console.log('📨 Received WhatsApp webhook data:', JSON.stringify(webhookData, null, 2));
       
       const { entry } = webhookData;
       
@@ -1051,12 +1052,32 @@ The doctor will contact you shortly to coordinate the visit.`;
         const { changes } = entryItem;
         
         for (const change of changes) {
+          // SECURITY: Only process user messages, not system status updates
           if (change.field === 'messages') {
-            const { messages } = change.value;
+            const { messages, statuses } = change.value;
+            
+            // Skip processing if this is a status update webhook (delivery, read receipts, etc.)
+            if (statuses && statuses.length > 0) {
+              console.log('📊 Received message status update - ignoring to prevent auto-acceptance');
+              console.log('Status details:', JSON.stringify(statuses, null, 2));
+              continue;
+            }
             
             for (const message of messages || []) {
-              ('🔍 Processing message type:', message.type);
-              ('📱 Message details:', JSON.stringify(message, null, 2));
+              // SECURITY: Additional validation to ensure this is a user-initiated message
+              if (!message.from || !message.type) {
+                console.log('⚠️ Skipping invalid message structure');
+                continue;
+              }
+              
+              // SECURITY: Skip system messages or automated responses
+              if (message.system || message.context?.from === 'system') {
+                console.log('⚠️ Skipping system message to prevent auto-acceptance');
+                continue;
+              }
+              
+              console.log('🔍 Processing message type:', message.type);
+              console.log('📱 Message details:', JSON.stringify(message, null, 2));
               
               if (message.type === 'text') {
                 await this.processTextMessage(message);
@@ -1077,26 +1098,51 @@ The doctor will contact you shortly to coordinate the visit.`;
    */
   async processInteractiveMessage(message) {
     try {
-      ('🔄 Processing interactive message:', JSON.stringify(message, null, 2));
+      console.log('🔄 Processing interactive message:', JSON.stringify(message, null, 2));
       
       const { from, interactive } = message;
+      
+      // SECURITY: Additional validation for interactive messages
+      if (!interactive || !interactive.button_reply) {
+        console.log('⚠️ Invalid interactive message structure - skipping');
+        return;
+      }
       
       // Handle Quick Reply button responses
       if (interactive.type === 'button_reply') {
         const buttonId = interactive.button_reply.id;
         const buttonTitle = interactive.button_reply.title;
         
-        (`🎯 Button clicked - ID: ${buttonId}, Title: ${buttonTitle}, From: ${from}`);
+        console.log(`🎯 Button clicked - ID: ${buttonId}, Title: ${buttonTitle}, From: ${from}`);
+        
+        // SECURITY: Validate button ID format to prevent injection
+        if (!buttonId || typeof buttonId !== 'string') {
+          console.log('⚠️ Invalid button ID format - skipping');
+          return;
+        }
         
         // Parse button ID to extract action, service request ID, and doctor ID
         // Format: accept_123_456 or decline_123_456
         const buttonParts = buttonId.split('_');
         if (buttonParts.length === 3) {
           const action = buttonParts[0]; // 'accept' or 'decline'
+          
+          // SECURITY: Validate action is expected value
+          if (action !== 'accept' && action !== 'decline') {
+            console.log(`⚠️ Invalid action in button ID: ${action} - skipping`);
+            return;
+          }
+          
           const serviceRequestId = parseInt(buttonParts[1]);
           const doctorId = parseInt(buttonParts[2]);
           
-          (`📋 Parsed button data - Action: ${action}, Service Request: ${serviceRequestId}, Doctor: ${doctorId}`);
+          // SECURITY: Validate IDs are valid numbers
+          if (isNaN(serviceRequestId) || isNaN(doctorId) || serviceRequestId <= 0 || doctorId <= 0) {
+            console.log(`⚠️ Invalid service request ID (${serviceRequestId}) or doctor ID (${doctorId}) - skipping`);
+            return;
+          }
+          
+          console.log(`📋 Parsed button data - Action: ${action}, Service Request: ${serviceRequestId}, Doctor: ${doctorId}`);
           
           // Find doctor by phone number to verify
           const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
@@ -1108,17 +1154,17 @@ The doctor will contact you shortly to coordinate the visit.`;
           });
 
           if (doctors.length === 0) {
-            (`❌ No doctor found with phone: ${from}`);
+            console.log(`❌ No doctor found with phone: ${from}`);
             await this.sendSimpleMessage(from, "❌ Sorry, we couldn't verify your identity. Please contact support.");
             return;
           }
 
           const doctor = doctors[0];
           
-          // Verify doctor ID matches
+          // SECURITY: Verify doctor ID matches - critical security check
           if (doctor.id !== doctorId) {
-            (`❌ Doctor ID mismatch - Found: ${doctor.id}, Expected: ${doctorId}`);
-            await this.sendSimpleMessage(from, "❌ Security verification failed. Please contact support.");
+            console.log(`❌ SECURITY VIOLATION: Doctor ID mismatch - Found: ${doctor.id}, Expected: ${doctorId}`);
+            await this.sendSimpleMessage(from, "❌ Security verification failed. Please contact support immediately.");
             return;
           }
 
@@ -1128,21 +1174,28 @@ The doctor will contact you shortly to coordinate the visit.`;
           });
 
           if (!serviceRequest) {
-            (`❌ Service request not found: ${serviceRequestId}`);
+            console.log(`❌ Service request not found: ${serviceRequestId}`);
             await this.sendSimpleMessage(from, "❌ Service request not found or has expired.");
             return;
           }
 
-          // Check if request is still pending
+          // SECURITY: Check if request is still pending
           if (serviceRequest.status !== 'pending') {
-            (`❌ Service request status is not pending: ${serviceRequest.status}`);
+            console.log(`❌ Service request status is not pending: ${serviceRequest.status}`);
             await this.sendSimpleMessage(from, `❌ This request is no longer available (Status: ${serviceRequest.status.toUpperCase()}).`);
+            return;
+          }
+          
+          // SECURITY: Ensure request isn't already assigned to another doctor
+          if (serviceRequest.doctor && serviceRequest.doctor.id !== doctorId) {
+            console.log(`❌ Request already assigned to different doctor: ${serviceRequest.doctor.id}`);
+            await this.sendSimpleMessage(from, "❌ This request has already been assigned to another doctor.");
             return;
           }
 
           // Process the action
           if (action === 'accept') {
-            (`✅ Processing ACCEPT for request ${serviceRequestId} by doctor ${doctorId}`);
+            console.log(`✅ Processing SECURE ACCEPT for request ${serviceRequestId} by doctor ${doctorId}`);
             await this.acceptServiceRequest(serviceRequestId, doctorId);
             await this.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
             
@@ -1151,22 +1204,17 @@ The doctor will contact you shortly to coordinate the visit.`;
               await this.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
             }
           } else if (action === 'decline') {
-            (`❌ Processing DECLINE for request ${serviceRequestId} by doctor ${doctorId}`);
+            console.log(`❌ Processing SECURE DECLINE for request ${serviceRequestId} by doctor ${doctorId}`);
             await this.sendConfirmationMessage(doctor.phone, 'reject', serviceRequest, serviceRequest.business);
           }
           
           return;
+        } else {
+          console.log(`⚠️ Invalid button ID format: ${buttonId} - expected format: action_requestId_doctorId`);
         }
         
-        // Fallback: Process as if it's a text message with the button title
-        const simulatedTextMessage = {
-          from: from,
-          text: {
-            body: buttonTitle.toLowerCase()
-          }
-        };
-        
-        await this.processTextMessage(simulatedTextMessage);
+        // REMOVED: Fallback text message processing to prevent security vulnerabilities
+        // Previous code would process any button title as a text message, which was unsafe
       }
     } catch (error) {
       console.error('Error processing interactive message:', error);
@@ -1182,13 +1230,19 @@ The doctor will contact you shortly to coordinate the visit.`;
 
   /**
    * Process incoming text messages for ACCEPT/DECLINE responses
+   * SECURITY: Disabled automatic acceptance via text messages to prevent accidental acceptance
    */
   async processTextMessage(message) {
     try {
       const { from, text } = message;
       const messageText = text.body.toLowerCase().trim();
       
-      // Handle both old format and new template Quick Reply responses
+      console.log(`📱 Received text message from ${from}: "${messageText}"`);
+      
+      // SECURITY FIX: Disable automatic acceptance via plain text messages
+      // This prevents accidental acceptance when doctors send casual messages
+      // or when WhatsApp system messages contain trigger words
+      
       if (messageText === 'accept' || messageText === 'decline' || 
           messageText === 'accept request' || messageText === 'decline request') {
         
@@ -1202,41 +1256,21 @@ The doctor will contact you shortly to coordinate the visit.`;
         });
 
         if (doctors.length === 0) {
-          (`No doctor found with phone: ${from}`);
+          console.log(`❌ No doctor found with phone: ${from}`);
+          // Send helpful message
+          await this.sendSimpleMessage(from, 
+            "🔒 For security, please use the Accept/Decline buttons in our official messages, or visit your dashboard to respond to service requests."
+          );
           return;
         }
 
         const doctor = doctors[0];
+        console.log(`⚠️ SECURITY: Doctor ${doctor.firstName} ${doctor.lastName} sent text "${messageText}" - text-based acceptance disabled`);
 
-        // Find the most recent pending service request
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const pendingRequests = await strapi.entityService.findMany('api::service-request.service-request', {
-          filters: {
-            status: 'pending',
-            requestedAt: {
-              $gte: oneDayAgo
-            }
-          },
-          populate: ['business'],
-          sort: { requestedAt: 'desc' },
-          pagination: { limit: 1 }
-        });
-
-        if (pendingRequests.length === 0) {
-          (`No pending requests found for doctor: ${doctor.id}`);
-          return;
-        }
-
-        const serviceRequest = pendingRequests[0];
-
-        if (messageText === 'accept' || messageText === 'accept request') {
-          // Accept the service request
-          await this.acceptServiceRequest(serviceRequest.id, doctor.id);
-          await this.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
-          await this.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
-        } else if (messageText === 'decline' || messageText === 'decline request') {
-          await this.sendConfirmationMessage(doctor.phone, 'reject', serviceRequest, serviceRequest.business);
-        }
+        // Send security message instead of auto-accepting
+        await this.sendSimpleMessage(from, 
+          `🔒 Hi Dr. ${doctor.firstName}! For security reasons, please use the Accept/Decline buttons in our service request messages, or visit your dashboard at ${process.env.FRONTEND_DASHBOARD_URL}/doctor/dashboard to respond to requests.`
+        );
       }
     } catch (error) {
       console.error('Error processing text message:', error);
@@ -1247,21 +1281,65 @@ The doctor will contact you shortly to coordinate the visit.`;
    * Accept service request (extracted for reuse)
    */
   async acceptServiceRequest(serviceRequestId, doctorId) {
-    // Update the service request
-    await strapi.entityService.update('api::service-request.service-request', serviceRequestId, {
-      data: {
-        doctor: doctorId,
-        status: 'accepted',
-        acceptedAt: new Date(),
+    try {
+      console.log(`🔐 SECURITY: Processing service request acceptance - ID: ${serviceRequestId}, Doctor: ${doctorId}`);
+      
+      // Log the acceptance for security audit
+      await SecurityLogger.logServiceRequestAcceptance('whatsapp_button', serviceRequestId, doctorId, {
+        timestamp: new Date().toISOString(),
+        source: 'WhatsApp interactive button'
+      });
+      
+      // Double-check the request is still pending before accepting
+      const currentRequest = await strapi.entityService.findOne('api::service-request.service-request', serviceRequestId, {
+        populate: ['doctor']
+      });
+      
+      if (!currentRequest) {
+        console.log(`❌ SECURITY: Service request ${serviceRequestId} not found during acceptance`);
+        throw new Error('Service request not found');
       }
-    });
+      
+      if (currentRequest.status !== 'pending') {
+        console.log(`❌ SECURITY: Service request ${serviceRequestId} status changed to ${currentRequest.status} before acceptance`);
+        throw new Error(`Request status is ${currentRequest.status}, cannot accept`);
+      }
+      
+      if (currentRequest.doctor && currentRequest.doctor.id !== doctorId) {
+        console.log(`❌ SECURITY: Service request ${serviceRequestId} already assigned to doctor ${currentRequest.doctor.id}`);
+        throw new Error('Request already assigned to another doctor');
+      }
+    
+      // Update the service request
+      await strapi.entityService.update('api::service-request.service-request', serviceRequestId, {
+        data: {
+          doctor: doctorId,
+          status: 'accepted',
+          acceptedAt: new Date(),
+        }
+      });
 
-    // Set doctor as temporarily unavailable
-    await strapi.entityService.update('api::doctor.doctor', doctorId, {
-      data: {
-        isAvailable: false,
-      },
-    });
+      // Set doctor as temporarily unavailable
+      await strapi.entityService.update('api::doctor.doctor', doctorId, {
+        data: {
+          isAvailable: false,
+        },
+      });
+      
+      console.log(`✅ SECURITY: Service request ${serviceRequestId} successfully accepted by doctor ${doctorId}`);
+    } catch (error) {
+      console.error(`❌ SECURITY ERROR: Failed to accept service request ${serviceRequestId}:`, error.message);
+      
+      // Log the security error
+      await SecurityLogger.logSecurityViolation('ACCEPTANCE_FAILED', {
+        serviceRequestId,
+        doctorId,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+      
+      throw error;
+    }
   }
 
   /**

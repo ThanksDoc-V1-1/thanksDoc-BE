@@ -585,17 +585,40 @@ module.exports = createCoreController('api::service-request.service-request', ({
       const { id } = ctx.params;
       const { doctorId } = ctx.request.body;
 
+      console.log(`🔐 SECURITY: Dashboard acceptance attempt - Request: ${id}, Doctor: ${doctorId}`);
+      
+      // Log the acceptance attempt for security audit
+      const SecurityLogger = require('../../../utils/security-logger');
+      await SecurityLogger.logServiceRequestAcceptance('dashboard', id, doctorId, {
+        timestamp: new Date().toISOString(),
+        source: 'Doctor Dashboard'
+      });
+
       // Get the service request
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
         populate: ['business', 'doctor', 'service'],
       });
 
       if (!serviceRequest) {
+        console.log(`❌ SECURITY: Service request ${id} not found`);
         return ctx.notFound('Service request not found');
       }
 
       if (serviceRequest.status !== 'pending') {
+        console.log(`❌ SECURITY: Service request ${id} status is ${serviceRequest.status}, cannot accept`);
         return ctx.badRequest('Service request is no longer available');
+      }
+
+      // SECURITY: Check if already assigned to another doctor
+      if (serviceRequest.doctor && serviceRequest.doctor.id !== parseInt(doctorId)) {
+        console.log(`❌ SECURITY: Service request ${id} already assigned to doctor ${serviceRequest.doctor.id}`);
+        await SecurityLogger.logSecurityViolation('ASSIGNMENT_CONFLICT', {
+          serviceRequestId: id,
+          requestingDoctorId: doctorId,
+          assignedDoctorId: serviceRequest.doctor.id,
+          source: 'dashboard'
+        });
+        return ctx.badRequest('Service request is already assigned to another doctor');
       }
 
       // Get doctor details and check verification
@@ -604,6 +627,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
       });
       
       if (!doctor) {
+        console.log(`❌ SECURITY: Doctor ${doctorId} not found`);
         return ctx.badRequest('Doctor not found');
       }
 
