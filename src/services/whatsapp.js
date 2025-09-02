@@ -428,13 +428,6 @@ class WhatsAppService {
       try {
         ('🔍 formatServiceDateTime: Processing datetime string directly');
         
-        // Parse the datetime string directly to avoid timezone conversion
-        const date = new Date(dateTimeString);
-        if (isNaN(date.getTime())) {
-          ('🔍 formatServiceDateTime: Invalid date');
-          return { date: 'Not specified', time: 'Not specified' };
-        }
-        
         // Extract the original time components from the ISO string
         // This preserves the exact time that was originally selected
         let timeString = '';
@@ -453,13 +446,12 @@ class WhatsAppService {
           console.log('  - Time only:', timeOnly);
           console.log('  - Hours:', hours, 'Minutes:', minutes);
           
-          // Format date
-          const dateObj = new Date(datePart);
-          dateString = dateObj.toLocaleDateString('en-GB', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          });
+          // Format date directly from string parts to avoid timezone conversion
+          const [year, month, day] = datePart.split('-');
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const monthName = monthNames[parseInt(month) - 1];
+          dateString = `${parseInt(day)} ${monthName} ${year}`;
           
           // Format time manually to preserve exact selected time
           const hour24 = parseInt(hours);
@@ -475,7 +467,13 @@ class WhatsAppService {
           console.log('  - Final time string:', timeString);
           
         } else {
-          // Fallback to regular formatting if not ISO format
+          // Fallback: parse as Date object but avoid timezone issues
+          const date = new Date(dateTimeString);
+          if (isNaN(date.getTime())) {
+            ('🔍 formatServiceDateTime: Invalid date');
+            return { date: 'Not specified', time: 'Not specified' };
+          }
+          
           dateString = date.toLocaleDateString('en-GB', {
             year: 'numeric',
             month: 'short',
@@ -624,12 +622,7 @@ class WhatsAppService {
       }
       
       try {
-        const date = new Date(dateTimeString);
-        if (isNaN(date.getTime())) {
-          return { date: 'Not specified', time: 'Not specified' };
-        }
-        
-        // Extract date and time components
+        // Extract date and time components directly from string to avoid timezone conversion
         let timeString = '';
         let dateString = '';
         
@@ -638,15 +631,14 @@ class WhatsAppService {
           const timeOnly = timePart.split('.')[0];
           const [hours, minutes] = timeOnly.split(':');
           
-          // Format date
-          const dateObj = new Date(datePart);
-          dateString = dateObj.toLocaleDateString('en-GB', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          });
+          // Format date directly from string parts to avoid timezone conversion
+          const [year, month, day] = datePart.split('-');
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const monthName = monthNames[parseInt(month) - 1];
+          dateString = `${parseInt(day)} ${monthName} ${year}`;
           
-          // Format time manually
+          // Format time manually to preserve exact selected time
           const hour24 = parseInt(hours);
           const minute = parseInt(minutes);
           const isPM = hour24 >= 12;
@@ -654,6 +646,12 @@ class WhatsAppService {
           const minuteStr = minute.toString().padStart(2, '0');
           timeString = `${hour12}:${minuteStr} ${isPM ? 'pm' : 'am'}`;
         } else {
+          // Fallback: parse as Date object for non-ISO formats
+          const date = new Date(dateTimeString);
+          if (isNaN(date.getTime())) {
+            return { date: 'Not specified', time: 'Not specified' };
+          }
+          
           dateString = date.toLocaleDateString('en-GB', {
             year: 'numeric',
             month: 'short',
