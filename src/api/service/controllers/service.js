@@ -32,6 +32,48 @@ module.exports = createCoreController('api::service.service', ({ strapi }) => ({
     }
   },
 
+  // Get patient-specific services
+  async findPatientServices(ctx) {
+    try {
+      const services = await strapi.entityService.findMany('api::service.service', {
+        filters: {
+          $or: [
+            { serviceType: 'patient' },
+            { serviceType: 'both' }
+          ],
+          isActive: true
+        },
+        sort: { displayOrder: 'asc', name: 'asc' }
+      });
+      
+      return { data: services };
+    } catch (error) {
+      console.error('Error finding patient services:', error);
+      ctx.throw(500, `Error finding patient services: ${error.message}`);
+    }
+  },
+
+  // Get business-specific services
+  async findBusinessServices(ctx) {
+    try {
+      const services = await strapi.entityService.findMany('api::service.service', {
+        filters: {
+          $or: [
+            { serviceType: 'business' },
+            { serviceType: 'both' }
+          ],
+          isActive: true
+        },
+        sort: { displayOrder: 'asc', name: 'asc' }
+      });
+      
+      return { data: services };
+    } catch (error) {
+      console.error('Error finding business services:', error);
+      ctx.throw(500, `Error finding business services: ${error.message}`);
+    }
+  },
+
   // Find doctors by service
   async findDoctorsByService(ctx) {
     try {

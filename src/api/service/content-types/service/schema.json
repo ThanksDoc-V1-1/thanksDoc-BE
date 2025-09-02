@@ -25,6 +25,12 @@
       "enum": ["in-person", "online", "nhs"],
       "required": true
     },
+    "serviceType": {
+      "type": "enumeration",
+      "enum": ["business", "patient", "both"],
+      "default": "both",
+      "description": "Who can request this service"
+    },
     "isActive": {
       "type": "boolean",
       "default": true

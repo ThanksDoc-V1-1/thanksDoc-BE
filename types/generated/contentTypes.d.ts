@@ -1361,6 +1361,8 @@ export interface ApiServiceService extends Struct.CollectionTypeSchema {
       Schema.Attribute.Unique;
     price: Schema.Attribute.Decimal & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
+    serviceType: Schema.Attribute.Enumeration<['business', 'patient', 'both']> &
+      Schema.Attribute.DefaultTo<'both'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
