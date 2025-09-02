@@ -1305,7 +1305,7 @@ export interface ApiServiceRequestServiceRequest
     rejectedBy: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
     rejectionReason: Schema.Attribute.Text;
     requestedAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
-    requestedServiceDateTime: Schema.Attribute.DateTime;
+    requestedServiceDateTime: Schema.Attribute.String;
     scheduledAt: Schema.Attribute.DateTime;
     service: Schema.Attribute.Relation<'manyToOne', 'api::service.service'>;
     serviceType: Schema.Attribute.String & Schema.Attribute.Required;

@@ -74,7 +74,7 @@
       "type": "datetime"
     },
     "requestedServiceDateTime": {
-      "type": "datetime",
+      "type": "string",
       "required": false
     },
     "totalAmount": {

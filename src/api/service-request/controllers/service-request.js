@@ -2704,6 +2704,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
     try {
       console.log('👤 Creating patient service request');
       console.log('📋 Request body:', ctx.request.body);
+      console.log('🕐 DEBUG - received serviceDateTime:', ctx.request.body.serviceDateTime);
 
       const {
         // Patient information
@@ -2806,7 +2807,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
         // Doctor selection and scheduling
         doctorSelectionType: doctorSelectionType || 'any',
         preferredDoctorId: preferredDoctorId || null,
-        requestedServiceDateTime: serviceDateTime ? new Date(serviceDateTime) : null,
+        requestedServiceDateTime: serviceDateTime || null,
         
         // Mark as patient request
         isPatientRequest: true,
@@ -2820,6 +2821,8 @@ module.exports = createCoreController('api::service-request.service-request', ({
         // Service information
         service: serviceId
       };
+
+      console.log('🕐 DEBUG - Final serviceRequestData.requestedServiceDateTime:', serviceRequestData.requestedServiceDateTime);
 
       // Add payment information if provided
       if (isPaid) {

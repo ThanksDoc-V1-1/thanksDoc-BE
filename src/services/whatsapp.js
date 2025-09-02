@@ -418,15 +418,15 @@ class WhatsAppService {
     
     // Format service date and time for display
     const formatServiceDateTime = (dateTimeString) => {
-      ('🔍 formatServiceDateTime called with:', dateTimeString, 'Type:', typeof dateTimeString);
+      console.log('🔍 formatServiceDateTime called with:', dateTimeString, 'Type:', typeof dateTimeString);
       
       if (!dateTimeString) {
-        ('🔍 formatServiceDateTime: No dateTimeString provided');
+        console.log('🔍 formatServiceDateTime: No dateTimeString provided');
         return { date: 'Not specified', time: 'Not specified' };
       }
       
       try {
-        ('🔍 formatServiceDateTime: Processing datetime string directly');
+        console.log('🔍 formatServiceDateTime: Processing datetime string directly');
         
         // Extract the original time components from the ISO string
         // This preserves the exact time that was originally selected
@@ -470,7 +470,7 @@ class WhatsAppService {
           // Fallback: parse as Date object but avoid timezone issues
           const date = new Date(dateTimeString);
           if (isNaN(date.getTime())) {
-            ('🔍 formatServiceDateTime: Invalid date');
+            console.log('🔍 formatServiceDateTime: Invalid date');
             return { date: 'Not specified', time: 'Not specified' };
           }
           
@@ -487,7 +487,7 @@ class WhatsAppService {
           });
         }
         
-        ('🔍 formatServiceDateTime formatted output:', { date: dateString, time: timeString });
+        console.log('🔍 formatServiceDateTime formatted output:', { date: dateString, time: timeString });
         return { date: dateString, time: timeString };
       } catch (error) {
         console.error('❌ formatServiceDateTime error:', error);
@@ -617,6 +617,7 @@ class WhatsAppService {
     
     // Format service date and time
     const formatServiceDateTime = (dateTimeString) => {
+      console.log('🕐 DEBUG formatServiceDateTime input:', dateTimeString);
       if (!dateTimeString) {
         return { date: 'Not specified', time: 'Not specified' };
       }
@@ -627,9 +628,13 @@ class WhatsAppService {
         let dateString = '';
         
         if (typeof dateTimeString === 'string' && dateTimeString.includes('T')) {
+          console.log('🕐 DEBUG: Processing ISO format string');
           const [datePart, timePart] = dateTimeString.split('T');
           const timeOnly = timePart.split('.')[0];
           const [hours, minutes] = timeOnly.split(':');
+          
+          console.log('🕐 DEBUG: datePart:', datePart, 'timePart:', timePart);
+          console.log('🕐 DEBUG: timeOnly:', timeOnly, 'hours:', hours, 'minutes:', minutes);
           
           // Format date directly from string parts to avoid timezone conversion
           const [year, month, day] = datePart.split('-');
@@ -645,7 +650,10 @@ class WhatsAppService {
           const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
           const minuteStr = minute.toString().padStart(2, '0');
           timeString = `${hour12}:${minuteStr} ${isPM ? 'pm' : 'am'}`;
+          
+          console.log('🕐 DEBUG: Final formatted - dateString:', dateString, 'timeString:', timeString);
         } else {
+          console.log('🕐 DEBUG: Using fallback Date parsing');
           // Fallback: parse as Date object for non-ISO formats
           const date = new Date(dateTimeString);
           if (isNaN(date.getTime())) {
