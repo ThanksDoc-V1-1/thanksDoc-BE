@@ -686,7 +686,7 @@ class WhatsAppService {
       template: {
         name: this.patientRequestTemplate,
         language: {
-          code: "en" // UK English
+          code: "en_GB" // UK English
         },
         components: [
           {
@@ -1227,7 +1227,7 @@ The doctor will contact you shortly to coordinate the visit.`;
       template: {
         name: this.patientContactTemplate,
         language: {
-          code: "en"
+          code: "en_GB"
         },
         components: [
           {
