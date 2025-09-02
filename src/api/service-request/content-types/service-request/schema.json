@@ -150,6 +150,34 @@
       "type": "string",
       "required": false
     },
+    "patientDateOfBirth": {
+      "type": "date",
+      "required": false
+    },
+    "patientAddressLine1": {
+      "type": "string",
+      "required": false
+    },
+    "patientAddressLine2": {
+      "type": "string",
+      "required": false
+    },
+    "patientCity": {
+      "type": "string",
+      "required": false
+    },
+    "patientCounty": {
+      "type": "string",
+      "required": false
+    },
+    "patientPostcode": {
+      "type": "string",
+      "required": false
+    },
+    "patientHowDidYouHear": {
+      "type": "string",
+      "required": false
+    },
     "wherebyRoomUrl": {
       "type": "string",
       "required": false

@@ -1273,10 +1273,17 @@ export interface ApiServiceRequestServiceRequest
     notes: Schema.Attribute.Text;
     originalRequestId: Schema.Attribute.Integer & Schema.Attribute.Private;
     paidAt: Schema.Attribute.DateTime;
+    patientAddressLine1: Schema.Attribute.String;
+    patientAddressLine2: Schema.Attribute.String;
+    patientCity: Schema.Attribute.String;
+    patientCounty: Schema.Attribute.String;
+    patientDateOfBirth: Schema.Attribute.Date;
     patientEmail: Schema.Attribute.String;
     patientFirstName: Schema.Attribute.String;
+    patientHowDidYouHear: Schema.Attribute.String;
     patientLastName: Schema.Attribute.String;
     patientPhone: Schema.Attribute.String;
+    patientPostcode: Schema.Attribute.String;
     paymentDetails: Schema.Attribute.Text;
     paymentIntentId: Schema.Attribute.String;
     paymentMethod: Schema.Attribute.String;
