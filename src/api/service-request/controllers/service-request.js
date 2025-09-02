@@ -2895,34 +2895,29 @@ module.exports = createCoreController('api::service-request.service-request', ({
         console.log(`🩺 Found ${doctors.length} verified doctors who offer this service`);
 
         if (doctors.length > 0) {
-          // Send notifications to all available doctors
+          // Send notifications to all available doctors in parallel (non-blocking)
           const whatsappService = strapi.service('whatsapp');
 
-          for (const doctor of doctors) {
+          // Create notification promises for parallel execution
+          const notificationPromises = doctors.map(async (doctor) => {
             try {
-              // Create notification entry for this doctor
-              await strapi.entityService.create('api::notification.notification', {
-                data: {
-                  doctor: doctor.id,
-                  serviceRequest: serviceRequest.id,
-                  type: 'new_request',
-                  message: `New patient service request for ${service.name}`,
-                  isRead: false,
-                  publishedAt: new Date()
-                }
-              });
-
-              // Send WhatsApp notification
+              // Send WhatsApp notification using the same template as business requests
               if (whatsappService && doctor.phone) {
-                const whatsappMessage = `🏥 *New Patient Service Request*\n\n` +
-                  `*Service:* ${service.name}\n` +
-                  `*Patient:* ${patientFirstName} ${patientLastName}\n` +
-                  `*Payment:* ${isPaid ? 'Paid' : 'Pending'}\n` +
-                  `*Amount:* ${totalAmount ? '£' + totalAmount.toFixed(2) : 'N/A'}\n\n` +
-                  `*Accept:* ${process.env.BASE_URL}/service-requests/whatsapp-accept/${serviceRequest.id}?doctorId=${doctor.id}\n` +
-                  `*Decline:* ${process.env.BASE_URL}/service-requests/doctor-decline/${serviceRequest.id}?doctorId=${doctor.id}`;
+                // Create a mock business object for patient requests
+                const patientAsBusiness = {
+                  id: 'patient',
+                  name: 'Private Patient',
+                  businessName: 'Private Patient',
+                  contactPerson: `${patientFirstName} ${patientLastName}`,
+                  phone: patientPhone,
+                  email: patientEmail,
+                  address: 'Patient Location', // For template parameter
+                  latitude: null, // Will show as "Online" or distance calculation will be skipped
+                  longitude: null,
+                  isPatient: true
+                };
 
-                await whatsappService.sendMessage(doctor.phone, whatsappMessage);
+                await whatsappService.sendServiceRequestNotification(doctor, serviceRequest, patientAsBusiness);
                 console.log(`📱 WhatsApp sent to Dr. ${doctor.firstName} ${doctor.lastName}`);
               }
 
@@ -2941,29 +2936,39 @@ module.exports = createCoreController('api::service-request.service-request', ({
                         <p><strong>Email:</strong> ${patientEmail}</p>
                         <p><strong>Payment Status:</strong> ${isPaid ? 'Paid' : 'Pending'}</p>
                         <p><strong>Amount:</strong> ${totalAmount ? '£' + totalAmount.toFixed(2) : 'N/A'}</p>
+                        <p><strong>Description:</strong> ${description || 'Not provided'}</p>
                       </div>
+                      <p>Please log in to your dashboard to accept or decline this request.</p>
                       <div style="text-align: center; margin: 30px 0;">
-                        <a href="${process.env.BASE_URL}/service-requests/email-accept/${serviceRequest.id}?doctorId=${doctor.id}" 
-                           style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-right: 10px; display: inline-block;">
-                          Accept Request
-                        </a>
-                        <a href="${process.env.BASE_URL}/service-requests/doctor-decline/${serviceRequest.id}?doctorId=${doctor.id}" 
-                           style="background-color: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                          Decline Request
+                        <a href="${process.env.FRONTEND_DASHBOARD_URL || process.env.BASE_URL}/doctor/dashboard" 
+                           style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                          View Dashboard
                         </a>
                       </div>
-                      <p style="color: #6b7280; font-size: 14px;">This is a patient request made directly through our public portal.</p>
                     </div>
                   `
                 });
                 console.log(`📧 Email sent to Dr. ${doctor.firstName} ${doctor.lastName}`);
               } catch (emailError) {
-                console.error(`❌ Error sending email to Dr. ${doctor.firstName} ${doctor.lastName}:`, emailError);
+                console.error(`❌ Failed to send email to Dr. ${doctor.firstName} ${doctor.lastName}:`, emailError.message);
               }
-            } catch (notificationError) {
-              console.error(`❌ Error sending notification to Dr. ${doctor.firstName} ${doctor.lastName}:`, notificationError);
+
+            } catch (error) {
+              console.error(`❌ Error sending notification to Dr. ${doctor.firstName} ${doctor.lastName}:`, error);
             }
-          }
+          });
+
+          // Execute all notifications in parallel without waiting for completion
+          // This allows the response to be sent immediately while notifications happen in background
+          Promise.allSettled(notificationPromises).then((results) => {
+            const successful = results.filter(result => result.status === 'fulfilled').length;
+            const failed = results.filter(result => result.status === 'rejected').length;
+            console.log(`🎯 Notification summary: ${successful} successful, ${failed} failed out of ${doctors.length} doctors`);
+          }).catch((error) => {
+            console.error('❌ Error in notification batch processing:', error);
+          });
+
+          console.log(`🚀 Started sending notifications to ${doctors.length} doctors in background`);
         } else {
           console.log('⚠️ No available doctors found for this service');
         }
