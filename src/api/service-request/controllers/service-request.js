@@ -736,6 +736,21 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Note: Doctor availability is NOT changed when accepting requests
       // This allows doctors to accept multiple requests if they choose to
 
+      // Send patient contact details to doctor for ALL patient requests (regardless of type)
+      try {
+        const WhatsAppService = require('../../../services/whatsapp');
+        const whatsappService = new WhatsAppService();
+        
+        if (updatedServiceRequest.isPatientRequest && updatedServiceRequest.patientPhone) {
+          // IMPORTANT: Always send patient contact details to the doctor when they accept a patient request
+          console.log('📱 Sending patient contact details to doctor for patient request');
+          await whatsappService.sendPatientContactToDoctor(doctor.phone, updatedServiceRequest);
+        }
+      } catch (contactNotificationError) {
+        console.error('❌ Failed to send patient contact details to doctor:', contactNotificationError.message);
+        // Continue even if this fails
+      }
+
       // Send notifications to business or patient (only if not online consultation, as video notifications are sent above)
       if (!isOnlineConsultation) {
         try {
@@ -744,7 +759,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
           
           // Check if this is a patient request or business request
           if (updatedServiceRequest.isPatientRequest && updatedServiceRequest.patientPhone) {
-            // Send notification to patient
+            // Send notification to patient that doctor was assigned
             await whatsappService.sendPatientNotification(updatedServiceRequest.patientPhone, doctor, updatedServiceRequest);
           } else if (updatedServiceRequest.business?.phone) {
             // Send notification to business

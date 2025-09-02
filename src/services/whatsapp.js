@@ -1399,6 +1399,93 @@ Thank you for choosing ThanksDoc! 🏥`;
   }
 
   /**
+   * Send patient contact details to doctor after acceptance using the patient contact template
+   */
+  async sendPatientContactToDoctor(doctorPhone, serviceRequest, doctor) {
+    try {
+      console.log('📱 Sending patient contact details to doctor:', doctorPhone);
+      
+      if (!doctorPhone || !serviceRequest.isPatientRequest) {
+        console.log('❌ Missing doctor phone or not a patient request');
+        return;
+      }
+
+      const formattedDoctorPhone = this.formatPhoneNumber(doctorPhone);
+      
+      // Use the buildPatientContactTemplate function
+      const templateMessage = this.buildPatientContactTemplate(formattedDoctorPhone, serviceRequest);
+      
+      console.log('📱 Sending patient contact template to doctor:', JSON.stringify(templateMessage, null, 2));
+
+      const response = await axios.post(this.apiUrl, templateMessage, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.status === 200) {
+        console.log('✅ Patient contact details sent to doctor successfully');
+        return response.data;
+      } else {
+        console.error('❌ Failed to send patient contact details - Status:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Failed to send patient contact details to doctor:', error.response?.data || error.message);
+      
+      // Fallback to text message if template fails
+      try {
+        console.log('📱 Attempting fallback text message for patient contact details');
+        await this.sendPatientContactFallback(doctorPhone, serviceRequest, doctor);
+      } catch (fallbackError) {
+        console.error('❌ Fallback message also failed:', fallbackError.message);
+      }
+    }
+  }
+
+  /**
+   * Fallback text message for patient contact details
+   */
+  async sendPatientContactFallback(doctorPhone, serviceRequest, doctor) {
+    const patientName = `${serviceRequest.patientFirstName || ''} ${serviceRequest.patientLastName || ''}`.trim() || 'Patient';
+    
+    const messageText = `🎉 *SERVICE REQUEST ACCEPTED*
+
+You've successfully accepted a patient request!
+
+👤 *Patient Details:*
+• Name: ${patientName}
+• Phone: ${serviceRequest.patientPhone}
+• Email: ${serviceRequest.patientEmail || 'Not provided'}
+
+💊 *Service:* ${serviceRequest.serviceType}
+🕐 *Duration:* ${serviceRequest.estimatedDuration} minute(s)
+💰 *Payment:* £${serviceRequest.totalAmount?.toFixed(2) || 'N/A'}
+
+Please contact the patient to coordinate the medical service.
+
+ThanksDoc - Connecting healthcare professionals 🏥`;
+
+    const messageData = {
+      messaging_product: "whatsapp",
+      to: this.formatPhoneNumber(doctorPhone),
+      type: "text",
+      text: {
+        body: messageText
+      }
+    };
+
+    await axios.post(this.apiUrl, messageData, {
+      headers: {
+        'Authorization': `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('✅ Fallback patient contact message sent to doctor');
+  }
+
+  /**
    * Handle incoming WhatsApp webhook messages
    */
   async handleIncomingMessage(webhookData) {
