@@ -642,27 +642,19 @@ class WhatsAppService {
               },
               {
                 type: "text",
-                text: doctor.specialization || "General Practice" // {{2}} Specialisation
+                text: doctor.phone || "N/A" // {{2}} Phone
               },
               {
                 type: "text",
-                text: (doctor.yearsOfExperience || 0).toString() // {{3}} Experience
+                text: serviceRequest.serviceType // {{3}} Service
               },
               {
                 type: "text",
-                text: doctor.phone || "N/A" // {{4}} Phone
+                text: serviceRequest.estimatedDuration.toString() // {{4}} Duration
               },
               {
                 type: "text",
-                text: serviceRequest.serviceType // {{5}} Service
-              },
-              {
-                type: "text",
-                text: serviceRequest.estimatedDuration.toString() // {{6}} Duration
-              },
-              {
-                type: "text",
-                text: dashboardUrl // {{7}} Track Progress
+                text: dashboardUrl // {{5}} Track Progress
               }
             ]
           }
@@ -1006,8 +998,6 @@ Thank you for your response! 👨‍⚕️`;
 Great news! A doctor has accepted your service request.
 
 👨‍⚕️ *Doctor:* Dr. ${doctor.name}
-🏥 *Specialization:* ${doctor.specialization}
-⭐ *Experience:* ${doctor.yearsOfExperience} years
 📞 *Phone:* ${doctor.phone}
 
 ⏱️ *Service:* ${serviceRequest.serviceType}
@@ -1054,8 +1044,6 @@ The doctor will contact you shortly to coordinate the visit.`;
 Great news! A doctor has accepted your service request.
 
 👨‍⚕️ *Doctor:* Dr. ${doctor.firstName} ${doctor.lastName}
-🏥 *Specialization:* ${doctor.specialization || 'General Practice'}
-⭐ *Experience:* ${doctor.yearsOfExperience || 'Not specified'} years
 📞 *Phone:* ${doctor.phone}
 
 💊 *Service:* ${serviceRequest.serviceType}
