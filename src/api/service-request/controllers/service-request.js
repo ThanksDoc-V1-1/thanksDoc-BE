@@ -1702,15 +1702,15 @@ module.exports = createCoreController('api::service-request.service-request', ({
             <p>You have successfully accepted the service request.</p>
             
             <div class="detail">
-              <strong>Business:</strong> ${serviceRequest.business.name}<br>
+              <strong>Business:</strong> ${serviceRequest.isPatientRequest ? 'Patient Requests' : serviceRequest.business.name}<br>
               <strong>Service:</strong> ${serviceRequest.serviceType}<br>
               <strong>Duration:</strong> ${serviceRequest.estimatedDuration} minute(s)<br>
-              <strong>Contact:</strong> ${serviceRequest.business.phone}<br>
-              <strong>Address:</strong> ${serviceRequest.business.address}
+              <strong>Contact:</strong> ${serviceRequest.isPatientRequest ? serviceRequest.patientPhone : serviceRequest.business.phone}<br>
+              <strong>Address:</strong> ${serviceRequest.isPatientRequest ? (serviceRequest.patientAddressLine1 || serviceRequest.patientAddress || 'Patient Address') : serviceRequest.business.address}
             </div>
             
             <p><strong>Next Steps:</strong></p>
-            <p>1. Contact the business directly to coordinate your visit</p>
+            <p>1. ${serviceRequest.isPatientRequest ? 'Contact the patient directly to coordinate your service' : 'Contact the business directly to coordinate your visit'}</p>
             <p>2. Update your status through your dashboard</p>
             <p>3. Complete the service when finished</p>
             
