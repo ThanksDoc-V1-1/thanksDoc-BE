@@ -285,15 +285,18 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Validate serviceDateTime if provided
       let requestedServiceDateTime = null;
       if (serviceDateTime) {
-        requestedServiceDateTime = new Date(serviceDateTime);
-        if (isNaN(requestedServiceDateTime.getTime())) {
+        const dateObj = new Date(serviceDateTime);
+        if (isNaN(dateObj.getTime())) {
           return ctx.badRequest('Invalid service date/time format');
         }
         
         // Check if the requested time is in the future
-        if (requestedServiceDateTime <= new Date()) {
+        if (dateObj <= new Date()) {
           return ctx.badRequest('Service date/time must be in the future');
         }
+        
+        // Store as string to match schema - preserve original format
+        requestedServiceDateTime = serviceDateTime;
       }
 
       // Prepare service request data
@@ -1114,15 +1117,18 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Validate serviceDateTime if provided
       let requestedServiceDateTime = null;
       if (serviceDateTime) {
-        requestedServiceDateTime = new Date(serviceDateTime);
-        if (isNaN(requestedServiceDateTime.getTime())) {
+        const dateObj = new Date(serviceDateTime);
+        if (isNaN(dateObj.getTime())) {
           return ctx.badRequest('Invalid service date/time format');
         }
         
         // Check if the requested time is in the future
-        if (requestedServiceDateTime <= new Date()) {
+        if (dateObj <= new Date()) {
           return ctx.badRequest('Service date/time must be in the future');
         }
+        
+        // Store as string to match schema - preserve original format
+        requestedServiceDateTime = serviceDateTime;
       }
 
       // Prepare service request data based on request type
