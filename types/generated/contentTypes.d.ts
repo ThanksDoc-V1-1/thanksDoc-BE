@@ -1252,6 +1252,10 @@ export interface ApiServiceRequestServiceRequest
     distanceFilter: Schema.Attribute.Integer;
     doctor: Schema.Attribute.Relation<'manyToOne', 'api::doctor.doctor'>;
     doctorPaidAt: Schema.Attribute.DateTime;
+    doctorSelectionType: Schema.Attribute.Enumeration<
+      ['any', 'previous', 'specific']
+    > &
+      Schema.Attribute.DefaultTo<'any'>;
     estimatedDuration: Schema.Attribute.Integer;
     feedback: Schema.Attribute.Text;
     isBroadcasted: Schema.Attribute.Boolean &
@@ -1280,6 +1284,7 @@ export interface ApiServiceRequestServiceRequest
       ['pending', 'paid', 'failed', 'refunded', 'doctor_paid']
     > &
       Schema.Attribute.DefaultTo<'pending'>;
+    preferredDoctorId: Schema.Attribute.Integer;
     publishedAt: Schema.Attribute.DateTime;
     rating: Schema.Attribute.Integer &
       Schema.Attribute.SetMinMax<

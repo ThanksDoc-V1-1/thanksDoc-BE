@@ -188,6 +188,16 @@
       "type": "boolean",
       "default": false,
       "required": false
+    },
+    "doctorSelectionType": {
+      "type": "enumeration",
+      "enum": ["any", "previous", "specific"],
+      "default": "any",
+      "required": false
+    },
+    "preferredDoctorId": {
+      "type": "integer",
+      "required": false
     }
   }
 }
