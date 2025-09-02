@@ -1284,8 +1284,8 @@ Thank you for choosing ThanksDoc! 🏥`;
             console.log(`✅ Processing SECURE ACCEPT for request ${serviceRequestId} by doctor ${doctorId}`);
             await this.acceptServiceRequest(serviceRequestId, doctorId);
             
-            // Check if this is a patient request or business request
-            const isPatientRequest = serviceRequest.patientPhone && !serviceRequest.business;
+            // Check if this is a patient request or business request using isPatientRequest field
+            const isPatientRequest = serviceRequest.isPatientRequest === true;
             const isBusinessRequest = serviceRequest.business && serviceRequest.business.phone;
             
             console.log(`🔍 Request type detection:`, {
@@ -1294,7 +1294,10 @@ Thank you for choosing ThanksDoc! 🏥`;
               hasPatientPhone: !!serviceRequest.patientPhone,
               hasBusiness: !!serviceRequest.business,
               patientPhone: serviceRequest.patientPhone,
-              businessName: serviceRequest.business?.name
+              businessName: serviceRequest.business?.name,
+              isPatientRequestField: serviceRequest.isPatientRequest,
+              patientFirstName: serviceRequest.patientFirstName,
+              patientLastName: serviceRequest.patientLastName
             });
             
             if (isPatientRequest) {
