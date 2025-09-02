@@ -1040,6 +1040,55 @@ The doctor will contact you shortly to coordinate the visit.`;
   }
 
   /**
+   * Send notification to patient about doctor acceptance
+   */
+  async sendPatientNotification(patientPhone, doctor, serviceRequest) {
+    try {
+      if (!patientPhone) return;
+
+      const formattedPhone = this.formatPhoneNumber(patientPhone);
+      
+      // Build patient notification message
+      const messageText = `🎉 *DOCTOR ASSIGNED TO YOUR REQUEST*
+
+Great news! A doctor has accepted your service request.
+
+👨‍⚕️ *Doctor:* Dr. ${doctor.firstName} ${doctor.lastName}
+🏥 *Specialization:* ${doctor.specialization || 'General Practice'}
+⭐ *Experience:* ${doctor.yearsOfExperience || 'Not specified'} years
+📞 *Phone:* ${doctor.phone}
+
+💊 *Service:* ${serviceRequest.serviceType}
+🕐 *Duration:* ${serviceRequest.estimatedDuration} minute(s)
+💰 *Amount:* £${serviceRequest.totalAmount?.toFixed(2) || 'N/A'}
+
+The doctor will contact you shortly to coordinate your medical service.
+
+Thank you for choosing ThanksDoc! 🏥`;
+
+      const messageData = {
+        messaging_product: "whatsapp",
+        to: formattedPhone,
+        type: "text",
+        text: {
+          body: messageText
+        }
+      };
+
+      await axios.post(this.apiUrl, messageData, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log(`Patient notification sent for accepted service request to ${patientPhone}`);
+    } catch (error) {
+      console.error(`Failed to send patient notification:`, error.response?.data || error.message);
+    }
+  }
+
+  /**
    * Handle incoming WhatsApp webhook messages
    */
   async handleIncomingMessage(webhookData) {

@@ -588,11 +588,15 @@ module.exports = createCoreController('api::service-request.service-request', ({
       console.log(`🔐 SECURITY: Dashboard acceptance attempt - Request: ${id}, Doctor: ${doctorId}`);
       
       // Log the acceptance attempt for security audit
-      const SecurityLogger = require('../../../utils/security-logger');
-      await SecurityLogger.logServiceRequestAcceptance('dashboard', id, doctorId, {
-        timestamp: new Date().toISOString(),
-        source: 'Doctor Dashboard'
-      });
+      try {
+        const SecurityLogger = require('../../../utils/security-logger');
+        await SecurityLogger.logServiceRequestAcceptance('dashboard', id, doctorId, {
+          timestamp: new Date().toISOString(),
+          source: 'Doctor Dashboard'
+        });
+      } catch (securityLogError) {
+        console.warn('Security logging failed:', securityLogError.message);
+      }
 
       // Get the service request
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', id, {
@@ -728,6 +732,26 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       // Note: Doctor availability is NOT changed when accepting requests
       // This allows doctors to accept multiple requests if they choose to
+
+      // Send notifications to business or patient (only if not online consultation, as video notifications are sent above)
+      if (!isOnlineConsultation) {
+        try {
+          const WhatsAppService = require('../../../services/whatsapp');
+          const whatsappService = new WhatsAppService();
+          
+          // Check if this is a patient request or business request
+          if (updatedServiceRequest.isPatientRequest && updatedServiceRequest.patientPhone) {
+            // Send notification to patient
+            await whatsappService.sendPatientNotification(updatedServiceRequest.patientPhone, doctor, updatedServiceRequest);
+          } else if (updatedServiceRequest.business?.phone) {
+            // Send notification to business
+            await whatsappService.sendBusinessNotification(updatedServiceRequest.business.phone, doctor, updatedServiceRequest);
+          }
+        } catch (notificationError) {
+          console.error('❌ Failed to send acceptance notifications:', notificationError.message);
+          // Continue even if notifications fail
+        }
+      }
 
       return updatedServiceRequest;
     } catch (error) {
@@ -1642,7 +1666,15 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Send confirmation messages (only if not online consultation, as video notifications are sent above)
       if (!isOnlineConsultation) {
         await whatsappService.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
-        await whatsappService.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
+        
+        // Check if this is a patient request or business request
+        if (serviceRequest.isPatientRequest && serviceRequest.patientPhone) {
+          // Send notification to patient
+          await whatsappService.sendPatientNotification(serviceRequest.patientPhone, doctor, serviceRequest);
+        } else {
+          // Send notification to business
+          await whatsappService.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
+        }
       }
 
       // Generate success page
@@ -2664,6 +2696,291 @@ module.exports = createCoreController('api::service-request.service-request', ({
     } catch (error) {
       console.error('❌ Error ignoring service request via email:', error);
       return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/error?message=Failed to process request`);
+    }
+  },
+
+  // Create a patient service request (public endpoint, no authentication required)
+  async createPatientRequest(ctx) {
+    try {
+      console.log('👤 Creating patient service request');
+      console.log('📋 Request body:', ctx.request.body);
+
+      const {
+        // Patient information
+        patientFirstName,
+        patientLastName,
+        patientPhone,
+        patientEmail,
+        
+        // Service information
+        serviceId,
+        serviceType,
+        urgencyLevel = 'medium',
+        description,
+        estimatedDuration = 1,
+        
+        // Doctor selection and scheduling
+        doctorSelectionType = 'any',
+        preferredDoctorId,
+        serviceDateTime,
+        
+        // Payment information
+        isPaid,
+        paymentMethod,
+        paymentIntentId,
+        paymentStatus,
+        paidAt,
+        totalAmount,
+        servicePrice,
+        serviceCharge,
+        currency = 'gbp',
+        chargeId,
+        
+        // Additional fields
+        status = 'pending',
+        requestedAt
+      } = ctx.request.body;
+
+      // Validate required fields
+      if (!patientFirstName || !patientLastName || !patientPhone || !patientEmail) {
+        return ctx.badRequest('Patient information (firstName, lastName, phone, email) is required');
+      }
+
+      if (!serviceId) {
+        return ctx.badRequest('Service ID is required');
+      }
+
+      // Validate service exists
+      const service = await strapi.entityService.findOne('api::service.service', serviceId);
+      if (!service) {
+        return ctx.badRequest('Service not found');
+      }
+
+      console.log('✅ Service found:', service.name);
+
+      // Create a special "patient" business entry or use a system placeholder
+      let patientBusiness;
+      try {
+        // Check if a patient business entry already exists
+        const existingPatientBusiness = await strapi.entityService.findMany('api::business.business', {
+          filters: {
+            email: 'patients@system.com'
+          },
+          limit: 1
+        });
+
+        if (existingPatientBusiness.length > 0) {
+          patientBusiness = existingPatientBusiness[0];
+        } else {
+          // Create a system business entry for patient requests
+          patientBusiness = await strapi.entityService.create('api::business.business', {
+            data: {
+              businessName: 'Patient Requests',
+              name: 'Patient Requests',
+              email: 'patients@system.com',
+              password: '$2a$10$defaultPatientSystemPassword',
+              phone: '+44000000000',
+              businessType: 'patient',
+              isVerified: true,
+              isEmailVerified: true,
+              publishedAt: new Date()
+            }
+          });
+        }
+      } catch (businessError) {
+        console.error('Error creating/finding patient business entry:', businessError);
+        return ctx.internalServerError('Failed to setup patient business entry');
+      }
+
+      // Prepare service request data
+      const serviceRequestData = {
+        business: patientBusiness.id,
+        urgencyLevel,
+        serviceType: serviceType || service.name,
+        description: description || `Patient service request for ${service.name}`,
+        estimatedDuration: parseInt(estimatedDuration) || 1,
+        requestedAt: requestedAt ? new Date(requestedAt) : new Date(),
+        status,
+        publishedAt: new Date(),
+        
+        // Doctor selection and scheduling
+        doctorSelectionType: doctorSelectionType || 'any',
+        preferredDoctorId: preferredDoctorId || null,
+        requestedServiceDateTime: serviceDateTime ? new Date(serviceDateTime) : null,
+        
+        // Mark as patient request
+        isPatientRequest: true,
+        
+        // Patient information
+        patientFirstName,
+        patientLastName,
+        patientPhone,
+        patientEmail,
+        
+        // Service information
+        service: serviceId
+      };
+
+      // Add payment information if provided
+      if (isPaid) {
+        let normalizedPaymentStatus = paymentStatus;
+        if (paymentStatus === 'succeeded') {
+          normalizedPaymentStatus = 'paid';
+        } else if (paymentStatus === 'requires_payment_method') {
+          normalizedPaymentStatus = 'pending';
+        } else if (paymentStatus === 'failed') {
+          normalizedPaymentStatus = 'failed';
+        } else if (!['pending', 'paid', 'failed', 'refunded', 'doctor_paid'].includes(paymentStatus)) {
+          normalizedPaymentStatus = 'paid';
+        }
+        
+        serviceRequestData.isPaid = isPaid;
+        serviceRequestData.paymentMethod = paymentMethod;
+        serviceRequestData.paymentIntentId = paymentIntentId;
+        serviceRequestData.paymentStatus = normalizedPaymentStatus;
+        serviceRequestData.paidAt = paidAt ? new Date(paidAt) : new Date();
+        serviceRequestData.totalAmount = parseFloat(totalAmount) || 0;
+        serviceRequestData.currency = currency;
+        serviceRequestData.chargeId = chargeId;
+        
+        // Create payment details object
+        const paymentDetails = {
+          paymentIntentId,
+          paymentMethod: paymentMethod || 'card',
+          paymentStatus: paymentStatus || 'succeeded',
+          servicePrice: parseFloat(servicePrice) || 0,
+          serviceCharge: parseFloat(serviceCharge) || 0,
+          totalAmount: parseFloat(totalAmount) || 0,
+          processedAt: paidAt || new Date().toISOString(),
+          currency: currency || 'gbp'
+        };
+        
+        serviceRequestData.paymentDetails = JSON.stringify(paymentDetails);
+        
+        console.log('💰 Adding payment information to patient request:', {
+          isPaid: serviceRequestData.isPaid,
+          paymentIntentId: serviceRequestData.paymentIntentId,
+          totalAmount: serviceRequestData.totalAmount,
+          paymentMethod: serviceRequestData.paymentMethod
+        });
+      }
+
+      // Create the service request
+      const serviceRequest = await strapi.entityService.create('api::service-request.service-request', {
+        data: serviceRequestData,
+        populate: ['business', 'service']
+      });
+
+      console.log('✅ Patient service request created:', serviceRequest.id);
+
+      // Find nearby doctors and send notifications
+      try {
+        console.log('🔍 Finding available doctors for patient request...');
+        
+        // Get all verified doctors who offer this service
+        const doctors = await strapi.entityService.findMany('api::doctor.doctor', {
+          filters: {
+            isVerified: true,
+            isAvailable: true,
+            services: {
+              id: {
+                $in: [serviceId]
+              }
+            }
+          },
+          populate: ['services'],
+          limit: 100
+        });
+
+        console.log(`🩺 Found ${doctors.length} verified doctors who offer this service`);
+
+        if (doctors.length > 0) {
+          // Send notifications to all available doctors
+          const whatsappService = strapi.service('whatsapp');
+
+          for (const doctor of doctors) {
+            try {
+              // Create notification entry for this doctor
+              await strapi.entityService.create('api::notification.notification', {
+                data: {
+                  doctor: doctor.id,
+                  serviceRequest: serviceRequest.id,
+                  type: 'new_request',
+                  message: `New patient service request for ${service.name}`,
+                  isRead: false,
+                  publishedAt: new Date()
+                }
+              });
+
+              // Send WhatsApp notification
+              if (whatsappService && doctor.phone) {
+                const whatsappMessage = `🏥 *New Patient Service Request*\n\n` +
+                  `*Service:* ${service.name}\n` +
+                  `*Patient:* ${patientFirstName} ${patientLastName}\n` +
+                  `*Payment:* ${isPaid ? 'Paid' : 'Pending'}\n` +
+                  `*Amount:* ${totalAmount ? '£' + totalAmount.toFixed(2) : 'N/A'}\n\n` +
+                  `*Accept:* ${process.env.BASE_URL}/service-requests/whatsapp-accept/${serviceRequest.id}?doctorId=${doctor.id}\n` +
+                  `*Decline:* ${process.env.BASE_URL}/service-requests/doctor-decline/${serviceRequest.id}?doctorId=${doctor.id}`;
+
+                await whatsappService.sendMessage(doctor.phone, whatsappMessage);
+                console.log(`📱 WhatsApp sent to Dr. ${doctor.firstName} ${doctor.lastName}`);
+              }
+
+              // Send email notification
+              try {
+                await strapi.plugins['email'].services.email.send({
+                  to: doctor.email,
+                  subject: 'New Patient Service Request',
+                  html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                      <h2 style="color: #2563eb;">New Patient Service Request</h2>
+                      <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <p><strong>Service:</strong> ${service.name}</p>
+                        <p><strong>Patient:</strong> ${patientFirstName} ${patientLastName}</p>
+                        <p><strong>Phone:</strong> ${patientPhone}</p>
+                        <p><strong>Email:</strong> ${patientEmail}</p>
+                        <p><strong>Payment Status:</strong> ${isPaid ? 'Paid' : 'Pending'}</p>
+                        <p><strong>Amount:</strong> ${totalAmount ? '£' + totalAmount.toFixed(2) : 'N/A'}</p>
+                      </div>
+                      <div style="text-align: center; margin: 30px 0;">
+                        <a href="${process.env.BASE_URL}/service-requests/email-accept/${serviceRequest.id}?doctorId=${doctor.id}" 
+                           style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-right: 10px; display: inline-block;">
+                          Accept Request
+                        </a>
+                        <a href="${process.env.BASE_URL}/service-requests/doctor-decline/${serviceRequest.id}?doctorId=${doctor.id}" 
+                           style="background-color: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                          Decline Request
+                        </a>
+                      </div>
+                      <p style="color: #6b7280; font-size: 14px;">This is a patient request made directly through our public portal.</p>
+                    </div>
+                  `
+                });
+                console.log(`📧 Email sent to Dr. ${doctor.firstName} ${doctor.lastName}`);
+              } catch (emailError) {
+                console.error(`❌ Error sending email to Dr. ${doctor.firstName} ${doctor.lastName}:`, emailError);
+              }
+            } catch (notificationError) {
+              console.error(`❌ Error sending notification to Dr. ${doctor.firstName} ${doctor.lastName}:`, notificationError);
+            }
+          }
+        } else {
+          console.log('⚠️ No available doctors found for this service');
+        }
+      } catch (notificationError) {
+        console.error('❌ Error in doctor notification process:', notificationError);
+        // Don't fail the request creation if notifications fail
+      }
+
+      // Return the created service request
+      return {
+        data: serviceRequest,
+        message: 'Patient service request created successfully'
+      };
+
+    } catch (error) {
+      console.error('❌ Error creating patient service request:', error);
+      ctx.throw(500, `Error creating patient service request: ${error.message}`);
     }
   },
 }));

@@ -183,6 +183,11 @@
       "relation": "manyToMany",
       "target": "api::doctor.doctor",
       "required": false
+    },
+    "isPatientRequest": {
+      "type": "boolean",
+      "default": false,
+      "required": false
     }
   }
 }

@@ -48,6 +48,14 @@ module.exports = {
       },
     },
     {
+      method: 'POST',
+      path: '/service-requests/patient-request',
+      handler: 'service-request.createPatientRequest',
+      config: {
+        auth: false,
+      },
+    },
+    {
       method: 'PUT',
       path: '/service-requests/:id',
       handler: 'service-request.update',

@@ -1258,6 +1258,8 @@ export interface ApiServiceRequestServiceRequest
       Schema.Attribute.Private &
       Schema.Attribute.DefaultTo<false>;
     isPaid: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isPatientRequest: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
