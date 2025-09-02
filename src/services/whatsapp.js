@@ -1319,12 +1319,8 @@ The doctor will contact you shortly to coordinate the visit.`;
         }
       });
 
-      // Set doctor as temporarily unavailable
-      await strapi.entityService.update('api::doctor.doctor', doctorId, {
-        data: {
-          isAvailable: false,
-        },
-      });
+      // Note: Doctor availability is NOT changed when accepting requests
+      // This allows doctors to accept multiple requests if they choose to
       
       console.log(`✅ SECURITY: Service request ${serviceRequestId} successfully accepted by doctor ${doctorId}`);
     } catch (error) {

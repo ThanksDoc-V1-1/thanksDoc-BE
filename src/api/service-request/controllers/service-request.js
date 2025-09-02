@@ -726,12 +726,8 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Cancel all related requests when this one is accepted
       await this.cancelRelatedRequests(id, strapi);
 
-      // Set doctor as temporarily unavailable
-      await strapi.entityService.update('api::doctor.doctor', doctorId, {
-        data: {
-          isAvailable: false,
-        },
-      });
+      // Note: Doctor availability is NOT changed when accepting requests
+      // This allows doctors to accept multiple requests if they choose to
 
       return updatedServiceRequest;
     } catch (error) {
@@ -1640,12 +1636,8 @@ module.exports = createCoreController('api::service-request.service-request', ({
       // Cancel all related requests when this one is accepted
       await this.cancelRelatedRequests(serviceRequestId, strapi);
 
-      // Set doctor as temporarily unavailable
-      await strapi.entityService.update('api::doctor.doctor', doctorId, {
-        data: {
-          isAvailable: false,
-        },
-      });
+      // Note: Doctor availability is NOT changed when accepting requests
+      // This allows doctors to accept multiple requests if they choose to
 
       // Send confirmation messages (only if not online consultation, as video notifications are sent above)
       if (!isOnlineConsultation) {
@@ -2620,10 +2612,8 @@ module.exports = createCoreController('api::service-request.service-request', ({
         populate: ['business', 'doctor', 'service']
       });
 
-      // Update doctor availability
-      await strapi.entityService.update('api::doctor.doctor', doctorId, {
-        data: { isAvailable: false }
-      });
+      // Note: Doctor availability is NOT changed when accepting requests
+      // This allows doctors to accept multiple requests if they choose to
 
       console.log(`✅ Service request ${id} accepted by Dr. ${doctor.firstName} ${doctor.lastName} via email`);
 
