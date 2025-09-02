@@ -1030,6 +1030,55 @@ The doctor will contact you shortly to coordinate the visit.`;
   }
 
   /**
+   * Send notification to doctor about accepting a patient request
+   */
+  async sendDoctorPatientAcceptanceNotification(doctorPhone, serviceRequest) {
+    try {
+      if (!doctorPhone) return;
+
+      const formattedPhone = this.formatPhoneNumber(doctorPhone);
+      
+      // Build doctor notification message for patient request
+      const messageText = `✅ *REQUEST ACCEPTED*
+
+Thank you for accepting the patient service request!
+
+👤 *Patient:* ${serviceRequest.patientFirstName} ${serviceRequest.patientLastName}
+📞 *Contact:* ${serviceRequest.patientPhone}
+📧 *Email:* ${serviceRequest.patientEmail || 'Not provided'}
+📍 *Address:* ${serviceRequest.patientAddress || serviceRequest.patientAddressLine1 || 'Not provided'}
+
+💊 *Service:* ${serviceRequest.serviceType}
+🕐 *Duration:* ${serviceRequest.estimatedDuration} minute(s)
+💰 *Amount:* £${serviceRequest.totalAmount?.toFixed(2) || 'N/A'}
+
+💼 *Next Steps:*
+1. Contact the patient directly at ${serviceRequest.patientPhone}
+2. Coordinate the service details
+3. Update status in your dashboard
+
+📱 *Dashboard:* ${this.baseUrll}/doctor/dashboard
+
+Good luck with your service! 👨‍⚕️`;
+
+      const messageData = {
+        messaging_product: "whatsapp",
+        to: formattedPhone,
+        type: "text",
+        text: {
+          body: messageText
+        }
+      };
+
+      await this.sendWhatsAppMessage(messageData);
+
+      console.log(`Doctor patient acceptance notification sent to ${doctorPhone}`);
+    } catch (error) {
+      console.error(`Failed to send doctor patient acceptance notification:`, error.response?.data || error.message);
+    }
+  }
+
+  /**
    * Send notification to patient about doctor acceptance
    */
   async sendPatientNotification(patientPhone, doctor, serviceRequest) {
@@ -1234,11 +1283,38 @@ Thank you for choosing ThanksDoc! 🏥`;
           if (action === 'accept') {
             console.log(`✅ Processing SECURE ACCEPT for request ${serviceRequestId} by doctor ${doctorId}`);
             await this.acceptServiceRequest(serviceRequestId, doctorId);
-            await this.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
             
-            // Send business notification if business phone is available
-            if (serviceRequest.business?.phone) {
+            // Check if this is a patient request or business request
+            const isPatientRequest = serviceRequest.patientPhone && !serviceRequest.business;
+            const isBusinessRequest = serviceRequest.business && serviceRequest.business.phone;
+            
+            console.log(`🔍 Request type detection:`, {
+              isPatientRequest,
+              isBusinessRequest,
+              hasPatientPhone: !!serviceRequest.patientPhone,
+              hasBusiness: !!serviceRequest.business,
+              patientPhone: serviceRequest.patientPhone,
+              businessName: serviceRequest.business?.name
+            });
+            
+            if (isPatientRequest) {
+              // Patient request - send doctor notification with patient contact details
+              console.log(`📱 Sending doctor notification for patient request acceptance`);
+              await this.sendDoctorPatientAcceptanceNotification(doctor.phone, serviceRequest);
+              
+              // Also send notification to patient if patient phone is available
+              if (serviceRequest.patientPhone) {
+                await this.sendPatientNotification(serviceRequest.patientPhone, doctor, serviceRequest);
+              }
+            } else if (isBusinessRequest) {
+              // Business request - send traditional business notification
+              console.log(`📱 Sending doctor confirmation for business request acceptance`);
+              await this.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
               await this.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
+            } else {
+              // Fallback - send generic confirmation
+              console.log(`📱 Sending generic confirmation for request acceptance`);
+              await this.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
             }
           } else if (action === 'decline') {
             console.log(`❌ Processing SECURE DECLINE for request ${serviceRequestId} by doctor ${doctorId}`);
