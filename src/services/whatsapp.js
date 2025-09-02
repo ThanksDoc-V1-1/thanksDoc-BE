@@ -27,6 +27,10 @@ class WhatsAppService {
     this.passwordResetTemplate = process.env.WHATSAPP_TEMPLATE_PASSWORD_RESET || 'password_reset_doc';
     this.doctorVideoCallTemplate = process.env.WHATSAPP_TEMPLATE_DOCTOR_VIDEO_CALL || 'doctor_video_call_link';
     this.patientVideoCallTemplate = process.env.WHATSAPP_TEMPLATE_PATIENT_VIDEO_CALL || 'patient_video_call_link';
+    
+    // Patient-specific templates
+    this.patientRequestTemplate = process.env.WHATSAPP_TEMPLATE_PATIENT_REQUEST || 'doctor_patient_request';
+    this.patientContactTemplate = process.env.WHATSAPP_TEMPLATE_PATIENT_CONTACT || 'doctor_patient_contact';
   }
 
   /**
@@ -228,11 +232,25 @@ class WhatsAppService {
     const templateName = process.env.WHATSAPP_TEMPLATE_NAME;
     
     console.log('🔍 DEBUG: buildTemplateMessage called with templateName:', templateName);
-    console.log('🔍 DEBUG: Checking conditions...');
+    console.log('🔍 DEBUG: Checking request type...');
     
-    // FORCE ALL REQUESTS TO USE buildDoctorAcceptRequestTemplate - NO EXCEPTIONS
-    console.log('🔍 DEBUG: FORCING buildDoctorAcceptRequestTemplate for ALL requests');
-    return this.buildDoctorAcceptRequestTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
+    // Check if this is a patient request (direct patient booking)
+    const isPatientRequest = serviceRequest.isPatientRequest === true || (!business || !business.name);
+    
+    console.log('🔍 DEBUG: Request type detection:', {
+      isPatientRequest,
+      hasPatientData: !!(serviceRequest.patientFirstName || serviceRequest.patientLastName),
+      hasBusiness: !!(business && business.name),
+      isPatientRequestField: serviceRequest.isPatientRequest
+    });
+    
+    if (isPatientRequest) {
+      console.log('🔍 DEBUG: Using buildPatientRequestTemplate for patient request');
+      return this.buildPatientRequestTemplate(doctorPhone, serviceRequest, acceptUrl, rejectUrl, doctor);
+    } else {
+      console.log('🔍 DEBUG: Using buildDoctorAcceptRequestTemplate for business request');
+      return this.buildDoctorAcceptRequestTemplate(doctorPhone, serviceRequest, business, acceptUrl, rejectUrl, doctor);
+    }
   }
 
   /**
@@ -545,6 +563,162 @@ class WhatsAppService {
               {
                 type: "text",
                 text: serviceTime // {{9}} Time
+              }
+            ]
+          },
+          {
+            type: "button",
+            sub_type: "url",
+            index: "0",
+            parameters: [
+              {
+                type: "text",
+                text: acceptUrl.split('/').pop() // Just the token
+              }
+            ]
+          },
+          {
+            type: "button",
+            sub_type: "url", 
+            index: "1",
+            parameters: [
+              {
+                type: "text",
+                text: rejectUrl.split('/').pop() // Use reject token for second button
+              }
+            ]
+          }
+        ]
+      }
+    };
+  }
+
+  /**
+   * Build Patient Request template message (for direct patient requests)
+   */
+  buildPatientRequestTemplate(doctorPhone, serviceRequest, acceptUrl, rejectUrl, doctor = null) {
+    const doctorName = doctor ? this.getDoctorDisplayName(doctor) : 'Doctor';
+    
+    // Calculate doctor's take-home pay (90% of service cost)
+    const calculateDoctorTakeHome = (servicePrice) => {
+      return servicePrice * 0.9; // Doctor keeps 90%, ThanksDoc takes 10%
+    };
+    
+    // Get the service price from multiple possible sources
+    let servicePrice = 0;
+    if (serviceRequest.servicePrice && parseFloat(serviceRequest.servicePrice) > 0) {
+      servicePrice = parseFloat(serviceRequest.servicePrice);
+    } else if (serviceRequest.serviceCost && parseFloat(serviceRequest.serviceCost) > 0) {
+      servicePrice = parseFloat(serviceRequest.serviceCost);
+    } else if (serviceRequest.totalAmount && parseFloat(serviceRequest.totalAmount) > 0) {
+      servicePrice = parseFloat(serviceRequest.totalAmount);
+    }
+    
+    const doctorTakeHome = servicePrice > 0 ? calculateDoctorTakeHome(servicePrice) : 0;
+    const formattedTakeHome = doctorTakeHome > 0 ? `£${doctorTakeHome.toFixed(2)}` : 'To be confirmed';
+    
+    // Format service date and time
+    const formatServiceDateTime = (dateTimeString) => {
+      if (!dateTimeString) {
+        return { date: 'Not specified', time: 'Not specified' };
+      }
+      
+      try {
+        const date = new Date(dateTimeString);
+        if (isNaN(date.getTime())) {
+          return { date: 'Not specified', time: 'Not specified' };
+        }
+        
+        // Extract date and time components
+        let timeString = '';
+        let dateString = '';
+        
+        if (typeof dateTimeString === 'string' && dateTimeString.includes('T')) {
+          const [datePart, timePart] = dateTimeString.split('T');
+          const timeOnly = timePart.split('.')[0];
+          const [hours, minutes] = timeOnly.split(':');
+          
+          // Format date
+          const dateObj = new Date(datePart);
+          dateString = dateObj.toLocaleDateString('en-GB', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+          
+          // Format time manually
+          const hour24 = parseInt(hours);
+          const minute = parseInt(minutes);
+          const isPM = hour24 >= 12;
+          const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+          const minuteStr = minute.toString().padStart(2, '0');
+          timeString = `${hour12}:${minuteStr} ${isPM ? 'pm' : 'am'}`;
+        } else {
+          dateString = date.toLocaleDateString('en-GB', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+          
+          timeString = date.toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+        }
+        
+        return { date: dateString, time: timeString };
+      } catch (error) {
+        console.error('❌ formatServiceDateTime error:', error);
+        return { date: 'Not specified', time: 'Not specified' };
+      }
+    };
+    
+    const { date: serviceDate, time: serviceTime } = formatServiceDateTime(serviceRequest.requestedServiceDateTime);
+    
+    // Get patient name
+    const patientName = `${serviceRequest.patientFirstName || ''} ${serviceRequest.patientLastName || ''}`.trim() || 'Patient';
+    
+    return {
+      messaging_product: "whatsapp",
+      to: doctorPhone,
+      type: "template",
+      template: {
+        name: this.patientRequestTemplate,
+        language: {
+          code: "en" // UK English
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: doctorName // {{1}} Doctor name
+              },
+              {
+                type: "text",
+                text: serviceRequest.serviceType || "Medical service" // {{2}} Service type
+              },
+              {
+                type: "text",
+                text: patientName // {{3}} Patient name
+              },
+              {
+                type: "text",
+                text: serviceRequest.estimatedDuration?.toString() || "Unknown" // {{4}} Duration in minutes
+              },
+              {
+                type: "text",
+                text: formattedTakeHome // {{5}} Pay (doctor's take-home after 10% commission)
+              },
+              {
+                type: "text",
+                text: serviceDate // {{6}} Date
+              },
+              {
+                type: "text",
+                text: serviceTime // {{7}} Time
               }
             ]
           },
@@ -1030,6 +1204,79 @@ The doctor will contact you shortly to coordinate the visit.`;
   }
 
   /**
+   * Build Patient Contact template message (sent to doctor after accepting patient request)
+   */
+  buildPatientContactTemplate(doctorPhone, serviceRequest) {
+    const dashboardUrl = `${this.baseUrll}/doctor/dashboard`;
+    
+    // Get patient details
+    const patientFullName = `${serviceRequest.patientFirstName || ''} ${serviceRequest.patientLastName || ''}`.trim() || 'Patient';
+    const patientPhone = serviceRequest.patientPhone || 'Not provided';
+    const patientEmail = serviceRequest.patientEmail || 'Not provided';
+    const patientAddress = serviceRequest.patientAddress || serviceRequest.patientAddressLine1 || 'Not provided';
+    
+    // Get service details
+    const serviceType = serviceRequest.serviceType || 'Medical service';
+    const duration = serviceRequest.estimatedDuration?.toString() || 'Unknown';
+    const amount = serviceRequest.totalAmount ? `£${serviceRequest.totalAmount.toFixed(2)}` : 'N/A';
+    
+    return {
+      messaging_product: "whatsapp",
+      to: doctorPhone,
+      type: "template",
+      template: {
+        name: this.patientContactTemplate,
+        language: {
+          code: "en"
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: patientFullName // {{1}} Patient name
+              },
+              {
+                type: "text",
+                text: patientPhone // {{2}} Patient phone
+              },
+              {
+                type: "text",
+                text: patientEmail // {{3}} Patient email
+              },
+              {
+                type: "text",
+                text: patientAddress // {{4}} Patient address
+              },
+              {
+                type: "text",
+                text: serviceType // {{5}} Service type
+              },
+              {
+                type: "text",
+                text: duration // {{6}} Duration
+              },
+              {
+                type: "text",
+                text: amount // {{7}} Amount
+              },
+              {
+                type: "text",
+                text: patientPhone // {{8}} Patient phone (repeated for emphasis)
+              },
+              {
+                type: "text",
+                text: dashboardUrl // {{9}} Dashboard URL
+              }
+            ]
+          }
+        ]
+      }
+    };
+  }
+
+  /**
    * Send notification to doctor about accepting a patient request
    */
   async sendDoctorPatientAcceptanceNotification(doctorPhone, serviceRequest) {
@@ -1038,7 +1285,27 @@ The doctor will contact you shortly to coordinate the visit.`;
 
       const formattedPhone = this.formatPhoneNumber(doctorPhone);
       
-      // Build doctor notification message for patient request
+      // Try to use template first, fall back to text message
+      if (this.useTemplate && this.patientContactTemplate) {
+        try {
+          console.log('📱 Using patient contact template for doctor notification');
+          
+          const templateMessage = this.buildPatientContactTemplate(formattedPhone, serviceRequest);
+          
+          console.log('📱 Patient contact template payload:', JSON.stringify(templateMessage, null, 2));
+          
+          await this.sendWhatsAppMessage(templateMessage);
+          
+          console.log(`✅ Patient contact template sent successfully to ${doctorPhone}`);
+          return;
+        } catch (templateError) {
+          console.error('❌ Patient contact template failed, falling back to text message:', templateError.response?.data || templateError.message);
+        }
+      }
+      
+      // Fallback to text message
+      console.log('📱 Using text message fallback for doctor notification');
+      
       const messageText = `✅ *REQUEST ACCEPTED*
 
 Thank you for accepting the patient service request!
