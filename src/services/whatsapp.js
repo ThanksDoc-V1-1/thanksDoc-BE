@@ -606,10 +606,13 @@ class WhatsAppService {
     let servicePrice = 0;
     if (serviceRequest.servicePrice && parseFloat(serviceRequest.servicePrice) > 0) {
       servicePrice = parseFloat(serviceRequest.servicePrice);
+    } else if (serviceRequest.service?.price && parseFloat(serviceRequest.service.price) > 0) {
+      servicePrice = parseFloat(serviceRequest.service.price);
     } else if (serviceRequest.serviceCost && parseFloat(serviceRequest.serviceCost) > 0) {
       servicePrice = parseFloat(serviceRequest.serviceCost);
     } else if (serviceRequest.totalAmount && parseFloat(serviceRequest.totalAmount) > 0) {
-      servicePrice = parseFloat(serviceRequest.totalAmount);
+      // Last resort: estimate service price by subtracting booking fee
+      servicePrice = parseFloat(serviceRequest.totalAmount) - 3;
     }
     
     const doctorTakeHome = servicePrice > 0 ? calculateDoctorTakeHome(servicePrice) : 0;
