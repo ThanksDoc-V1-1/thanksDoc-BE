@@ -2672,6 +2672,30 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       console.log(`✅ Service request ${id} accepted by Dr. ${doctor.firstName} ${doctor.lastName} via email`);
 
+      // Send notifications to both parties (same as WhatsApp acceptance)
+      try {
+        const WhatsAppService = require('../../../services/whatsapp');
+        const whatsappService = new WhatsAppService();
+
+        // Check if this is a patient request or business request and send appropriate notifications
+        if (serviceRequest.isPatientRequest && serviceRequest.patientPhone) {
+          // Patient request - send doctor notification with patient contact details
+          await whatsappService.sendDoctorPatientAcceptanceNotification(doctor.phone, serviceRequest);
+          // Send notification to patient
+          await whatsappService.sendPatientNotification(serviceRequest.patientPhone, doctor, serviceRequest);
+          console.log('📱 Patient acceptance notifications sent (email acceptance)');
+        } else {
+          // Business request - send traditional confirmation
+          await whatsappService.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
+          // Send notification to business
+          await whatsappService.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
+          console.log('📱 Business acceptance notifications sent (email acceptance)');
+        }
+      } catch (notificationError) {
+        console.error('❌ Failed to send acceptance notifications (email acceptance):', notificationError.message);
+        // Continue with redirect even if notifications fail
+      }
+
       // Redirect to success page
       return ctx.redirect(`${process.env.FRONTEND_DASHBOARD_URL}/doctor/dashboard?accepted=${id}`);
 
