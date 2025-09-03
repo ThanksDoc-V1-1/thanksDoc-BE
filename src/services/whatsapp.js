@@ -1242,18 +1242,31 @@ The doctor will contact you shortly to coordinate the visit.`;
       totalAmount: serviceRequest.totalAmount,
       serviceCost: serviceRequest.serviceCost,
       basePrice: serviceRequest.basePrice,
-      price: serviceRequest.price
+      price: serviceRequest.price,
+      'service.price': serviceRequest.service?.price,
+      'service object': serviceRequest.service
     });
     
+    // Try to get service price from different possible locations
+    let baseServicePrice = null;
     if (serviceRequest.servicePrice && typeof serviceRequest.servicePrice === 'number') {
-      const doctorTakeHome = serviceRequest.servicePrice * 0.9; // 90% of service price (not total amount)
+      baseServicePrice = serviceRequest.servicePrice;
+    } else if (serviceRequest.service?.price && typeof serviceRequest.service.price === 'number') {
+      baseServicePrice = serviceRequest.service.price;
+    } else if (serviceRequest.price && typeof serviceRequest.price === 'number') {
+      baseServicePrice = serviceRequest.price;
+    }
+    
+    if (baseServicePrice) {
+      const doctorTakeHome = baseServicePrice * 0.9; // 90% of service price
       doctorAmount = `£${doctorTakeHome.toFixed(2)}`;
-      console.log(`Doctor amount calculated from servicePrice: £${serviceRequest.servicePrice} -> £${doctorTakeHome.toFixed(2)}`);
+      console.log(`Doctor amount calculated from service price: £${baseServicePrice} -> £${doctorTakeHome.toFixed(2)}`);
     } else if (serviceRequest.totalAmount && typeof serviceRequest.totalAmount === 'number') {
-      // Fallback to total amount if servicePrice is not available
-      const doctorTakeHome = serviceRequest.totalAmount * 0.9;
+      // Last resort fallback: assume booking fee is £3, so service price = totalAmount - 3
+      const estimatedServicePrice = serviceRequest.totalAmount - 3;
+      const doctorTakeHome = estimatedServicePrice * 0.9;
       doctorAmount = `£${doctorTakeHome.toFixed(2)}`;
-      console.log(`Doctor amount calculated from totalAmount (fallback): £${serviceRequest.totalAmount} -> £${doctorTakeHome.toFixed(2)}`);
+      console.log(`Doctor amount calculated from estimated service price (totalAmount - £3): £${estimatedServicePrice} -> £${doctorTakeHome.toFixed(2)}`);
     }
     
     // Debug logging to see what values we're working with
@@ -1265,7 +1278,7 @@ The doctor will contact you shortly to coordinate the visit.`;
       serviceType,
       duration,
       doctorAmount,
-      servicePrice: serviceRequest.servicePrice,
+      baseServicePrice,
       totalAmount: serviceRequest.totalAmount,
       dashboardUrl
     });
