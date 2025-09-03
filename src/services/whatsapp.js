@@ -1224,23 +1224,6 @@ The doctor will contact you shortly to coordinate the visit.`;
     const patientEmail = serviceRequest.patientEmail || 'Not provided';
     
     // Build complete address from multiple fields
-    // Debug: Check what address fields are available
-    console.log('Available address fields in serviceRequest:', {
-      patientAddressLine1: serviceRequest.patientAddressLine1,
-      patientAddressLine2: serviceRequest.patientAddressLine2,
-      patientCity: serviceRequest.patientCity,
-      patientCounty: serviceRequest.patientCounty,
-      patientPostcode: serviceRequest.patientPostcode,
-      patientAddress: serviceRequest.patientAddress,
-      // Check for other possible field names
-      addressLine1: serviceRequest.addressLine1,
-      addressLine2: serviceRequest.addressLine2,
-      city: serviceRequest.city,
-      county: serviceRequest.county,
-      postcode: serviceRequest.postcode,
-      address: serviceRequest.address
-    });
-    
     const addressParts = [
       serviceRequest.patientAddressLine1,
       serviceRequest.patientAddressLine2,

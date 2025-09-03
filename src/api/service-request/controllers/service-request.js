@@ -2735,6 +2735,11 @@ module.exports = createCoreController('api::service-request.service-request', ({
         patientLastName,
         patientPhone,
         patientEmail,
+        patientAddressLine1,
+        patientAddressLine2,
+        patientCity,
+        patientCounty,
+        patientPostcode,
         
         // Service information
         serviceId,
@@ -2840,6 +2845,11 @@ module.exports = createCoreController('api::service-request.service-request', ({
         patientLastName,
         patientPhone,
         patientEmail,
+        patientAddressLine1,
+        patientAddressLine2,
+        patientCity,
+        patientCounty,
+        patientPostcode,
         
         // Service information
         service: serviceId
