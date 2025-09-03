@@ -825,19 +825,23 @@ class WhatsAppService {
               },
               {
                 type: "text",
-                text: doctor.phone || "N/A" // {{2}} Phone
+                text: "General Practice" // {{2}} Specialisation
               },
               {
                 type: "text",
-                text: serviceRequest.serviceType // {{3}} Service
+                text: doctor.phone || "N/A" // {{3}} Phone
               },
               {
                 type: "text",
-                text: serviceRequest.estimatedDuration.toString() // {{4}} Duration
+                text: serviceRequest.serviceType // {{4}} Service
               },
               {
                 type: "text",
-                text: dashboardUrl // {{5}} Track Progress
+                text: serviceRequest.estimatedDuration.toString() // {{5}} Duration
+              },
+              {
+                type: "text",
+                text: dashboardUrl // {{6}} Track Progress
               }
             ]
           }
