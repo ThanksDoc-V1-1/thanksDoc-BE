@@ -1235,9 +1235,25 @@ The doctor will contact you shortly to coordinate the visit.`;
     
     // Calculate doctor's take-home amount (service price - 10%)
     let doctorAmount = 'N/A';
+    
+    // Debug: Check what price fields are available
+    console.log('Available price fields in serviceRequest:', {
+      servicePrice: serviceRequest.servicePrice,
+      totalAmount: serviceRequest.totalAmount,
+      serviceCost: serviceRequest.serviceCost,
+      basePrice: serviceRequest.basePrice,
+      price: serviceRequest.price
+    });
+    
     if (serviceRequest.servicePrice && typeof serviceRequest.servicePrice === 'number') {
       const doctorTakeHome = serviceRequest.servicePrice * 0.9; // 90% of service price (not total amount)
       doctorAmount = `£${doctorTakeHome.toFixed(2)}`;
+      console.log(`Doctor amount calculated from servicePrice: £${serviceRequest.servicePrice} -> £${doctorTakeHome.toFixed(2)}`);
+    } else if (serviceRequest.totalAmount && typeof serviceRequest.totalAmount === 'number') {
+      // Fallback to total amount if servicePrice is not available
+      const doctorTakeHome = serviceRequest.totalAmount * 0.9;
+      doctorAmount = `£${doctorTakeHome.toFixed(2)}`;
+      console.log(`Doctor amount calculated from totalAmount (fallback): £${serviceRequest.totalAmount} -> £${doctorTakeHome.toFixed(2)}`);
     }
     
     // Debug logging to see what values we're working with
