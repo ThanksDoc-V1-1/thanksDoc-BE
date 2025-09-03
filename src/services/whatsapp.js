@@ -1226,6 +1226,18 @@ The doctor will contact you shortly to coordinate the visit.`;
     const duration = serviceRequest.estimatedDuration?.toString() || 'Unknown';
     const amount = serviceRequest.totalAmount ? `£${serviceRequest.totalAmount.toFixed(2)}` : 'N/A';
     
+    // Debug logging to see what values we're working with
+    console.log('Building patient contact template with values:', {
+      patientFullName,
+      patientPhone,
+      patientEmail,
+      patientAddress,
+      serviceType,
+      duration,
+      amount,
+      dashboardUrl
+    });
+    
     return {
       messaging_product: "whatsapp",
       to: doctorPhone,
@@ -1241,39 +1253,39 @@ The doctor will contact you shortly to coordinate the visit.`;
             parameters: [
               {
                 type: "text",
-                text: patientFullName // {{1}} Patient name
+                text: String(patientFullName) // {{1}} Patient name
               },
               {
                 type: "text",
-                text: patientPhone // {{2}} Patient phone
+                text: String(patientPhone) // {{2}} Patient phone
               },
               {
                 type: "text",
-                text: patientEmail // {{3}} Patient email
+                text: String(patientEmail) // {{3}} Patient email
               },
               {
                 type: "text",
-                text: patientAddress // {{4}} Patient address
+                text: String(patientAddress) // {{4}} Patient address
               },
               {
                 type: "text",
-                text: serviceType // {{5}} Service type
+                text: String(serviceType) // {{5}} Service type
               },
               {
                 type: "text",
-                text: duration // {{6}} Duration
+                text: String(duration) // {{6}} Duration
               },
               {
                 type: "text",
-                text: amount // {{7}} Amount
+                text: String(amount) // {{7}} Amount
               },
               {
                 type: "text",
-                text: patientPhone // {{8}} Patient phone (repeated for emphasis)
+                text: String(patientPhone) // {{8}} Patient phone (repeated for emphasis)
               },
               {
                 type: "text",
-                text: dashboardUrl // {{9}} Dashboard URL
+                text: String(dashboardUrl) // {{9}} Dashboard URL
               }
             ]
           }
