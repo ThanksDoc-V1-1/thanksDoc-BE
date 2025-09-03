@@ -2667,33 +2667,106 @@ module.exports = createCoreController('api::service-request.service-request', ({
         populate: ['business', 'doctor', 'service']
       });
 
+      // Check if this is an online consultation
+      const isOnlineConsultation = serviceRequest.service && serviceRequest.service.category === 'online';
+
+      // Handle video call creation for online consultations
+      if (isOnlineConsultation) {
+        try {
+          const WherebyService = require('../../../services/whereby');
+          const wherebyService = new WherebyService();
+          
+          const roomName = `consultation-${id}-${Date.now()}`;
+          const videoCallUrl = await wherebyService.createRoom(roomName);
+          
+          // Update the service request with the video call URL
+          await strapi.entityService.update('api::service-request.service-request', id, {
+            data: { wherebyRoomUrl: videoCallUrl }
+          });
+          
+          // Update our local object
+          updatedRequest.wherebyRoomUrl = videoCallUrl;
+          
+          console.log(`✅ Video call room created for online consultation: ${videoCallUrl}`);
+        } catch (videoError) {
+          console.error('❌ Failed to create video call room (email acceptance):', videoError.message);
+          // Continue with acceptance even if video call creation fails
+        }
+      }
+
+      // Send video call notifications for online consultations
+      if (isOnlineConsultation && updatedRequest.wherebyRoomUrl && serviceRequest.patientPhone) {
+        try {
+          console.log('📱 Sending video call notifications (email acceptance)');
+          
+          const WhatsAppService = require('../../../services/whatsapp');
+          const whatsappServiceForVideo = new WhatsAppService();
+          
+          // Send WhatsApp notifications
+          await whatsappServiceForVideo.sendVideoCallNotifications(
+            doctor, 
+            updatedRequest, 
+            updatedRequest.wherebyRoomUrl
+          );
+          
+          console.log('✅ WhatsApp video call notifications sent successfully (email acceptance)');
+
+          // Send Email notifications
+          try {
+            const EmailService = require('../../../services/email.service');
+            const emailService = new EmailService();
+            
+            await emailService.sendVideoCallEmails(
+              doctor,
+              updatedRequest,
+              updatedRequest.wherebyRoomUrl
+            );
+            
+            console.log('✅ Email video call notifications sent successfully (email acceptance)');
+            
+          } catch (emailError) {
+            console.error('❌ Failed to send video call emails (email acceptance, continuing anyway):', emailError.message);
+            // Don't fail the whole process if emails fail - WhatsApp was successful
+          }
+          
+        } catch (notificationError) {
+          console.error('❌ Failed to send video call notifications (email acceptance):', notificationError.message);
+          // Continue even if notifications fail
+        }
+      }
+
+      // Cancel all related requests when this one is accepted
+      await this.cancelRelatedRequests(id, strapi);
+
       // Note: Doctor availability is NOT changed when accepting requests
       // This allows doctors to accept multiple requests if they choose to
 
       console.log(`✅ Service request ${id} accepted by Dr. ${doctor.firstName} ${doctor.lastName} via email`);
 
-      // Send notifications to both parties (same as WhatsApp acceptance)
-      try {
-        const WhatsAppService = require('../../../services/whatsapp');
-        const whatsappService = new WhatsAppService();
+      // Send confirmation messages (only if not online consultation, as video notifications are sent above)
+      if (!isOnlineConsultation) {
+        try {
+          const WhatsAppService = require('../../../services/whatsapp');
+          const whatsappService = new WhatsAppService();
 
-        // Check if this is a patient request or business request and send appropriate notifications
-        if (serviceRequest.isPatientRequest && serviceRequest.patientPhone) {
-          // Patient request - send doctor notification with patient contact details
-          await whatsappService.sendDoctorPatientAcceptanceNotification(doctor.phone, serviceRequest);
-          // Send notification to patient
-          await whatsappService.sendPatientNotification(serviceRequest.patientPhone, doctor, serviceRequest);
-          console.log('📱 Patient acceptance notifications sent (email acceptance)');
-        } else {
-          // Business request - send traditional confirmation
-          await whatsappService.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
-          // Send notification to business
-          await whatsappService.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
-          console.log('📱 Business acceptance notifications sent (email acceptance)');
+          // Check if this is a patient request or business request and send appropriate notifications
+          if (serviceRequest.isPatientRequest && serviceRequest.patientPhone) {
+            // Patient request - send doctor notification with patient contact details
+            await whatsappService.sendDoctorPatientAcceptanceNotification(doctor.phone, serviceRequest);
+            // Send notification to patient
+            await whatsappService.sendPatientNotification(serviceRequest.patientPhone, doctor, serviceRequest);
+            console.log('📱 Patient acceptance notifications sent (email acceptance)');
+          } else {
+            // Business request - send traditional confirmation
+            await whatsappService.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
+            // Send notification to business
+            await whatsappService.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
+            console.log('📱 Business acceptance notifications sent (email acceptance)');
+          }
+        } catch (notificationError) {
+          console.error('❌ Failed to send acceptance notifications (email acceptance):', notificationError.message);
+          // Continue with redirect even if notifications fail
         }
-      } catch (notificationError) {
-        console.error('❌ Failed to send acceptance notifications (email acceptance):', notificationError.message);
-        // Continue with redirect even if notifications fail
       }
 
       // Redirect to success page
