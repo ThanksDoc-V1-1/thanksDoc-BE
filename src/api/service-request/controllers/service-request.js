@@ -1686,20 +1686,6 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       // Send confirmation messages (only if not online consultation, as video notifications are sent above)
       if (!isOnlineConsultation) {
-        // Debug: Log service request details for patient contact template
-        console.log('Service request for patient contact template:', {
-          isPatientRequest: serviceRequest.isPatientRequest,
-          patientPhone: serviceRequest.patientPhone,
-          patientFirstName: serviceRequest.patientFirstName,
-          patientLastName: serviceRequest.patientLastName,
-          patientEmail: serviceRequest.patientEmail,
-          patientAddress: serviceRequest.patientAddress,
-          patientAddressLine1: serviceRequest.patientAddressLine1,
-          serviceType: serviceRequest.serviceType,
-          estimatedDuration: serviceRequest.estimatedDuration,
-          totalAmount: serviceRequest.totalAmount
-        });
-        
         // Check if this is a patient request or business request
         if (serviceRequest.isPatientRequest && serviceRequest.patientPhone) {
           // Patient request - send doctor notification with patient contact details

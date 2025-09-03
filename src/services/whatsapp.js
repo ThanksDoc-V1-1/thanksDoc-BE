@@ -1219,12 +1219,26 @@ The doctor will contact you shortly to coordinate the visit.`;
     const patientFullName = `${serviceRequest.patientFirstName || ''} ${serviceRequest.patientLastName || ''}`.trim() || 'Patient';
     const patientPhone = serviceRequest.patientPhone || 'Not provided';
     const patientEmail = serviceRequest.patientEmail || 'Not provided';
-    const patientAddress = serviceRequest.patientAddress || serviceRequest.patientAddressLine1 || 'Not provided';
+    
+    // Build complete address from multiple fields
+    const addressParts = [
+      serviceRequest.patientAddressLine1,
+      serviceRequest.patientCity,
+      serviceRequest.patientCounty,
+      serviceRequest.patientPostcode
+    ].filter(part => part && part.trim() !== ''); // Remove empty parts
+    const patientAddress = addressParts.length > 0 ? addressParts.join(', ') : 'Not provided';
     
     // Get service details
     const serviceType = serviceRequest.serviceType || 'Medical service';
     const duration = serviceRequest.estimatedDuration?.toString() || 'Unknown';
-    const amount = serviceRequest.totalAmount ? `£${serviceRequest.totalAmount.toFixed(2)}` : 'N/A';
+    
+    // Calculate doctor's take-home amount (service price - 10%)
+    let doctorAmount = 'N/A';
+    if (serviceRequest.servicePrice && typeof serviceRequest.servicePrice === 'number') {
+      const doctorTakeHome = serviceRequest.servicePrice * 0.9; // 90% of service price (not total amount)
+      doctorAmount = `£${doctorTakeHome.toFixed(2)}`;
+    }
     
     // Debug logging to see what values we're working with
     console.log('Building patient contact template with values:', {
@@ -1234,7 +1248,9 @@ The doctor will contact you shortly to coordinate the visit.`;
       patientAddress,
       serviceType,
       duration,
-      amount,
+      doctorAmount,
+      servicePrice: serviceRequest.servicePrice,
+      totalAmount: serviceRequest.totalAmount,
       dashboardUrl
     });
     
@@ -1277,7 +1293,7 @@ The doctor will contact you shortly to coordinate the visit.`;
               },
               {
                 type: "text",
-                text: String(amount) // {{7}} Amount
+                text: String(doctorAmount) // {{7}} Doctor's take-home amount
               },
               {
                 type: "text",
