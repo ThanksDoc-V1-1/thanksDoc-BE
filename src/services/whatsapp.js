@@ -1236,17 +1236,6 @@ The doctor will contact you shortly to coordinate the visit.`;
     // Calculate doctor's take-home amount (service price - 10%)
     let doctorAmount = 'N/A';
     
-    // Debug: Check what price fields are available
-    console.log('Available price fields in serviceRequest:', {
-      servicePrice: serviceRequest.servicePrice,
-      totalAmount: serviceRequest.totalAmount,
-      serviceCost: serviceRequest.serviceCost,
-      basePrice: serviceRequest.basePrice,
-      price: serviceRequest.price,
-      'service.price': serviceRequest.service?.price,
-      'service object': serviceRequest.service
-    });
-    
     // Try to get service price from different possible locations
     let baseServicePrice = null;
     if (serviceRequest.servicePrice && typeof serviceRequest.servicePrice === 'number') {
@@ -1260,28 +1249,12 @@ The doctor will contact you shortly to coordinate the visit.`;
     if (baseServicePrice) {
       const doctorTakeHome = baseServicePrice * 0.9; // 90% of service price
       doctorAmount = `£${doctorTakeHome.toFixed(2)}`;
-      console.log(`Doctor amount calculated from service price: £${baseServicePrice} -> £${doctorTakeHome.toFixed(2)}`);
     } else if (serviceRequest.totalAmount && typeof serviceRequest.totalAmount === 'number') {
-      // Last resort fallback: assume booking fee is £3, so service price = totalAmount - 3
+      // Fallback: estimate service price by subtracting booking fee
       const estimatedServicePrice = serviceRequest.totalAmount - 3;
       const doctorTakeHome = estimatedServicePrice * 0.9;
       doctorAmount = `£${doctorTakeHome.toFixed(2)}`;
-      console.log(`Doctor amount calculated from estimated service price (totalAmount - £3): £${estimatedServicePrice} -> £${doctorTakeHome.toFixed(2)}`);
     }
-    
-    // Debug logging to see what values we're working with
-    console.log('Building patient contact template with values:', {
-      patientFullName,
-      patientPhone,
-      patientEmail,
-      patientAddress,
-      serviceType,
-      duration,
-      doctorAmount,
-      baseServicePrice,
-      totalAmount: serviceRequest.totalAmount,
-      dashboardUrl
-    });
     
     return {
       messaging_product: "whatsapp",

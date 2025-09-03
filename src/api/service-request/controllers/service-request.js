@@ -1491,7 +1491,7 @@ module.exports = createCoreController('api::service-request.service-request', ({
 
       // Get the service request
       const serviceRequest = await strapi.entityService.findOne('api::service-request.service-request', serviceRequestId, {
-        populate: ['business', 'doctor'],
+        populate: ['business', 'doctor', 'service'],
       });
 
       // If no confirmation parameter, this is likely WhatsApp's link preview crawling
