@@ -2937,56 +2937,40 @@ module.exports = createCoreController('api::service-request.service-request', ({
           // Create notification promises for parallel execution
           const notificationPromises = doctors.map(async (doctor) => {
             try {
+              // Create a mock business object for patient requests (used by both WhatsApp and email)
+              const patientAsBusiness = {
+                id: 'patient',
+                name: 'Private Patient',
+                businessName: 'Private Patient',
+                contactPerson: `${patientFirstName} ${patientLastName}`,
+                phone: patientPhone,
+                email: patientEmail,
+                address: 'Patient Location', // For template parameter
+                latitude: null, // Will show as "Online" or distance calculation will be skipped
+                longitude: null,
+                isPatient: true
+              };
+
               // Send WhatsApp notification using the same template as business requests
               if (whatsappService && doctor.phone) {
-                // Create a mock business object for patient requests
-                const patientAsBusiness = {
-                  id: 'patient',
-                  name: 'Private Patient',
-                  businessName: 'Private Patient',
-                  contactPerson: `${patientFirstName} ${patientLastName}`,
-                  phone: patientPhone,
-                  email: patientEmail,
-                  address: 'Patient Location', // For template parameter
-                  latitude: null, // Will show as "Online" or distance calculation will be skipped
-                  longitude: null,
-                  isPatient: true
-                };
-
                 await whatsappService.sendServiceRequestNotification(doctor, serviceRequest, patientAsBusiness);
                 console.log(`📱 WhatsApp sent to Dr. ${doctor.firstName} ${doctor.lastName}`);
               }
 
-              // Send email notification
+              // Send email notification using the proper email service
               try {
-                await strapi.plugins['email'].services.email.send({
-                  to: doctor.email,
-                  subject: 'New Patient Service Request',
-                  html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                      <h2 style="color: #2563eb;">New Patient Service Request</h2>
-                      <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                        <p><strong>Service:</strong> ${service.name}</p>
-                        <p><strong>Patient:</strong> ${patientFirstName} ${patientLastName}</p>
-                        <p><strong>Phone:</strong> ${patientPhone}</p>
-                        <p><strong>Email:</strong> ${patientEmail}</p>
-                        <p><strong>Payment Status:</strong> ${isPaid ? 'Paid' : 'Pending'}</p>
-                        <p><strong>Amount:</strong> ${totalAmount ? '£' + totalAmount.toFixed(2) : 'N/A'}</p>
-                        <p><strong>Description:</strong> ${description || 'Not provided'}</p>
-                      </div>
-                      <p>Please log in to your dashboard to accept or decline this request.</p>
-                      <div style="text-align: center; margin: 30px 0;">
-                        <a href="${process.env.FRONTEND_DASHBOARD_URL || process.env.BASE_URL}/doctor/dashboard" 
-                           style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-                          View Dashboard
-                        </a>
-                      </div>
-                    </div>
-                  `
-                });
+                const emailService = new (require('../../../services/email.service'))();
+                await Promise.race([
+                  emailService.sendServiceRequestNotification(doctor, serviceRequest, patientAsBusiness),
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 30000)) // 30 second timeout
+                ]);
                 console.log(`📧 Email sent to Dr. ${doctor.firstName} ${doctor.lastName}`);
               } catch (emailError) {
-                console.error(`❌ Failed to send email to Dr. ${doctor.firstName} ${doctor.lastName}:`, emailError.message);
+                if (emailError.message.includes('timeout')) {
+                  console.warn(`⚠️ Email notification timed out for Dr. ${doctor.firstName} ${doctor.lastName} - continuing anyway`);
+                } else {
+                  console.error(`❌ Failed to send email to Dr. ${doctor.firstName} ${doctor.lastName}:`, emailError.message);
+                }
               }
 
             } catch (error) {
