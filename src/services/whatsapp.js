@@ -1149,11 +1149,24 @@ Thank you for your response! 👨‍⚕️`;
    */
   async sendBusinessNotification(businessPhone, doctor, serviceRequest) {
     try {
-      if (!businessPhone) return;
+      console.log('📱 sendBusinessNotification called with:', {
+        businessPhone,
+        doctorName: doctor.name || `${doctor.firstName} ${doctor.lastName}`,
+        doctorPhone: doctor.phone,
+        serviceType: serviceRequest.serviceType
+      });
+
+      if (!businessPhone) {
+        console.error('❌ No business phone provided for notification');
+        return;
+      }
 
       const formattedPhone = this.formatPhoneNumber(businessPhone);
+      console.log('📱 Formatted business phone:', formattedPhone);
       
       if (this.useTemplate) {
+        console.log('📱 Using template for business notification:', this.businessNotificationTemplate);
+        
         // Use template for business notification
         const templateMessage = this.buildBusinessNotificationTemplate(
           formattedPhone,
@@ -1161,8 +1174,8 @@ Thank you for your response! 👨‍⚕️`;
           serviceRequest
         );
         
-        ('📱 Sending business notification template message');
-        ('📱 Full payload:', JSON.stringify(templateMessage, null, 2));
+        console.log('📱 Sending business notification template message');
+        console.log('📱 Full payload:', JSON.stringify(templateMessage, null, 2));
         
         const response = await axios.post(this.apiUrl, templateMessage, {
           headers: {
@@ -1171,7 +1184,7 @@ Thank you for your response! 👨‍⚕️`;
           }
         });
         
-        ('✅ Business notification template sent successfully');
+        console.log('✅ Business notification template sent successfully to', businessPhone);
         return;
       }
       
@@ -1206,7 +1219,7 @@ The doctor will contact you shortly to coordinate the visit.`;
         }
       });
 
-      (`Business notification sent for accepted service request`);
+      console.log(`Business notification sent for accepted service request`);
     } catch (error) {
       console.error(`Failed to send business notification:`, error.response?.data || error.message);
     }

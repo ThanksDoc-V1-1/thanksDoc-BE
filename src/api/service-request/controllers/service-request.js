@@ -1694,9 +1694,17 @@ module.exports = createCoreController('api::service-request.service-request', ({
           await whatsappService.sendPatientNotification(serviceRequest.patientPhone, doctor, serviceRequest);
         } else {
           // Business request - send traditional confirmation
+          console.log('🏢 DEBUG: Processing business request notification');
+          console.log('🏢 DEBUG: serviceRequest.business:', serviceRequest.business);
+          console.log('🏢 DEBUG: serviceRequest.business.phone:', serviceRequest.business?.phone);
+          console.log('🏢 DEBUG: doctor object:', { id: doctor.id, firstName: doctor.firstName, lastName: doctor.lastName, phone: doctor.phone });
+          
           await whatsappService.sendConfirmationMessage(doctor.phone, 'accept', serviceRequest, serviceRequest.business);
+          
           // Send notification to business
+          console.log('🏢 DEBUG: About to call sendBusinessNotification');
           await whatsappService.sendBusinessNotification(serviceRequest.business.phone, doctor, serviceRequest);
+          console.log('🏢 DEBUG: sendBusinessNotification call completed');
         }
       }
 
